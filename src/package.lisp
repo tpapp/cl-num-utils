@@ -23,4 +23,12 @@
 
    size sum sse mean variance
 
+   ;; interval
+   
+   interval make-interval forced-interval make-forced-interval interval-diff interval-width
+   interval-midpoint positive-interval-p negative-interval-p weakly-positive-interval-p 
+   weakly-negative-interval-p zero-interval-p flip-interval make-interval-or-nil range 
+   combined-range interval-intersection fraction fraction-value fractions percent percents
+   spacer spacer-value spacers split-interval
+
    ))
