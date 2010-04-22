@@ -25,22 +25,20 @@
   (:method (object)
      (/ (sum object) (size object))))
 
-(defun variance% (sse length default default?)
+(defun variance% (sse length)
   "Calculate variance from SSE and LENGTH.  Meant for defining new
 variance methods."
-  (cond
-    ((< 1 length)
-       (/ sse (1- length)))
-    (default? default)
-    (t (error 'not-enough-elements))))
+  (if (< 1 length)
+      (/ sse (1- length))
+      (error 'not-enough-elements)))
 
-(defgeneric variance (object &key default &allow-other-keys)
+(defgeneric variance (object)
   (:documentation "Return the variance.  When the object doesn't have
   enough elements, DEFAULT is returned when given, otherwise an error
   is signalled.")
-  (:method (object &key (default nil default?))
+  (:method (object)
      (bind (((:accessors-r/o sse size) object))
-       (variance% sse size default default?))))
+       (variance% sse size))))
 
 ;;; sensible behavior for sequences and arrays
 
