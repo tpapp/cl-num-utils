@@ -17,6 +17,7 @@
     :components
     ((:file "seq")
      (:file "pretty")
-     (:file "bins"))))
+     (:file "bins")
+     (:file "statistics"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora))

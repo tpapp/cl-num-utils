@@ -17,6 +17,10 @@
 
    bin-range bin-index bin-function bin-domain-error
    evenly-distributed-bins pretty-bins integer-bins sturges-bins 
-   irregular-bins within-boundaries?
+   irregular-bins within-breaks? breaks
+
+   ;; statistics
+
+   size sum sse mean variance
 
    ))
