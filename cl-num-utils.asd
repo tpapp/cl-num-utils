@@ -18,6 +18,7 @@
     ((:file "seq")
      (:file "pretty")
      (:file "bins")
-     (:file "statistics"))))
+     (:file "statistics")
+     (:file "interval"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora))
