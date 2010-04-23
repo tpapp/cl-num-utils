@@ -12,7 +12,7 @@ coerced to ELEMENT-TYPE."
       (setf (aref vector i) (coerce element element-type)))
     vector))
 
-(defun numseq (from to &key length (by 1) type)
+(defun numseq (from to &key length (by 1 by?) type)
   "Return a sequence between FROM and TO, progressing by BY, of the
 given LENGTH.  Only 3 of these a parameters should be given, the
 missing one (NIL) should be inferred automatically.  If TYPE, it will
@@ -38,13 +38,13 @@ result is a LIST.  Note: the sign of BY is adjusted if necessary."
 	      (by (* (signum range) (signum by) by))
               (length (1+ (floor (/ range by)))))
          (seq% from by length)))
-      ((not by)
+      ((and length (not by?))
        (let ((range (- to from)))
          (seq% from (if (zerop range)
                         0
                         (/ range (1- length)))
                length)))
-      (t "Only 3 of FROM, TO, LENGTH and BY are needed."))))
+      (t (error "Only 3 of FROM, TO, LENGTH and BY are needed.")))))
 
 (defun vector-satisfies? (vector predicate)
   "Return non-nil iff vector satisfies predicate elementwise.
@@ -57,3 +57,13 @@ increasing."
     (for element :in-vector vector :from 1)
     (for element-p :previous element :initially (aref vector 0))
     (always (funcall predicate element-p element))))
+
+(defgeneric cumsum (object)
+  (:documentation "The cumulative sum of the elements.  Always starts
+  with the first element, and ends with the total."))
+
+(defmethod cumsum ((sequence sequence))
+  (let ((sum 0))
+    (map (type-of sequence) (lambda (element)
+                              (incf sum element))
+         sequence)))
