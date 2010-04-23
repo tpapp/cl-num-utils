@@ -18,16 +18,18 @@
   (left 0 :type real)
   (right 0 :type real))
 
-(metabang.bind::defbinding-form (:interval
-                                 :docstring
-                                 "Intervals can be accessed as (:interval left right)."
-                                 :use-values-p nil)
-  (bind (((left right) metabang.bind::variables))
-    `(bind (((:structure/rw interval- (,left left) (,right right)) ,values)))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (metabang.bind::defbinding-form (:interval
+                                   :docstring
+                                   "Intervals can be accessed as (:interval left right)."
+                                   :use-values-p nil)
+    (bind (((left right) metabang.bind::variables))
+      `(bind (((:structure/rw interval- (,left left) (,right right)) ,values))))))
 
 (defstruct (forced-interval
              (:include interval)
-             (:constructor make-forced-interval (left right)))
+             (:constructor make-forced-interval (left right))
+             (:conc-name interval-))
   "When combined using range-of, replaces the last effective union.")
 
 (declaim (inline interval%))
@@ -72,7 +74,7 @@ weight on right."
   "Exchange left and right."
   (make-interval (interval-right interval) (interval-left interval)))
 
-(defun make-interval-or-nil% (minimum maximum)
+(defun make-interval-or-nil (minimum maximum)
   "When both arguments are given, return an interval, otherwise nil. "
   (when (and minimum maximum)
     (make-interval minimum maximum)))
@@ -89,20 +91,19 @@ weight on right."
        (maximizing elt :into maximum)
        (minimizing elt :into minimum)
        (finally
-        (return (make-interval-or-nil% minimum maximum)))))
+        (return (make-interval-or-nil minimum maximum)))))
   (:method ((list list))
      (iter
        (for elt :in list)
        (maximizing elt :into maximum)
        (minimizing elt :into minimum)
        (finally
-        (return (make-interval-or-nil% minimum maximum))))))
+        (return (make-interval-or-nil minimum maximum))))))
 
 (defun combined-range (&rest objects)
   "Return the combined range of all objects, from left to right.  An
 object of type forced-interval will make replace the range calculated
 so far."
-  (Declare (optimize debug))
   (iter
     (with min := nil)
     (with max := nil)
@@ -121,7 +122,7 @@ so far."
              (setf min left
                    max right)))))
     (finally
-     (return (make-interval-or-nil% min max)))))
+     (return (make-interval-or-nil min max)))))
 
 (defun interval-intersection (&rest intervals)
   "Return intersection of intervals, which is always a (weakly) positive
