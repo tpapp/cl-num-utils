@@ -6,11 +6,7 @@
 ;;;; necessarily decreasing, as there can be negative intervals (eg
 ;;;; for reverse plots), but some functions (eg interval-containing
 ;;;; and interval-intersection) return positive intervals by
-;;;; construction.  The most important function is range-of, which
-;;;; returns an interval containing its arguments (which can be
-;;;; intervals too, among other things), ignoring nil's, or nil if all
-;;;; the arguments are nil.  If it encounters a forced-interval, that
-;;;; replaces the combination resulting from the previous intervals.
+;;;; construction.
 
 (defstruct (interval
              (:constructor make-interval (left right)))
@@ -30,7 +26,7 @@
              (:include interval)
              (:constructor make-forced-interval (left right))
              (:conc-name interval-))
-  "When combined using range-of, replaces the last effective union.")
+  "When combined using combined-range, replaces the last effective union.")
 
 (declaim (inline interval%))
 (defun interval% (operation interval)
@@ -81,22 +77,25 @@ weight on right."
 
 (defgeneric range (object)
   (:documentation "Return the range of an object as a weakly positive
-  interval.  If there are no elements, return NIL.")
+  interval.  If there are no elements, return NIL.  NILs are
+  ignored.")
   (:method ((x real))
      (make-interval x x))
   (:method ((array array))
      (iter
        (for index :from 0 :below (array-total-size array))
        (for elt := (row-major-aref array index))
-       (maximizing elt :into maximum)
-       (minimizing elt :into minimum)
+       (when elt
+         (maximizing elt :into maximum)
+         (minimizing elt :into minimum))
        (finally
         (return (make-interval-or-nil minimum maximum)))))
   (:method ((list list))
      (iter
        (for elt :in list)
-       (maximizing elt :into maximum)
-       (minimizing elt :into minimum)
+       (when elt
+         (maximizing elt :into maximum)
+         (minimizing elt :into minimum))
        (finally
         (return (make-interval-or-nil minimum maximum))))))
 
