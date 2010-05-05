@@ -31,4 +31,9 @@
    make-interval-or-nil range combined-range interval-intersection fraction fraction-value 
    fractions percent percents spacer spacer-value spacers split-interval
 
+   ;; histogram
+
+   histogram-counter with-histogram-counter histogram-count hash-key-range hash-key-range2
+   hash-table->array hash-table->array2
+
    ))
