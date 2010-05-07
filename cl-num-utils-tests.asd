@@ -19,7 +19,8 @@
     "tests"
     :pathname #P"unit-tests/"
     :components
-    ((:file "test-seq"))))
+    ((:file "test-seq")
+     (:file "test-sub"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :lift
                  :cl-num-utils))

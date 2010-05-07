@@ -20,6 +20,7 @@
      (:file "bins")
      (:file "statistics")
      (:file "interval")
-     (:file "histogram"))))
+     (:file "histogram")
+     (:file "sub"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora))

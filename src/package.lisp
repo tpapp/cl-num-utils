@@ -36,4 +36,8 @@
    histogram-counter with-histogram-counter histogram-count hash-key-range hash-key-range2
    hash-table->array hash-table->array2
 
+   ;; sub
+
+   sub map-columns map-rows
+
    ))
