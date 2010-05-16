@@ -114,16 +114,16 @@ using Sturges's rule. "
 
 (declaim (inline within-breaks? in-bin?% find-bin%))
 
-(defun within-breaks? (value left right)
+(defun within? (left value right)
   "Return non-nil iff value is in [left,right)."
   (and (<= left value) (< value right)))
 
 (defun in-bin?% (value index breaks)
   "Return non-nil iff VALUE is in the bin corresponding to INDEX.  No
 error checking, for internal use."
-  (within-breaks? value
-                  (aref breaks index)
-                  (aref breaks (1+ index))))
+  (within? (aref breaks index)
+           value
+           (aref breaks (1+ index))))
 
 (defun find-bin% (value breaks right &aux (left 0))
   "Find the bin index for value.  BREAKS should be strictly
@@ -144,7 +144,7 @@ internal use."
          (right (1- (length breaks)))
          (left-boundary (aref breaks 0))
          (right-boundary (aref breaks right)))
-    (unless (within-breaks? value left-boundary right-boundary)
+    (unless (within? left-boundary value right-boundary)
       (error 'bin-domain-error))
     (find-bin% value breaks right)))
 
@@ -155,6 +155,6 @@ internal use."
          (right-boundary (aref breaks right)))
     ;; ?? caching would be nice, test speed
     (lambda (value)
-      (unless (within-breaks? value left-boundary right-boundary)
+      (unless (within? left-boundary value right-boundary)
         (error 'bin-domain-error))
       (find-bin% value breaks right))))
