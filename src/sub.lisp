@@ -76,17 +76,27 @@ dimension+index.  If end?, 0 yields dimension, otherwise 0."
                () 'invalid-array-index :index index :dimension dimension)
      index)))
 
+(deftype sub-all ()
+  '(and boolean (not null)))
+
+(deftype sub-index ()
+  'fixnum)
+
+(deftype sub-range ()
+  '(cons fixnum fixnum))
+
+
 (defun transform-range (range dimension)
   "Transform indexes in a range.  Checks that contiguous ranges are
 valid."
   (etypecase range
-    ((and boolean (not null)) (cons 0 dimension))
-    (number (transform-index range dimension nil))
-    (cons (bind ((start (transform-index (car range) dimension nil))
-                 (end (transform-index (cdr range) dimension t)))
-            (assert (< start end) () 'invalid-range :range range)
-            (cons start end)))
-    (vector (map '(simple-array fixnum (*))
+    (sub-all (cons 0 dimension))
+    (sub-index (transform-index range dimension nil))
+    (sub-range (bind ((start (transform-index (car range) dimension nil))
+                      (end (transform-index (cdr range) dimension t)))
+                 (assert (< start end) () 'invalid-range :range range)
+                 (cons start end)))
+    (vector (map 'simple-fixnum-vector
                  (lambda (index) (transform-index index dimension nil))
                  range))))
 
@@ -288,4 +298,18 @@ body.  RANGES is a range specification, a sequence which is "
         (if result-ncol
             (setf (sub result row t) mapped-row)
             (setf (aref result row) mapped-row))))
+    result))
+
+(defgeneric transpose (object)
+  (:documentation "Transpose a matrix.")) 
+
+(defmethod transpose ((matrix array))
+  ;; transpose a matrix
+  (bind (((nrow ncol) (array-dimensions matrix))
+         (result (make-array (list ncol nrow) :element-type (array-element-type matrix)))
+         (result-index 0))
+    (dotimes (col ncol)
+      (dotimes (row nrow)
+        (setf (row-major-aref result result-index) (aref matrix row col))
+        (incf result-index)))
     result))
