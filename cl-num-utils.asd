@@ -21,6 +21,7 @@
      (:file "statistics")
      (:file "interval")
      (:file "histogram")
-     (:file "sub"))))
+     (:file "sub")
+     (:file "ix"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora))

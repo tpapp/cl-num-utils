@@ -38,6 +38,13 @@
 
    ;; sub
 
-   sub map-columns map-rows
+   invalid-array-index invalid-range transform-index sub-all sub-index sub-range
+   transform-range transform-ranges row-major-coefficients column-major-coefficients 
+   drop-dimensions range-dimension range-dimensions with-range-indexing sub map-columns map-rows
+   transpose
+
+   ;; ix
+   
+   ix ix-keys make-ix
 
    ))
