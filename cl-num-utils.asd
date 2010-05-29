@@ -15,7 +15,8 @@
     :pathname #P"src/"
     :serial t
     :components
-    ((:file "seq")
+    ((:file "misc")
+     (:file "seq")
      (:file "pretty")
      (:file "bins")
      (:file "statistics")
