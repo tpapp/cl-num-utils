@@ -67,3 +67,18 @@ increasing."
     (map (type-of sequence) (lambda (element)
                               (incf sum element))
          sequence)))
+
+(defun sort-order (sequence predicate &key key)
+  "Sort elements of SEQUENCE using PREDICATE (and optionally, KEY).  Return the
+permutation of elements as the second value (which is always a (SIMPLE-ARRAY
+FIXNUM (*)).  Functional and nondestructive."
+  (let* ((index 0)
+         (paired (map 'simple-vector
+                      (lambda (element)
+                        (prog1 (cons element index)
+                          (incf index)))
+                      sequence))
+         (paired (sort paired predicate
+                       :key (if key (compose key #'car) #'car))))
+    (values (map (type-of sequence) #'car paired)
+            (map '(simple-array fixnum (*)) #'cdr paired))))

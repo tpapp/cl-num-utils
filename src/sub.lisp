@@ -48,14 +48,18 @@
 ;;;    calculated, using partial sums from previous iterations to the
 ;;;    extent it is possible.
 
+(define-condition sub-incompatible-dimensions (error)
+  ()
+  (:documentation "Either rank or dimensions are incompatible."))
+
 (deftype simple-fixnum-vector ()
   '(simple-array fixnum (*)))
 
-(define-condition invalid-array-index (error)
+(define-condition sub-invalid-array-index (error)
   ((index :accessor index :initarg :index)
    (dimension :accessor dimension :initarg :dimension)))
 
-(define-condition invalid-range (error)
+(define-condition sub-invalid-range (error)
   ((range :accessor range :initarg :range)))
 
 (defun transform-index (index dimension end?)
@@ -68,12 +72,13 @@ dimension+index.  If end?, 0 yields dimension, otherwise 0."
          dimension
          0))
     ((minusp index) (aprog1 (+ dimension index)
-                      (assert (<= 0 it) () 'invalid-array-index
+                      (assert (<= 0 it) () 'sub-invalid-array-index
                               :index index :dimension dimension)))
     (t (assert (if end?
                    (<= index dimension)
                    (< index dimension))
-               () 'invalid-array-index :index index :dimension dimension)
+               () 'sub-invalid-array-index
+               :index index :dimension dimension)
      index)))
 
 (deftype sub-all ()
@@ -92,9 +97,11 @@ valid."
   (etypecase range
     (sub-all (cons 0 dimension))
     (sub-index (transform-index range dimension nil))
-    (sub-range (bind ((start (transform-index (car range) dimension nil))
+    (sub-range (bind ((start (transform-index (car range) dimension
+                                              nil))
                       (end (transform-index (cdr range) dimension t)))
-                 (assert (< start end) () 'invalid-range :range range)
+                 (assert (< start end) () 'sub-invalid-range
+                         :range range)
                  (cons start end)))
     (vector (map 'simple-fixnum-vector
                  (lambda (index) (transform-index index dimension nil))
@@ -171,35 +178,42 @@ first index has reached its limit, ie the array has been walked and
 all the counters are zero again."
   (iter
     (for axis-number :from (1- (length range-dimensions)) :downto 0)
-    (if (= (incf (aref counters axis-number)) (aref range-dimensions axis-number))
+    (if (= (incf (aref counters axis-number))
+           (aref range-dimensions axis-number))
         (setf (aref counters axis-number) 0)
         (return-from increment-index-counters axis-number)))
   (values 0 t))
 
 
-(defun map-counters (offset ranges coefficients counters cumsums valid-end)
+(defun map-counters (offset ranges coefficients counters cumsums
+                     valid-end)
   "Recalculate cumsums, return flat index."
   (let ((cumsum (if (zerop valid-end)
                     offset
                     (aref cumsums (1- valid-end)))))
     (iter
-      (for counter :in-vector counters :from valid-end :with-index axis-number)
+      (for counter :in-vector counters :from valid-end
+           :with-index axis-number)
       (for range :in-vector ranges :from valid-end)
       (for coefficient :in-vector coefficients :from valid-end)
       (incf cumsum (* coefficient (map-counter range counter)))
       (setf (aref cumsums axis-number) cumsum))
     cumsum))
 
-(defmacro with-range-indexing ((ranges dimensions increment index end? &optional
-                                       (range-dimensions (gensym "RANGE-DIMENSIONS")))
+(defmacro with-range-indexing ((ranges dimensions next-index
+                                       &key
+                                       (end? (gensym "END"))
+                                       (range-dimensions 
+                                        (gensym "RANGE-DIMENSIONS"))
+                                       (counters
+                                        (gensym "COUNTERS")))
                                &body body)
   "Establish incrementation and index-calculation functions within
 body.  RANGES is a range specification, a sequence which is "
-  (check-type increment symbol)
-  (check-type index symbol)
+  (check-type next-index symbol)
   (check-type end? symbol)
   (once-only (dimensions ranges)
-    (with-unique-names (coefficients offset rank counters cumsums valid-end)
+    (with-unique-names (coefficients offset rank cumsums valid-end)
       `(bind ((,dimensions (coerce ,dimensions 'simple-fixnum-vector))
               (,ranges (transform-ranges ,ranges ,dimensions)))
          (assert (= (length ,ranges) (length ,dimensions)) ()
@@ -213,12 +227,16 @@ body.  RANGES is a range specification, a sequence which is "
                 (,cumsums (make-array ,rank :element-type 'fixnum))
                 (,valid-end 0)
                 (,end? (every #'zerop ,range-dimensions))
-                ((:flet ,increment ())
-                 (setf (values ,valid-end ,end?)
-                       (increment-index-counters ,counters ,range-dimensions)))
-                ((:flet ,index ())
-                 (map-counters ,offset ,ranges ,coefficients ,counters ,cumsums ,valid-end)))
-         ;; !!! dynamic extent & type declarations, check optimizations
+                ((:flet ,next-index ())
+                 (aprog1 (map-counters ,offset ,ranges ,coefficients
+                                       ,counters ,cumsums 
+                                       ,valid-end)
+                   (setf (values ,valid-end ,end?)
+                         (increment-index-counters 
+                          ,counters
+                          ,range-dimensions)))))
+           ;; !!! dynamic extent & type declarations, check
+           ;; !!! optimizations
            ,@body)))))
 
 (defgeneric sub (object &rest ranges)
@@ -226,29 +244,34 @@ body.  RANGES is a range specification, a sequence which is "
 
 (defmethod sub ((array array) &rest ranges)
            (declare (optimize debug (speed 0)))
-  (with-range-indexing (ranges (array-dimensions array) inc index end? dimensions)
+  (with-range-indexing (ranges (array-dimensions array) next-index
+                               :end? end?
+                               :range-dimensions dimensions)
     (let ((result (make-array (coerce dimensions 'list)
-                              :element-type (array-element-type array))))
+                              :element-type
+                              (array-element-type array))))
       (iter
         (until end?)
         (for result-index :from 0)
         (setf (row-major-aref result result-index)
-              (row-major-aref array (index)))
-        (inc))
+              (row-major-aref array (next-index))))
       result)))
 
 (defgeneric (setf sub) (source target &rest ranges)
   (:documentation ""))
 
 (defmethod (setf sub) ((source array) (target array) &rest ranges)
-  (with-range-indexing (ranges (array-dimensions target) inc index end? dimensions)
-    (assert (equalp dimensions (coerce (array-dimensions source) 'vector)))
+  (with-range-indexing (ranges (array-dimensions target) next-index
+                               :end? end? 
+                               :range-dimensions dimensions)
+    (assert (equalp dimensions 
+                    (coerce (array-dimensions source) 'vector))
+            () 'sub-incompatible-dimensions)
     (iter
       (until end?)
       (for source-index :from 0)
-      (setf (row-major-aref target (index))
-            (row-major-aref source source-index))
-      (inc)))
+      (setf (row-major-aref target (next-index))
+            (row-major-aref source source-index))))
   source)
 
 (defgeneric map-columns (matrix function)
