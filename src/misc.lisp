@@ -8,3 +8,8 @@
   (bind (((:values quot rem) (floor number divisor)))
     (when (zerop rem)
       quot)))
+
+(declaim (inline square))
+(defun square (number)
+  "Return square of NUMBER."
+  (expt number 2))

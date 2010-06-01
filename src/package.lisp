@@ -1,13 +1,13 @@
 (defpackage #:cl-num-utils
     (:nicknames #:clnu)
-  (:use #:cl #:cl-utilities #:iterate
-        #:metabang-bind #:anaphora)
-  (:shadowing-import-from :iterate :collecting :collect)
+  (:use #:cl #:cl-utilities #:iterate #:metabang-bind #:anaphora
+        #:tpapp-utils)
+  (:shadowing-import-from :iterate #:collecting #:collect)
   (:export
 
    ;; misc
    
-   divides?
+   divides? square
 
    ;; seq
 
