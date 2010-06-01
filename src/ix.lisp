@@ -84,7 +84,7 @@ specification (eg (CONS START END)) or a single index."
                       (cons acc (+ acc (ix-size ix))))))))
     (resolve ix keys-and-indexes 0)))
 
-;; (defparameter *ix* (make-ix 'foo 3 'bar 8 'baz nil))
+;; (defparameter *ix* (make-ix '((foo 3) (bar 8) baz)))
 ;; (ix *ix* 'foo)
 ;; (ix *ix* 'bar 4)
 ;; (ix *ix* 'baz)
