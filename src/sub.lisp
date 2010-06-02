@@ -209,7 +209,7 @@ all the counters are zero again."
                                         (gensym "COUNTERS")))
                                &body body)
   "Establish incrementation and index-calculation functions within
-body.  RANGES is a range specification, a sequence which is "
+body.  The sequence RANGES is a range specification."
   (check-type next-index symbol)
   (check-type end? symbol)
   (once-only (dimensions ranges)
@@ -243,7 +243,6 @@ body.  RANGES is a range specification, a sequence which is "
   (:documentation ""))
 
 (defmethod sub ((array array) &rest ranges)
-           (declare (optimize debug (speed 0)))
   (with-range-indexing (ranges (array-dimensions array) next-index
                                :end? end?
                                :range-dimensions dimensions)
@@ -256,6 +255,16 @@ body.  RANGES is a range specification, a sequence which is "
         (setf (row-major-aref result result-index)
               (row-major-aref array (next-index))))
       result)))
+
+(defmethod sub ((list list) &rest ranges)
+  (assert (= 1 (length ranges)))
+  (with-range-indexing (ranges (list (length list)) next-index
+                               :end? end?
+                               :range-dimensions dimensions)
+    ;; !!! very inefficient method, could do much better
+    (iter
+      (until end?)
+      (collecting (nth (next-index) list)))))
 
 (defgeneric (setf sub) (source target &rest ranges)
   (:documentation ""))
@@ -273,6 +282,8 @@ body.  RANGES is a range specification, a sequence which is "
       (setf (row-major-aref target (next-index))
             (row-major-aref source source-index))))
   source)
+
+;;; !!! write (setf sub) for list
 
 (defgeneric map-columns (matrix function)
   (:documentation "Map columns of MATRIX using function.  FUNCTION is
@@ -336,3 +347,34 @@ body.  RANGES is a range specification, a sequence which is "
         (setf (row-major-aref result result-index) (aref matrix row col))
         (incf result-index)))
     result))
+
+(defgeneric create (type element-type &rest dimensions)
+  (:documentation "Create an object of TYPE with given DIMENSIONS and
+  ELEMENT-TYPE (or a supertype thereof)."))
+
+(defmethod create ((type (eql 'array)) element-type &rest dimensions)
+  (make-array dimensions :element-type element-type))
+
+(defmethod collect-rows (nrow function &optional type)
+  (bind (result
+         ncol)
+    (iter
+      (for row :from 0 :below nrow)
+      (let ((result-row (funcall function)))
+        (when (first-iteration-p)
+          (setf ncol (length result-row)
+                result (create type (array-element-type result-row) nrow ncol)))
+        (setf (sub result row t) result-row)))
+    result))
+
+(defun collect-vector (n function &optional (element-type t))
+  (bind (result)
+    (iter
+      (for index :from 0 :below n)
+      (let ((element (funcall function)))
+        (when (first-iteration-p)
+          (setf result (make-array n :element-type element-type)))
+        (setf (aref result index) element)))
+    result))
+
+

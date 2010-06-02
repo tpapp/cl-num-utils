@@ -49,10 +49,10 @@
    transform-range transform-ranges row-major-coefficients
    column-major-coefficients drop-dimensions range-dimension
    range-dimensions with-range-indexing sub map-columns map-rows
-   transpose
+   transpose create collect-rows collect-vector
 
    ;; ix
    
-   ix ix-keys make-ix
+   ix ix-keys make-ix ix->spec
 
    ))
