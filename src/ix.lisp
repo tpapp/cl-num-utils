@@ -16,7 +16,8 @@
     (ix (with-slots (cum-indexes) ix
           (aref cum-indexes (1- (length cum-indexes)))))))
 
-(defmethod print-object ((ix ix) stream)
+(defun ix->spec (ix)
+  "Return the specification for an IX object."
   (labels ((spec->list (key spec)
              (etypecase spec
                (null key)
@@ -24,17 +25,20 @@
                (ix (list key (ix->list spec)))))
            (ix->list (ix)
              (map 'list #'spec->list (ix-keys ix) (ix-specs ix))))
-    (print-unreadable-object (ix stream :type t)
-      (princ (ix->list ix) stream))))
+    (ix->list ix)))
 
-(defun make-ix (key-spec-pairs)
-  "Create index.  KEY-SPEC-PAIRS is a list of the following: KEY for
+(defmethod print-object ((ix ix) stream)
+  (print-unreadable-object (ix stream :type t)
+    (princ (ix->specification ix) stream)))
+
+(defun make-ix (specification)
+  "Create index.  SPEC is a list of the following: KEY for
 singletons, (KEY LENGTH) or (KEY DIMENSIONS-VECTOR) for vector or
 row-major-array indexing, (KEY IX-INSTANCE), or a list of these which
 is interpreted recursively."
   (iter
     (with cum-index := 0)
-    (for key-spec :in key-spec-pairs)
+    (for key-spec :in specification)
     (bind (((:values key spec)
             (if (atom key-spec)
                 (progn
@@ -79,10 +83,21 @@ specification (eg (CONS START END)) or a single index."
                       (bind (((:slots-r/o keys cum-indexes specs) ix)
                              ((key . rest) keys-and-indexes)
                              (position (position key keys :test #'eq)))
+                        (unless position
+                          (error "key ~A not found" key))
                         (resolve (aref specs position) rest 
                                  (+ acc (aref cum-indexes position))))
                       (cons acc (+ acc (ix-size ix))))))))
     (resolve ix keys-and-indexes 0)))
+
+(defmethod sub ((ix ix) &rest ranges)
+  ;; sub works on the specification
+  (bind (((range) ranges))
+    (make-ix (sub (ix->spec ix) range))))
+
+;; (defmethod sub (ix &rest ranges)
+;;   (bind ((range )))          
+;;   )
 
 ;; (defparameter *ix* (make-ix '((foo 3) (bar 8) baz)))
 ;; (ix *ix* 'foo)
