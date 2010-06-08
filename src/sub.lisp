@@ -355,7 +355,7 @@ body.  The sequence RANGES is a range specification."
 (defmethod create ((type (eql 'array)) element-type &rest dimensions)
   (make-array dimensions :element-type element-type))
 
-(defmethod collect-rows (nrow function &optional type)
+(defmethod collect-rows (nrow function &optional (type 'array))
   (bind (result
          ncol)
     (iter
