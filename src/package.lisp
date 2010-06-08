@@ -53,6 +53,6 @@
 
    ;; ix
    
-   ix ix-keys make-ix ix->spec
+   ix ix-keys make-ix flatten-ix ix->spec
 
    ))

@@ -16,6 +16,21 @@
     (ix (with-slots (cum-indexes) ix
           (aref cum-indexes (1- (length cum-indexes)))))))
 
+(defun flatten-ix (ix)
+  "Return a vector, which contains keys for each index."
+  (labels ((flatten (key spec)
+             (etypecase spec
+               (null (vector (list key)))
+               (fixnum (iter
+                         (for index :from 0 :below spec)
+                         (collecting (list key index) :result-type vector)))
+               (vector (error "internal error: case not defined yet"))
+               (ix (map 'vector (lambda (keys)
+                                  (cons key keys))
+                        (flatten-ix spec))))))
+    (apply #'concatenate 'vector 
+           (map 'list #'flatten (ix-keys ix) (ix-specs ix)))))
+
 (defun ix->spec (ix)
   "Return the specification for an IX object."
   (labels ((spec->list (key spec)
@@ -29,7 +44,7 @@
 
 (defmethod print-object ((ix ix) stream)
   (print-unreadable-object (ix stream :type t)
-    (princ (ix->specification ix) stream)))
+    (princ (ix->spec ix) stream)))
 
 (defun make-ix (specification)
   "Create index.  SPEC is a list of the following: KEY for
