@@ -7,7 +7,7 @@
 
    ;; misc
    
-   divides? square
+   divides? square nif anif xor bic
 
    ;; seq
 
