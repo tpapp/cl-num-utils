@@ -118,8 +118,3 @@ times, repeating each element EACH times (default is 1)."))
             (setf (aref result result-index) elt)
             (incf result-index)))))
     result))
-
-
-
-(rep '(1 2 3) 4 2)
-(rep #(1 2 3) 4 2)
