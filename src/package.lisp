@@ -7,11 +7,12 @@
 
    ;; misc
    
-   divides? square nif anif xor bic
+   divides? square nif anif bic xor multf
 
    ;; seq
 
-   vector* numseq vector-satisfies? cumsum sort-order
+   vector* numseq vector-satisfies? cumsum sort-order make-similar-vector
+   make-similar-array rep
 
    ;; pretty
 
@@ -54,5 +55,9 @@
    ;; ix
    
    ix ix-keys make-ix flatten-ix ix->spec
+
+   ;; optimization
+   
+   reached-max-iter golden-section-minimize
 
    ))

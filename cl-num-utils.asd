@@ -31,6 +31,7 @@
      (:file "interval")
      (:file "histogram")
      (:file "sub")
-     (:file "ix"))))
+     (:file "ix")
+     (:file "optimization"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :tpapp-utils))
