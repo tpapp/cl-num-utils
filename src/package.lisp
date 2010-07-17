@@ -7,7 +7,7 @@
 
    ;; misc
    
-   divides? square nif anif bic xor multf
+   divides? square nif anif bic xor multf as-integer
 
    ;; seq
 

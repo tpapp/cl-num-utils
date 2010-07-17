@@ -41,3 +41,18 @@
   (if a b (not b)))
 
 (define-modify-macro multf (&rest values) * "Multiply by the arguments")
+
+(defun as-integer (number)
+  "If NUMBER represents an integer (as an integer, complex, or float,
+etc), return it as an integer, otherwise signal an error."
+  (declare (inline as-integer))
+  (etypecase number
+    (integer number)
+    (complex 
+       (assert (zerop (imagpart number)) ()
+               "~A has non-zero imaginary part." number)
+       (as-integer (realpart number)))
+    (t (bind (((:values int frac) (floor number)))
+         (assert (zerop frac) ()
+                 "~A has non-zero fractional part." number)
+         int))))
