@@ -246,15 +246,17 @@ body.  The sequence RANGES is a range specification."
   (with-range-indexing (ranges (array-dimensions array) next-index
                                :end? end?
                                :range-dimensions dimensions)
-    (let ((result (make-array (coerce dimensions 'list)
-                              :element-type
-                              (array-element-type array))))
-      (iter
-        (until end?)
-        (for result-index :from 0)
-        (setf (row-major-aref result result-index)
-              (row-major-aref array (next-index))))
-      result)))
+    (if (zerop (length dimensions))
+        (row-major-aref array (next-index))
+        (let ((result (make-array (coerce dimensions 'list)
+                                  :element-type
+                                  (array-element-type array))))
+          (iter
+            (until end?)
+            (for result-index :from 0)
+            (setf (row-major-aref result result-index)
+                  (row-major-aref array (next-index))))
+          result))))
 
 (defmethod sub ((list list) &rest ranges)
   (assert (= 1 (length ranges)))
