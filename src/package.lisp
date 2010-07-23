@@ -54,7 +54,7 @@
 
    ;; ix
    
-   ix ix-keys make-ix flatten-ix ix->spec
+   ix ix-keys make-ix conforming-ix flatten-ix ix->spec
 
    ;; optimization
    

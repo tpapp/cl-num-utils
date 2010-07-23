@@ -77,6 +77,15 @@ is interpreted recursively."
     (finally
      (return (make-instance 'ix :specs specs :cum-indexes cum-indexes :keys keys)))))
 
+(defun conforming-ix (instance &rest slots)
+  "Return an index conforming to the slots of INSTANCE."
+  (make-ix (mapcar (lambda (slot)
+                     (let ((value (slot-value instance slot)))
+                       (if (vectorp value)
+                           `(,slot ,(length value))
+                           slot)))
+                   slots)))
+
 (defun ix (ix &rest keys-and-indexes)
   "Resolve KEYS-AND-INDEXES in IX.  Return either a range
 specification (eg (CONS START END)) or a single index."
