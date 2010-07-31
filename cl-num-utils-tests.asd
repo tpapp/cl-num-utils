@@ -21,7 +21,8 @@
     :components
     ((:file "test-seq")
      (:file "test-bins")
-     (:file "test-sub"))))
+     (:file "test-sub")
+     (:file "test-statistics"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :lift
                  :cl-num-utils))
