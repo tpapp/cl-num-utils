@@ -32,7 +32,7 @@ variance methods."
       (/ sse (1- length))
       (error 'not-enough-elements)))
 
-(defun sample-var (object &optional mean)
+(defun sample-var (object &optional (mean (mean object)))
   "Return the sample variance.  When the object doesn't have enough
   elements, an error is signalled.  The mean will be used if supplied."
   (sample-second-moment% (sse object mean) (size object)))
