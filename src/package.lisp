@@ -26,7 +26,7 @@
 
    ;; statistics
 
-   size sum sse mean variance
+   size sum sse mean sample-var sample-cov
 
    ;; interval
    
