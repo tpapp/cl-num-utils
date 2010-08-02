@@ -119,9 +119,15 @@ specification (eg (CONS START END)) or a single index."
   (bind (((range) ranges))
     (make-ix (sub (ix->spec ix) range))))
 
-;; (defmethod sub (ix &rest ranges)
-;;   (bind ((range )))          
-;;   )
+(defun sub-ix (object &rest ix-specs)
+  "(SUB OBJECT IX1 SPEC1 IX2 SPEC2 ...) applies each index on spec, then calls
+sub on the resulting coordinates.  NIL indexes just pass spec through."
+  (apply #'sub object
+         (iter
+           (for (ix spec . rest) :on ix-specs :by #'cddr)
+           (collecting (if ix
+                           (apply #'ix ix (mklist spec))
+                           spec)))))
 
 ;; (defparameter *ix* (make-ix '((foo 3) (bar 8) baz)))
 ;; (ix *ix* 'foo)
