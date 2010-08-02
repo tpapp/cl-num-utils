@@ -45,7 +45,7 @@
 
    ;; sub
 
-   sub-incompatible-dimensions sub-invalid-array-index 
+   nrow ncol sub-incompatible-dimensions sub-invalid-array-index 
    sub-invalid-range transform-index sub-all sub-index sub-range
    transform-range transform-ranges row-major-coefficients
    column-major-coefficients drop-dimensions range-dimension
@@ -54,7 +54,7 @@
 
    ;; ix
    
-   ix ix-keys make-ix conforming-ix flatten-ix ix->spec
+   ix ix-keys make-ix conforming-ix flatten-ix ix->spec sub-ix
 
    ;; optimization
    
