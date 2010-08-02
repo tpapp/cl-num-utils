@@ -2,6 +2,41 @@
 
 (in-package #:cl-num-utils)
 
+;;; Generic functions for querying dimensions and element types.
+
+(defgeneric dims (object)
+  (:documentation "Return the dimensions of object as a list.")
+  (:method ((array array))
+    (array-dimensions array)))
+
+(defgeneric dim (object axis-number)
+  (:documentation "Return the dimension of object along axis-number.")
+  (:method ((array array) axis-number)
+    (array-dimension array axis-number)))
+
+(defgeneric rank (object)
+  (:documentation "Return the number of dimensions.")
+  (:method ((array array))
+    (array-rank array)))
+
+(defgeneric element-type (object)
+  (:documentation "Return the element type of object.  Accessors return and
+  allow setting subtypes of this type."))
+
+(defgeneric nrow (object)
+  (:documentation "Return number of rows in object.  Signal an error if OBJECT
+  doesn't have exactly two dimensions.")
+  (:method ((array array))
+    (assert (= 2 (array-rank array)) () "Array is not a matrix.")
+    (array-dimension array 0)))
+
+(defgeneric ncol (object)
+  (:documentation "Return number of columns in object.  Signal an error if
+  OBJECT doesn't have exactly two dimensions.")
+  (:method ((array array))
+    (assert (= 2 (array-rank array)) () "Array is not a matrix.")
+    (array-dimension array 1)))
+
 ;;; WITH-RANGE-INDEXING is the user interface of an iteration
 ;;; construct that walks the (indexes of the) elements on an array.
 ;;; Indexing can be row- or column-major, or even represent axis
@@ -252,10 +287,10 @@ body.  The sequence RANGES is a range specification."
                                   :element-type
                                   (array-element-type array))))
           (iter
-            (until end?)
             (for result-index :from 0)
             (setf (row-major-aref result result-index)
-                  (row-major-aref array (next-index))))
+                  (row-major-aref array (next-index)))
+            (until end?))
           result))))
 
 (defmethod sub ((list list) &rest ranges)
@@ -265,11 +300,20 @@ body.  The sequence RANGES is a range specification."
                                :range-dimensions dimensions)
     ;; !!! very inefficient method, could do much better
     (iter
-      (until end?)
-      (collecting (nth (next-index) list)))))
+      (collecting (nth (next-index) list))
+      (until end?))))
 
 (defgeneric (setf sub) (source target &rest ranges)
   (:documentation ""))
+
+(defmethod (setf sub) (source (target array) &rest ranges)
+  (with-range-indexing (ranges (array-dimensions target) next-index
+                               :end? end? 
+                               :range-dimensions dimensions)
+    (iter
+      (setf (row-major-aref target (next-index)) source)
+      (until end?)))
+  source)
 
 (defmethod (setf sub) ((source array) (target array) &rest ranges)
   (with-range-indexing (ranges (array-dimensions target) next-index
@@ -279,10 +323,10 @@ body.  The sequence RANGES is a range specification."
                     (coerce (array-dimensions source) 'vector))
             () 'sub-incompatible-dimensions)
     (iter
-      (until end?)
       (for source-index :from 0)
       (setf (row-major-aref target (next-index))
-            (row-major-aref source source-index))))
+            (row-major-aref source source-index))
+      (until end?)))
   source)
 
 ;;; !!! write (setf sub) for list
