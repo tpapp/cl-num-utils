@@ -119,15 +119,23 @@ specification (eg (CONS START END)) or a single index."
   (bind (((range) ranges))
     (make-ix (sub (ix->spec ix) range))))
 
+(defun sub-ix-process% (ix-specs)
+  "Process index specifications for SUB-IX and (SETF SUB-IX)."
+  (iter
+    (for (ix spec . rest) :on ix-specs :by #'cddr)
+    (collecting (if ix
+                    (apply #'ix ix (mklist spec))
+                    spec))))
+
 (defun sub-ix (object &rest ix-specs)
   "(SUB OBJECT IX1 SPEC1 IX2 SPEC2 ...) applies each index on spec, then calls
 sub on the resulting coordinates.  NIL indexes just pass spec through."
-  (apply #'sub object
-         (iter
-           (for (ix spec . rest) :on ix-specs :by #'cddr)
-           (collecting (if ix
-                           (apply #'ix ix (mklist spec))
-                           spec)))))
+  (apply #'sub object (sub-ix-process% ix-specs)))
+
+(defun (setf sub-ix) (source target &rest ix-specs)
+  "(SUB OBJECT IX1 SPEC1 IX2 SPEC2 ...) applies each index on spec, then calls
+sub on the resulting coordinates.  NIL indexes just pass spec through."
+  (apply #'(setf sub) source target (sub-ix-process% ix-specs)))
 
 ;; (defparameter *ix* (make-ix '((foo 3) (bar 8) baz)))
 ;; (ix *ix* 'foo)
