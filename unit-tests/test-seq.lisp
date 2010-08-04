@@ -36,18 +36,18 @@ of the same type)."
 (addtest (seq-tests)
   seq
   ;; missing :LENGTH (default :BY)
-  (ensure-same (numseq 0 5 :type 'fixnum) 
+  (ensure-same (numseq 0 5) 
                (vector* 'fixnum 0 1 2 3 4 5))
   ;; missing :TO
-  (ensure-same (numseq 1 nil :by 1/2 :length 3 :type nil)
+  (ensure-same (numseq 1 nil :by 1/2 :length 3 :type 'list)
                '(1 3/2 2))
   ;; missing :FROM
-  (ensure-same (numseq nil 9 :by 1d0 :length 4 :type 'double-float)
+  (ensure-same (numseq nil 9 :by 1d0 :length 4)
                (vector* 'double-float 6d0 7d0 8d0 9d0))
   ;; missing :LENGTH, automatic direction for :by
-  (ensure-same (numseq 9 8 :by 0.5)
+  (ensure-same (numseq 9 8 :by 0.5 :type 'list)
                '(9.0 8.5 8.0))
-  (ensure-same (numseq 9 8 :by -0.5)
+  (ensure-same (numseq 9 8 :by -0.5 :type 'list)
                '(9.0 8.5 8.0)))
 
 (addtest (seq-tests)

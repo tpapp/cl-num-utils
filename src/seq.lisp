@@ -13,20 +13,34 @@ coerced to ELEMENT-TYPE."
     vector))
 
 (defun numseq (from to &key length (by 1 by?) type)
-  "Return a sequence between FROM and TO, progressing by BY, of the
-given LENGTH.  Only 3 of these a parameters should be given, the
-missing one (NIL) should be inferred automatically.  If TYPE, it will
-be the element type of the resulting SIMPLE-ARRAY, otherwise the
-result is a LIST.  Note: the sign of BY is adjusted if necessary."
+  "Return a sequence between FROM and TO, progressing by BY, of the given
+LENGTH.  Only 3 of these a parameters should be given, the missing one (NIL)
+should be inferred automatically.  The sign of BY is adjusted if necessary.  If
+TYPE is LIST, the result is a list, otherwise it determines the element type of
+the resulting simple array.  If TYPE is nil, it as autodetected from the
+arguments (as a FIXNUM, a RATIONAL, or some subtype of FLOAT).  Note that your
+implementation may upgrade the element type."
   (flet ((seq% (from by length)
-           (if type
-               (let ((result (make-array length :element-type type)))
-                 (dotimes (i length)
-                   (setf (aref result i) (coerce (+ from (* i by)) type)))
-                 result)
+           (if (eq type 'list)
                (iter
                  (for i :from 0 :below length)
-                 (collecting (+ from (* i by)))))))
+                 (collecting (+ from (* i by))))
+               (bind ((type (cond
+                              (type type)
+                              ((= length 1) (if (typep from 'fixnum)
+                                                'fixnum
+                                                (type-of from)))
+                              (t (let ((to (+ from (* by length))))
+                                   (etypecase to
+                                     (fixnum (if (typep from 'fixnum)
+                                                 'fixnum
+                                                 'integer))
+                                     (float (type-of to))
+                                     (t 'rational))))))
+                      (result (make-array length :element-type type)))
+                 (dotimes (i length)
+                   (setf (aref result i) (coerce (+ from (* i by)) type)))
+                 result))))
     (cond
       ((not from)
        (seq% (- to (* by (1- length))) by length))
