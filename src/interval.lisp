@@ -46,23 +46,23 @@
 weight on right."
   (+ (* (- 1 alpha) (interval-left interval)) (* alpha (interval-right interval))))
 
-(defun positive-interval-p (interval)
+(defun positive-interval? (interval)
   "True iff the interval is positive, ie left < right."
   (interval% #'< interval))
 
-(defun negative-interval-p (interval)
+(defun negative-interval? (interval)
   "True iff the interval is negative, ie left > right."
   (interval% #'> interval))
 
-(defun weakly-positive-interval-p (interval)
+(defun weakly-positive-interval? (interval)
   "True iff the interval is positive, ie left <= right."
   (interval% #'<= interval))
 
-(defun weakly-negative-interval-p (interval)
+(defun weakly-negative-interval? (interval)
   "True iff the interval is negative, ie left >= right."
   (interval% #'>= interval))
 
-(defun zero-interval-p (interval)
+(defun zero-interval? (interval)
   "True iff the left is equal to right."
   (interval% #'= interval))
 
@@ -130,13 +130,21 @@ nil, nil is returned."
   ;; flip nonpositive intervals
   (iter
     (for interval :in intervals)
-    (bind (((:interval left right) (aif (positive-interval-p interval)
-                                        it
-                                        (flip-interval it))))
-      (minimizing left :into minimum)
-      (maximizing right :into maximum))
+    (bind (((:interval left right) (if (positive-interval? interval)
+                                       interval
+                                       (flip-interval interval))))
+      (minimizing right :into min-right)
+      (maximizing left :into max-left))
     (finally
-     (return (make-interval-or-nil minimum maximum)))))
+     (return (make-interval-or-nil max-left min-right)))))
+
+(defun extend-interval (interval left-frac &optional
+                        (right-frac left-frac))
+  "Extend interval proportionally to its width on both sides."
+  (bind (((:interval left right) interval)
+         (width (- right left)))
+    (make-interval (- left (* width left-frac))
+                   (+ right (* width right-frac)))))
 
 ;;;;  percentages, fractions and spacers - interpreted relative to the
 ;;;;  interval width.  A spacer divides the remaining area in the
@@ -178,8 +186,8 @@ nil, (vector interval) is returned."
     (return-from split-interval (vector interval)))
   (let* ((width (interval-width interval))
 	 (direction (cond
-		      ((positive-interval-p interval) 1)
-		      ((negative-interval-p interval) -1)
+		      ((positive-interval? interval) 1)
+		      ((negative-interval? interval) -1)
 		      (t (error "interval has to be nonzero"))))
 	 (spacers 0)
 	 (non-spacers 0)

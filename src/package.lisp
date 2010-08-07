@@ -32,10 +32,10 @@
    
    interval interval-left interval-right make-interval forced-interval
    make-forced-interval interval-diff interval-width interval-midpoint
-   positive-interval-p negative-interval-p weakly-positive-interval-p
-   weakly-negative-interval-p zero-interval-p flip-interval 
+   positive-interval? negative-interval? weakly-positive-interval?
+   weakly-negative-interval? zero-interval? flip-interval 
    make-interval-or-nil range combined-range interval-intersection
-   fraction fraction-value fractions percent percents spacer
+   extend-interval fraction fraction-value fractions percent percents spacer
    spacer-value spacers split-interval
 
    ;; histogram
