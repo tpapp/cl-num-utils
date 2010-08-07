@@ -15,7 +15,6 @@ of the same type)."
   ()
   (:equality-test #'sequence=))
 
-
 (addtest (seq-tests)
   vector*
   (let* ((element-type 'double-float)
