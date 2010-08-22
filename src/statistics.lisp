@@ -37,6 +37,10 @@ variance methods."
   elements, an error is signalled.  The mean will be used if supplied."
   (sample-second-moment% (sse object mean) (size object)))
 
+(defun sample-sd (object &optional (mean (mean object)))
+  "Return the sample standard deviation."
+  (sqrt (sample-var object mean)))
+
 (defun sample-cov (a b &key (a-mean (mean a)) (b-mean (mean b)))
   "Sample covariance between A and B.  Means will be used when provided."
   (let* ((a (coerce a 'vector))
@@ -48,6 +52,11 @@ variance methods."
       (incf sum (* (- (aref a i) a-mean)
                    (- (aref b i) b-mean))))
     (sample-second-moment% sum size)))
+
+(defun sample-corr (a b &key (a-mean (mean a)) (b-mean (mean b)))
+  "Sample correlation between A and B.  Means will be used when provided."
+  (/ (sample-cov a b :a-mean a-mean :b-mean b-mean)
+     (sample-sd a a-mean) (sample-sd b b-mean)))
 
 ;;; sensible behavior for sequences and arrays
 
