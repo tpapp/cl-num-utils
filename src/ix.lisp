@@ -42,6 +42,10 @@
              (map 'list #'spec->list (ix-keys ix) (ix-specs ix))))
     (ix->list ix)))
 
+(defun ix->labels (ix)
+  (map 'vector (lambda (name) (format nil "~(~{~a~^ ~}~)" name))
+       (flatten-ix ix)))
+
 (defmethod print-object ((ix ix) stream)
   (print-unreadable-object (ix stream :type t)
     (princ (ix->spec ix) stream)))
