@@ -70,6 +70,12 @@ weight on right."
   "Exchange left and right."
   (make-interval (interval-right interval) (interval-left interval)))
 
+(defun interval-abs (interval &optional min?)
+  "Return the maximum of the absolute values of the endpoints, or the minimum if
+MIN?."
+  (bind (((:interval left right) interval))
+    (funcall (if min? #'min #'max) (abs left) (abs right))))
+
 (defun make-interval-or-nil (minimum maximum)
   "When both arguments are given, return an interval, otherwise nil. "
   (when (and minimum maximum)
@@ -138,13 +144,6 @@ nil, nil is returned."
     (finally
      (return (make-interval-or-nil max-left min-right)))))
 
-(defun extend-interval (interval left-frac &optional
-                        (right-frac left-frac))
-  "Extend interval proportionally to its width on both sides."
-  (bind (((:interval left right) interval)
-         (width (- right left)))
-    (make-interval (- left (* width left-frac))
-                   (+ right (* width right-frac)))))
 
 ;;;;  percentages, fractions and spacers - interpreted relative to the
 ;;;;  interval width.  A spacer divides the remaining area in the
@@ -152,7 +151,11 @@ nil, nil is returned."
 ;;;;  equation. Primarily for frame manipulation.
 
 (defstruct (fraction (:constructor fraction (value)))
-  (value 1 :type (real 0 1)))
+  (value 1 :type real))
+
+(defun proper-fraction? (fraction)
+  "Test if a fraction is proper (ie between 0 and 1, inclusive)."
+  (<= 0 (fraction-value fraction) 1))
 
 (defun fractions (&rest xs)
   "Shorthand function that returns a list of fraction objects."
@@ -193,21 +196,22 @@ nil, (vector interval) is returned."
 	 (non-spacers 0)
 	 (subdivisions (map 'list (lambda (div)
 				    (etypecase div
-					;; numbers just passed through
+                                      ;; numbers just passed through
 				      ((real 0)
-				       (incf non-spacers div)
-				       div)
+                                         (incf non-spacers div)
+                                         div)
 				      ;; fractions are interpreted
 				      (fraction
-				       (let ((x (* width 
-						   (fraction-value div))))
-					 (incf non-spacers x)
-					 x))
+                                         (assert (proper-fraction? div))
+                                         (let ((x (* width 
+                                                     (fraction-value div))))
+                                           (incf non-spacers x)
+                                           x))
 				      ;; spacers are passed through
 				      (spacer 
-				       (incf spacers 
-					     (spacer-value div))
-				       div)))
+                                         (incf spacers 
+                                               (spacer-value div))
+                                         div)))
 			    subdivisions))
 	 (rest (- width non-spacers)))
     (when (minusp rest)
@@ -225,3 +229,16 @@ nil, (vector interval) is returned."
 		       (prog1 (make-interval left right)
 			 (setf left right))))
 	   subdivisions))))
+
+(defun extend-interval (interval left-ext &optional
+                        (right-ext left-ext))
+  "Extend interval with given magnitudes and fractions, the latter
+intepreted proportionally to width (see FRACTION and PERCENT)."
+  (bind (((:interval left right) interval)
+         (width (- right left))
+         ((:flet absolute (ext))
+          (etypecase ext
+            (fraction (* width (fraction-value ext)))
+            (real ext))))
+    (make-interval (- left (absolute left-ext))
+                   (+ right (absolute right-ext)))))

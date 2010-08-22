@@ -26,17 +26,17 @@
 
    ;; statistics
 
-   size sum sse mean sample-var sample-cov
+   size sum sse mean sample-var sample-sd sample-cov sample-corr
 
    ;; interval
    
    interval interval-left interval-right make-interval forced-interval
    make-forced-interval interval-diff interval-width interval-midpoint
    positive-interval? negative-interval? weakly-positive-interval?
-   weakly-negative-interval? zero-interval? flip-interval 
+   weakly-negative-interval? zero-interval? flip-interval interval-abs
    make-interval-or-nil range combined-range interval-intersection
-   extend-interval fraction fraction-value fractions percent percents spacer
-   spacer-value spacers split-interval
+   fraction proper-fraction? fraction-value fractions percent percents spacer
+   spacer-value spacers split-interval extend-interval
 
    ;; histogram
 
@@ -54,7 +54,7 @@
 
    ;; ix
    
-   ix ix-keys make-ix conforming-ix flatten-ix ix->spec sub-ix
+   ix ix-keys make-ix conforming-ix flatten-ix ix->labels ix->spec sub-ix
 
    ;; optimization
    
