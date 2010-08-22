@@ -331,7 +331,7 @@ body.  The sequence RANGES is a range specification."
 
 ;;; !!! write (setf sub) for list
 
-(defgeneric map-columns (matrix function)
+(defgeneric map-columns (function matrix)
   (:documentation "Map columns of MATRIX using function.  FUNCTION is
   called with columns that are extracted as a vector, and the returned
   values are assembled into another matrix.  Element types and number
@@ -339,7 +339,7 @@ body.  The sequence RANGES is a range specification."
   checked for conformity after that.  If function doesn't return a
   vector, the values are collected in a vector instead of a matrix."))
 
-(defmethod map-columns ((matrix array) function)
+(defmethod map-columns (function (matrix array))
   (bind (((nil ncol) (array-dimensions matrix))
          result
          result-nrow)
@@ -358,10 +358,10 @@ body.  The sequence RANGES is a range specification."
             (setf (aref result col) mapped-col))))
     result))
 
-(defgeneric map-rows (matrix function)
+(defgeneric map-rows (function matrix)
   (:documentation "Similar to MAP-ROWS, mutatis mutandis."))
 
-(defmethod map-rows ((matrix array) function)
+(defmethod map-rows (function (matrix array))
   (bind (((nrow nil) (array-dimensions matrix))
          result
          result-ncol)
