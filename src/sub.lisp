@@ -37,6 +37,120 @@
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
     (array-dimension array 1)))
 
+(defstruct (&r (:constructor &r (start end &optional by)))
+  "Range indexing: addresses elements from "
+  (start 0 :type fixnum)
+  (end 0 :type fixnum)
+  (by 1 :type fixnum))
+
+(declaim (inline valid-by? &r-valid-by? &r-length))
+
+(defun valid-by? (start end by)
+  "Determine if BY is compatible with START and END.  Only use on resolved
+arguments."
+  (plusp (* (- end start) by)))
+
+(defun &r-valid-by? (range)
+  "Determine if BY is compatible with START and END.  Only use on resolved
+ranges."
+  (bind (((:slots start end by) range))
+    (valid-by? start end by)))
+
+(defun &r-resolved? (range)
+  "Determine if a range is resolved."
+  (bind (((:slots start end by) range))
+    (and (<= 0 start) (<= 0 end))))
+
+(defun &r-length (range &optional skip-checks?)
+  "Return the length of a resolved range."
+  (bind (((:slots start end by) range))
+    (unless skip-checks?
+      (assert (&r-resolved? range) () "Unresolved range.")
+      (assert (&r-valid-by? range) () "Invalid BY specification."))
+    (floor (- end start) by)))
+
+(defun &r->vector (range &optional skip-checks?)
+  "Resolve the range into a SIMPLE-FIXNUM-VECTOR."
+  (bind ((length (&r-length range skip-checks?))
+         (vector (make-array length :element-type 'fixnum))
+         ((:slots-r/o start end by) range))
+    (unless skip-checks?
+      (assert (and (&r-resolved? range) (&r-valid-by? range))))
+    (loop
+      for index :from start :by by :below end
+      for vector-index :from 0
+      do (setf (aref vector vector-index) index))
+    vector))
+
+(defstruct (delayed-range (:constructor delayed-range (type data)))
+  "A range with relayed resolution."
+  type data)
+
+(deftype simple-fixnum-vector ()
+  '(simple-array fixnum (*)))
+
+(defun &c (&rest ranges)
+  "Concatenation of ranges."
+  (if (cdr ranges)
+      (if (every (lambda (range) (typep range 'simple-fixnum-vector)) ranges)
+          (apply #'concatenate 'simple-fixnum-vector ranges)
+          (delayed-range 'concatenation ranges))
+      (car ranges)))
+
+(define-condition sub-incompatible-dimensions (error)
+  ()
+  (:documentation "Either rank or dimensions are incompatible."))
+
+(define-condition sub-invalid-array-index (error)
+  ((index :accessor index :initarg :index)
+   (dimension :accessor dimension :initarg :dimension)))
+
+(define-condition sub-invalid-range (error)
+  ((range :accessor range :initarg :range)))
+
+(defun resolve-range (range dimension &optional force-vector?)
+  "Resolve delayed operations in range given the dimension.  Return either a
+  fixnum, an &r object, or a simple-fixnum-vector."
+  (bind (((:flet resolve-index (index &optional end?))
+          (check-type index fixnum)
+          (cond
+            ((zerop index)
+             (if end? dimension 0))
+            ((minusp index)
+             (aprog1 (+ dimension index)
+                      (assert (<= 0 it) () 'sub-invalid-array-index
+                              :index index :dimension dimension)))
+            (t (assert (if end?
+                           (<= index dimension)
+                           (< index dimension))
+                       () 'sub-invalid-array-index
+                       :index index :dimension dimension)
+             index))))
+    (etypecase range
+      ((eql t) (&r 0 dimension))
+      (fixnum (resolve-index range))
+      (vector (map 'simple-fixnum-vector #'resolve-index range))
+      (&r (bind (((:slots-r/o start end by) range)
+                 (start (resolve-index start))
+                 (end (resolve-index end t)))
+            (assert (valid-by? start end by) ()
+                    "Invalid range ~A->~A by ~A." start end by)
+            (if force-vector?
+                (&r->vector range t)
+                (&r start end by))))
+      (delayed-range
+         (bind (((:slots-r/o type data) range))
+           (ecase type
+             (concatenation
+                (apply #'concatenate 'simple-fixnum-vector
+                       (mapcar (lambda (range)
+                                 (resolve-range range dimension t))
+                               data)))))))))
+
+(defun resolve-ranges (ranges dimensions)
+  "Transform multiple ranges."
+  (map 'vector #'resolve-range ranges dimensions))
+
 ;;; WITH-RANGE-INDEXING is the user interface of an iteration
 ;;; construct that walks the (indexes of the) elements on an array.
 ;;; Indexing can be row- or column-major, or even represent axis
@@ -58,8 +172,7 @@
 ;;;    b. a single fixnum, which selects an index along that
 ;;;       dimension, and the dimensions is dropped
 ;;;
-;;;    c. (cons start end), both fixnums, with start < end (the latter
-;;;       exclusive, as is conventional for CL, see subseq, etc)
+;;;    c. An &r range indexing structure (see it documentation).
 ;;;
 ;;;    d. a vector of fixnums, selecting arbitrary indexes
 ;;;
@@ -83,68 +196,6 @@
 ;;;    calculated, using partial sums from previous iterations to the
 ;;;    extent it is possible.
 
-(define-condition sub-incompatible-dimensions (error)
-  ()
-  (:documentation "Either rank or dimensions are incompatible."))
-
-(deftype simple-fixnum-vector ()
-  '(simple-array fixnum (*)))
-
-(define-condition sub-invalid-array-index (error)
-  ((index :accessor index :initarg :index)
-   (dimension :accessor dimension :initarg :dimension)))
-
-(define-condition sub-invalid-range (error)
-  ((range :accessor range :initarg :range)))
-
-(defun transform-index (index dimension end?)
-  "Transform an index and check its validity within a given dimension.
-Positive numbers mapped to themselves, negative numbers result in
-dimension+index.  If end?, 0 yields dimension, otherwise 0."
-  (cond
-    ((zerop index)
-     (if end?
-         dimension
-         0))
-    ((minusp index) (aprog1 (+ dimension index)
-                      (assert (<= 0 it) () 'sub-invalid-array-index
-                              :index index :dimension dimension)))
-    (t (assert (if end?
-                   (<= index dimension)
-                   (< index dimension))
-               () 'sub-invalid-array-index
-               :index index :dimension dimension)
-     index)))
-
-(deftype sub-all ()
-  '(and boolean (not null)))
-
-(deftype sub-index ()
-  'fixnum)
-
-(deftype sub-range ()
-  '(cons fixnum fixnum))
-
-
-(defun transform-range (range dimension)
-  "Transform indexes in a range.  Checks that contiguous ranges are
-valid."
-  (etypecase range
-    (sub-all (cons 0 dimension))
-    (sub-index (transform-index range dimension nil))
-    (sub-range (bind ((start (transform-index (car range) dimension
-                                              nil))
-                      (end (transform-index (cdr range) dimension t)))
-                 (assert (< start end) () 'sub-invalid-range
-                         :range range)
-                 (cons start end)))
-    (vector (map 'simple-fixnum-vector
-                 (lambda (index) (transform-index index dimension nil))
-                 range))))
-
-(defun transform-ranges (ranges dimensions)
-  "Transform multiple ranges."
-  (map 'vector #'transform-range ranges dimensions))
 
 (defun row-major-coefficients (dimensions)
   "Calculate coefficients for row-major mapping."
@@ -189,8 +240,8 @@ NEW-COEFFICIENTS)."
 (defun range-dimension (range)
   "Dimension of a range."
   (etypecase range
-    (number 1)
-    (cons (- (cdr range) (car range)))
+    (fixnum 1)
+    (&r (&r-length range))
     (vector (length range))))
 
 (defun range-dimensions (ranges)
@@ -202,8 +253,9 @@ NEW-COEFFICIENTS)."
 validity checks, this function is meant for internal use and always
 expects a valid index."
   (etypecase range
-    (number range)
-    (cons (+ (car range) counter))
+    (fixnum range)
+    (&r (bind (((:slots start by) range))
+          (+ start (* counter by))))
     (vector (aref range counter))))
 
 (defun increment-index-counters (counters range-dimensions)
@@ -250,7 +302,7 @@ body.  The sequence RANGES is a range specification."
   (once-only (dimensions ranges)
     (with-unique-names (coefficients offset rank cumsums valid-end)
       `(bind ((,dimensions (coerce ,dimensions 'simple-fixnum-vector))
-              (,ranges (transform-ranges ,ranges ,dimensions)))
+              (,ranges (resolve-ranges ,ranges ,dimensions)))
          (assert (= (length ,ranges) (length ,dimensions)) ()
                  "Length of range specifiation does not match rank.")
          (bind ((,coefficients (row-major-coefficients ,dimensions))
