@@ -45,12 +45,10 @@
 
    ;; sub
 
-   nrow ncol sub-incompatible-dimensions sub-invalid-array-index 
-   sub-invalid-range &r &c sub-all sub-index sub-range
-   transform-range transform-ranges row-major-coefficients
-   column-major-coefficients drop-dimensions range-dimension
-   range-dimensions with-range-indexing sub map-columns map-rows
-   transpose create collect-rows collect-vector
+   nrow ncol sub sub-incompatible-dimensions sub-invalid-array-index 
+   sub-invalid-range si cat rev row-major-coefficients column-major-coefficients
+   drop-dimensions range-dimension range-dimensions with-range-indexing
+   map-columns map-rows transpose create collect-rows collect-vector
 
    ;; ix
    
