@@ -70,13 +70,9 @@
   in SOURCE.  See SUB for the documentation on the syntax of index
   specifications."))
 
-(define-condition sub-incompatible-rank (error)
-  ()
-  (:documentation "Ranks are not compatible."))
-
 (define-condition sub-incompatible-dimensions (error)
   ()
-  (:documentation "Dimensions are incompatible."))
+  (:documentation "Rank or dimensions are incompatible."))
 
 (define-condition sub-invalid-array-index (error)
   ((index :accessor index :initarg :index)
@@ -125,7 +121,7 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
     (otherwise (delayed-index-specification 'reverse index-specification))))
 
 (defmethod sub ((index-specification si) &rest index-specifications)
-  (assert (not (cdr index-specifications)) () "An SI has rank 1.")
+  (assert (not (cdr index-specifications)) () 'sub-incompatible-dimensions)
   (delayed-index-specification 'sub index-specification))
 
 (defun resolve-index-specification (index-specification dimension
@@ -336,9 +332,7 @@ comments on implementation details."
     (with-unique-names (coefficients offset rank cumsums valid-end)
       `(bind ((,dimensions (coerce ,dimensions 'simple-fixnum-vector))
               (,rank (length ,index-specifications)))
-         (assert (= ,rank (length ,dimensions)) () "Length of ~
-                 index-specification specifiation does not match rank inferred ~
-                 from dimensions.")
+         (assert (= ,rank (length ,dimensions)) () 'sub-incompatible-dimensions)
          (bind ((,index-specifications (resolve-index-specifications
                                  ,index-specifications ,dimensions))
                 (,coefficients (row-major-coefficients ,dimensions))
@@ -438,7 +432,8 @@ comments on implementation details."
   (with-indexing (index-specifications (vector (length list)) next-index
                                        :end? end?
                                        :effective-dimensions dimensions)
-    (assert (equalp dimensions (vector (length source))))
+    (assert (equalp dimensions (vector (length source))) ()
+            'sub-incompatible-dimensions)
     (iter
       (for element :in source)
       (setf (nth (next-index) list) element)
@@ -448,7 +443,8 @@ comments on implementation details."
   (with-indexing (index-specifications (vector (length list)) next-index
                                        :end? end?
                                        :effective-dimensions dimensions)
-    (assert (equalp dimensions (vector (length source))))
+    (assert (equalp dimensions (vector (length source))) ()
+            'sub-incompatible-dimensions)
     (iter
       (for element :in-vector source)
       (setf (nth (next-index) list) element)
