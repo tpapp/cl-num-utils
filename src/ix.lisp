@@ -103,7 +103,7 @@ specification (eg (CONS START END)) or a single index."
                       (bind (((key) keys-and-indexes))
                         (assert (within? 0 key ix))
                         (+ acc key))
-                      (cons acc (+ acc ix))))
+                      (si acc (+ acc ix))))
                (vector
                   (error "not implemented yet"))
                (ix
@@ -115,7 +115,7 @@ specification (eg (CONS START END)) or a single index."
                           (error "key ~A not found" key))
                         (resolve (aref specs position) rest 
                                  (+ acc (aref cum-indexes position))))
-                      (cons acc (+ acc (ix-size ix))))))))
+                      (si acc (+ acc (ix-size ix))))))))
     (resolve ix keys-and-indexes 0)))
 
 (defmethod sub ((ix ix) &rest ranges)
