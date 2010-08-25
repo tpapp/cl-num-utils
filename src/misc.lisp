@@ -56,3 +56,12 @@ etc), return it as an integer, otherwise signal an error."
          (assert (zerop frac) ()
                  "~A has non-zero fractional part." number)
          int))))
+
+(defun common-supertype (type-1 type-2)
+  "Return a common supertype of the two types.  Might not be the narrowest - it
+defaults to T if neither type is a subtype of the other.  Intended use is
+finding a common array element type."
+  (cond
+    ((subtypep type-1 type-2) type-2)
+    ((subtypep type-2 type-1) type-1)
+    (t t)))

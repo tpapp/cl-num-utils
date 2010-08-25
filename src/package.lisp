@@ -7,12 +7,12 @@
 
    ;; misc
    
-   divides? square nif anif bic xor multf as-integer
+   divides? square nif anif bic xor multf as-integer common-supertype
 
    ;; seq
 
    vector* numseq vector-satisfies? cumsum sort-order make-similar-vector
-   make-similar-array rep
+   make-similar-array rep concat
 
    ;; pretty
 
@@ -46,9 +46,10 @@
    ;; sub
 
    nrow ncol sub sub-incompatible-dimensions sub-invalid-array-index 
-   sub-invalid-range si cat rev row-major-coefficients column-major-coefficients
-   drop-dimensions range-dimension range-dimensions with-range-indexing
-   map-columns map-rows transpose create collect-rows collect-vector
+   si cat rev resolve-index-specification row-major-coefficients
+   column-major-coefficients drop-dimensions index-specification-dimension 
+   with-indexing map-columns map-rows transpose create collect-rows
+   collect-vector
 
    ;; ix
    

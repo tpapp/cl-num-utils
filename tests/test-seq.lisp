@@ -65,3 +65,9 @@ of the same type)."
                '(1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3))
   (ensure-same (rep #(1 2 3) 4 2)
                #(1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3)))
+
+(addtest (seq-tests)
+  concat-test
+  (ensure-same (concat #(1 2 3) #(4 5 6) (list  7) '(8 9 10))
+               (numseq 1 10 :type t) :test #'equalp))
+

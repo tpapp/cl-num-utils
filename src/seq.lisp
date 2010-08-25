@@ -132,3 +132,23 @@ times, repeating each element EACH times (default is 1)."))
             (setf (aref result result-index) elt)
             (incf result-index)))))
     result))
+
+(defun concat (&rest vectors)
+  "Concatenate VECTORS in to a single vector.  Lists are treated as
+SIMPLE-VECTORS.  The resulting array element type is found using
+COMMON-SUPERTYPE."
+  (let* ((vectors (mapcar (lambda (v)
+                            (etypecase v
+                              (vector v)
+                              (list (coerce v 'simple-vector))))
+                          vectors))
+         (common-type (reduce #'common-supertype vectors :key #'array-element-type))
+         (lengths (mapcar #'length vectors))
+         (result (make-array (reduce #'+ lengths) :element-type common-type)))
+    (iter
+      (with offset := 0)
+      (for v :in vectors)
+      (for l :in lengths)
+      (setf (subseq result offset (+ offset l)) v)
+      (incf offset l))
+    result))
