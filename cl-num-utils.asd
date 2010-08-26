@@ -24,7 +24,7 @@
     :serial t
     :components
     ((:file "misc")
-     (:file "seq")
+     (:file "seq-and-array")
      (:file "pretty")
      (:file "bins")
      (:file "statistics")

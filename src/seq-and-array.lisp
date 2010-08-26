@@ -152,3 +152,8 @@ COMMON-SUPERTYPE."
       (setf (subseq result offset (+ offset l)) v)
       (incf offset l))
     result))
+
+(defun displace-array (array dimensions &optional (offset 0))
+  "Shorthand function for displacing an array."
+  (make-array dimensions :displaced-to array :displaced-index-offset offset
+              :element-type (array-element-type array)))

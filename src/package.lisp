@@ -9,10 +9,10 @@
    
    divides? square nif anif bic xor multf as-integer common-supertype
 
-   ;; seq
+   ;; seq-and-array
 
    vector* numseq vector-satisfies? cumsum sort-order make-similar-vector
-   make-similar-array rep concat
+   make-similar-array rep concat displace-array
 
    ;; pretty
 

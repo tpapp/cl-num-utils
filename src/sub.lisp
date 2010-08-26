@@ -585,10 +585,6 @@ COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
         (setf (aref result index) element)))
     result))
 
-(defun displace-array (array dimensions &optional (offset 0))
-  "Shorthand function for displacing an array."
-  (make-array dimensions :displaced-to array :displaced-index-offset offset))
-
 (defun reshape-calculate-dimensions (dimensions size &optional list?)
   "If a single T is found among dimensions (a sequence), replace it with a
 positive integer so that the product equals SIZE.  Otherwise check that the
