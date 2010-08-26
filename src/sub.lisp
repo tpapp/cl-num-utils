@@ -613,14 +613,15 @@ it will return a list.."
                    (incf position)))
                dimensions)))
     (if missing-position
-        (bind (((:values fraction remainder)
-                (cond ((zerop size) (values 0 0))
-                      ((zerop product) (error "Can't create a positive size ~
+        (setf (aref dimensions missing-position)
+              (cond ((zerop size) 0)
+                    ((zerop product) (error "Can't create a positive size ~
                                               with a zero dimension."))
-                      (t (floor size product)))))
-          (assert (zerop remainder) ()
-                  "Substitution does not result in an integer.")
-          (setf (aref dimensions missing-position) fraction))
+                    (t (bind (((:values fraction remainder)
+                               (floor size product)))
+                         (assert (zerop remainder) ()
+                                 "Substitution does not result in an integer.")
+                         fraction))))
         (assert (= size product) () "Product of dimensions doesn't match size."))
     (if list?
         (coerce dimensions 'list)
