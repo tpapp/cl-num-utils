@@ -49,7 +49,7 @@
    si cat rev resolve-index-specification row-major-coefficients
    column-major-coefficients drop-dimensions index-specification-dimension 
    with-indexing with-indexing* map-columns map-rows transpose create
-   collect-rows collect-vector reshape
+   collect-rows collect-vector reshape reshape-calculate-dimensions
 
    ;; ix
    

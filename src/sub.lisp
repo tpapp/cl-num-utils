@@ -589,26 +589,64 @@ COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
   "Shorthand function for displacing an array."
   (make-array dimensions :displaced-to array :displaced-index-offset offset))
 
+(defun reshape-calculate-dimensions (dimensions size &optional list?)
+  "If a single T is found among dimensions (a sequence), replace it with a
+positive integer so that the product equals SIZE.  Otherwise check that the
+product equals size.  Return a SIMPLE-FIXNUM-VECTOR, unless LIST?, in which case
+it will return a list.."
+  (let* (missing-position
+         (product 1)
+         (position 0)
+         (dimensions
+          (map 'simple-fixnum-vector
+               (lambda (dimension)
+                 (aprog1
+                     (cond
+                       ((and (typep dimension 'fixnum) (<= 0 dimension))
+                        (multf product dimension)
+                        dimension)
+                       ((eq dimension t)
+                        (if missing-position
+                            (error "Can't have more than one missing dimension.")
+                            (progn (setf missing-position position) 0)))
+                       (t (error "Can't interpret ~A as a dimension." dimension)))
+                   (incf position)))
+               dimensions)))
+    (if missing-position
+        (bind (((:values fraction remainder)
+                (cond ((zerop size) 0)
+                      ((zerop product) (error "Can't create a positive size ~
+                                              with a zero dimension."))
+                      (t (floor size product)))))
+          (assert (zerop remainder) ()
+                  "Substitution does not result in an integer.")
+          (setf (aref dimensions missing-position) fraction))
+        (assert (= size product) () "Product of dimensions doesn't match size."))
+    (if list?
+        (coerce dimensions 'list)
+        dimensions)))
+
 (defgeneric reshape (object dimensions order &key copy? &allow-other-keys)
   (:documentation "Rearrange elements of an array-like object to new dimensions.
 Order is :ROW-MAJOR or :COLUMN-MAJOR, the object will be treated as if it was
 row- or column-major (but of course it does not have to be).  Unless COPY?, it
-may share structure with the original."))
+may share structure with the original.  Dimensions may can be a sequence, and
+contain a single T, which is replaced to match sizes."))
 
 (defmethod reshape ((array array) dimensions (order (eql :row-major)) &key copy?)
-  (if copy?
-      (let ((size (array-total-size array)))
+  (let* ((size (array-total-size array))
+         (dimensions (reshape-calculate-dimensions dimensions size t)))
+    (if copy?
         (aprog1 (make-similar-array array dimensions)
-          (assert (= (array-total-size it) size))
-          (replace (displace-array it size) (displace-array array size))))
-      (displace-array array dimensions)))
+          (replace (displace-array it size) (displace-array array size)))
+        (displace-array array dimensions))))
 
 (defmethod reshape ((array array) dimensions (order (eql :column-major))
                     &key copy?)
   (declare (ignore copy?))
-  (let ((result (make-similar-array array dimensions))
-        (size (array-total-size array)))
-    (assert (= size (array-total-size result)))
+  (let* ((size (array-total-size array))
+         (dimensions (reshape-calculate-dimensions dimensions size))
+         (result (make-similar-array array (coerce dimensions 'list))))
     (with-indexing* ((array-dimensions array) array-index
                      :column-major? t :reverse? t)
       (with-indexing* (dimensions result-index :column-major? t :reverse? t)
