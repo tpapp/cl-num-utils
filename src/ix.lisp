@@ -141,7 +141,8 @@ sub on the resulting coordinates.  NIL indexes just pass spec through."
 sub on the resulting coordinates.  NIL indexes just pass spec through."
   (apply #'(setf sub) source target (sub-ix-process% ix-specs)))
 
-;; (defparameter *ix* (make-ix '((foo 3) (bar 8) baz)))
-;; (ix *ix* 'foo)
-;; (ix *ix* 'bar 4)
-;; (ix *ix* 'baz)
+(metabang.bind::defbinding-form (:ix)
+  (bind (((function &optional (variable (gensym (symbol-name function))))
+          metabang-bind::variables))
+    `(bind ((,variable ,values)
+            ((:flet ,function (&rest rest)) (apply #'ix ,variable rest))))))
