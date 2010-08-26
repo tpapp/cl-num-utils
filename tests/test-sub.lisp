@@ -60,6 +60,14 @@
                    (30 10))))
 
 (addtest (sub-tests)
+  reshape-calculate-dimensions
+  (ensure-same (reshape-calculate-dimensions #(1 2 3) 6) #(1 2 3))
+  (ensure-same (reshape-calculate-dimensions #(1 t 3) 6) #(1 2 3))
+  (ensure-same (reshape-calculate-dimensions #(1 t 3) 0) #(1 0 3))
+  (ensure-error (reshape-calculate-dimensions #(1 t t 3) 6))
+  (ensure-error (reshape-calculate-dimensions #(1 t 0 3) 6)))
+
+(addtest (sub-tests)
   reshape
   (let ((a (ia 3 4))
         (a-reshaped-rm #2A((0 1 2)
