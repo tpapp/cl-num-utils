@@ -64,6 +64,8 @@
   (ensure-same (reshape-calculate-dimensions #(1 2 3) 6) #(1 2 3))
   (ensure-same (reshape-calculate-dimensions #(1 t 3) 6) #(1 2 3))
   (ensure-same (reshape-calculate-dimensions #(1 t 3) 0) #(1 0 3))
+  (ensure-same (reshape-calculate-dimensions 6 6) #(6))
+  (ensure-same (reshape-calculate-dimensions t 6) #(6))
   (ensure-error (reshape-calculate-dimensions #(1 t t 3) 6))
   (ensure-error (reshape-calculate-dimensions #(1 t 0 3) 6)))
 

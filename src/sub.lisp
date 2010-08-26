@@ -593,7 +593,8 @@ COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
   "If a single T is found among dimensions (a sequence), replace it with a
 positive integer so that the product equals SIZE.  Otherwise check that the
 product equals size.  Return a SIMPLE-FIXNUM-VECTOR, unless LIST?, in which case
-it will return a list.."
+it will return a list.  If dimensions is a single element, it is interpreted as
+a sequence of length 1."
   (let* (missing-position
          (product 1)
          (position 0)
@@ -611,7 +612,7 @@ it will return a list.."
                             (progn (setf missing-position position) 0)))
                        (t (error "Can't interpret ~A as a dimension." dimension)))
                    (incf position)))
-               dimensions)))
+               (if (typep dimensions 'sequence) dimensions (vector dimensions)))))
     (if missing-position
         (setf (aref dimensions missing-position)
               (cond ((zerop size) 0)
