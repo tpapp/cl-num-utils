@@ -124,6 +124,10 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
   (assert (not (cdr index-specifications)) () 'sub-incompatible-dimensions)
   (delayed-index-specification 'sub index-specification))
 
+(defun resolve-t (dimension)
+  "Resolve a T index specification."
+  (resolved-si 0 dimension 1))
+
 (defun resolve-index-specification (index-specification dimension
                                     &optional force-vector?)
   "Resolve delayed operations in INDEX-SPECIFICATION given the dimension.
@@ -145,7 +149,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                        :index index :dimension dimension)
              index))))
     (etypecase index-specification
-      ((eql t) (resolved-si 0 dimension 1))
+      ((eql t) (resolve-t dimension))
       (fixnum (resolve-index index-specification))
       (vector (map 'simple-fixnum-vector #'resolve-index index-specification))
       (si (bind (((:slots-r/o start end by strict-direction?) index-specification)
@@ -192,8 +196,6 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
 (defun resolve-index-specifications (index-specifications dimensions)
   "Resolve multiple index-specifications."
   (map 'vector #'resolve-index-specification index-specifications dimensions))
-
-
 
 (defun row-major-coefficients (dimensions)
   "Calculate coefficients for row-major mapping."
@@ -288,6 +290,18 @@ all the counters are zero again."
       (setf (aref cumsums axis-number) cumsum))
     cumsum))
 
+(defun map-counters* (coefficients counters cumsums valid-end)
+  "Recalculate cumsums, return flat index.  No offset, no index specification,
+counters map to themselves."
+  (let ((cumsum (if (zerop valid-end) 0 (aref cumsums (1- valid-end)))))
+    (iter
+      (for counter :in-vector counters :from valid-end
+           :with-index axis-number)
+      (for coefficient :in-vector coefficients :from valid-end)
+      (incf cumsum (* coefficient counter))
+      (setf (aref cumsums axis-number) cumsum))
+    cumsum))
+
 (defmacro with-indexing ((index-specifications dimensions next-index &key
                          (end? (gensym "END")) 
                          (effective-dimensions (gensym "EFFECTIVE-DIMENSIONS"))
@@ -334,13 +348,14 @@ comments on implementation details."
               (,rank (length ,index-specifications)))
          (assert (= ,rank (length ,dimensions)) () 'sub-incompatible-dimensions)
          (bind ((,index-specifications (resolve-index-specifications
-                                 ,index-specifications ,dimensions))
+                                        ,index-specifications ,dimensions))
                 (,coefficients (row-major-coefficients ,dimensions))
                 ((:values ,offset ,index-specifications ,coefficients)
                  (drop-dimensions ,index-specifications ,coefficients))
                 (,effective-dimensions (index-specification-dimensions
                                         ,index-specifications))
-                (,counters (make-array ,rank :element-type 'fixnum))
+                (,counters (make-array ,rank :element-type 'fixnum
+                                       :initial-element 0))
                 (,cumsums (make-array ,rank :element-type 'fixnum))
                 (,valid-end 0)
                 (,end? (every #'zerop ,effective-dimensions))
@@ -354,6 +369,31 @@ comments on implementation details."
                           ,effective-dimensions)))))
            ;; !!! dynamic extent & type declarations
            ;; !!! check optimizations
+           ,@body)))))
+
+(defmacro with-indexing* ((dimensions next-index &key (end? (gensym "END"))
+                                      column-major? reverse?)
+                          &body body)
+  "A simpler version of WITH-INDEXING, with all index-specifications as T.  
+COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
+  (once-only (dimensions)
+    (with-unique-names (coefficients rank counters cumsums valid-end)
+      `(bind ((,dimensions (coerce ,dimensions 'simple-fixnum-vector))
+              (,rank (length ,dimensions)))
+         (when ,reverse?
+           (setf ,dimensions (nreverse ,dimensions)))
+         (bind ((,coefficients (if ,column-major?
+                                   (column-major-coefficients ,dimensions)
+                                   (row-major-coefficients ,dimensions)))
+                (,counters (make-array ,rank :element-type 'fixnum
+                                       :initial-element 0))
+                (,cumsums (make-array ,rank :element-type 'fixnum))
+                (,valid-end 0)
+                (,end? (every #'zerop ,dimensions))
+                ((:flet ,next-index ())
+                 (aprog1 (map-counters* ,coefficients ,counters ,cumsums ,valid-end)
+                   (setf (values ,valid-end ,end?)
+                         (increment-index-counters ,counters ,dimensions)))))
            ,@body)))))
 
 (defmethod sub ((array array) &rest index-specifications)
@@ -543,4 +583,37 @@ comments on implementation details."
         (when (first-iteration-p)
           (setf result (make-array n :element-type element-type)))
         (setf (aref result index) element)))
+    result))
+
+(defun displace-array (array dimensions &optional (offset 0))
+  "Shorthand function for displacing an array."
+  (make-array dimensions :displaced-to array :displaced-index-offset offset))
+
+(defgeneric reshape (object dimensions order &key copy? &allow-other-keys)
+  (:documentation "Rearrange elements of an array-like object to new dimensions.
+Order is :ROW-MAJOR or :COLUMN-MAJOR, the object will be treated as if it was
+row- or column-major (but of course it does not have to be).  Unless COPY?, it
+may share structure with the original."))
+
+(defmethod reshape ((array array) dimensions (order (eql :row-major)) &key copy?)
+  (if copy?
+      (let ((size (array-total-size array)))
+        (aprog1 (make-similar-array array dimensions)
+          (assert (= (array-total-size it) size))
+          (replace (displace-array it size) (displace-array array size))))
+      (displace-array array dimensions)))
+
+(defmethod reshape ((array array) dimensions (order (eql :column-major))
+                    &key copy?)
+  (declare (ignore copy?))
+  (let ((result (make-similar-array array dimensions))
+        (size (array-total-size array)))
+    (assert (= size (array-total-size result)))
+    (with-indexing* ((array-dimensions array) array-index
+                     :column-major? t :reverse? t)
+      (with-indexing* (dimensions result-index :column-major? t :reverse? t)
+        (loop 
+          repeat size
+          do (setf (row-major-aref result (result-index))
+                   (row-major-aref array (array-index))))))
     result))
