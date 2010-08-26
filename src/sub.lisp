@@ -614,7 +614,7 @@ it will return a list.."
                dimensions)))
     (if missing-position
         (bind (((:values fraction remainder)
-                (cond ((zerop size) 0)
+                (cond ((zerop size) (values 0 0))
                       ((zerop product) (error "Can't create a positive size ~
                                               with a zero dimension."))
                       (t (floor size product)))))
