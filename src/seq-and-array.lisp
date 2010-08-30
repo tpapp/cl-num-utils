@@ -157,3 +157,33 @@ COMMON-SUPERTYPE."
   "Shorthand function for displacing an array."
   (make-array dimensions :displaced-to array :displaced-index-offset offset
               :element-type (array-element-type array)))
+
+(defun group (sequence &rest indexes)
+  "Return an array, which contains sequences of the same type as SEQUENCE, with
+elements grouped according to the indexes (which are expected to be nonnegative
+fixnums).  The maximum index for each dimension is calculated automatically, and
+they detemine the dimensions of the result.  Order of the elements is preserved."
+  (unless indexes
+    (return-from group sequence))
+  (let* ((indexes (mapcar (lambda (index) (coerce index 'vector)) indexes))
+         (dimensions (mapcar (lambda (index) (1+ (reduce #'max index))) indexes))
+         (result (make-array dimensions :initial-element nil))
+         (length (length sequence)))
+    (assert (every (lambda (index) (= (length index) length)) indexes) ()
+            "Indexes must be the same length as the sequence.")
+    (map nil
+         (let ((i 0))
+           (lambda (element)
+             (push element
+                   (apply #'aref result 
+                          (mapcar (lambda (index) (aref index i)) indexes)))
+             (incf i)))
+         sequence)
+    (let ((sequence-type
+           (etypecase sequence
+             (list 'list)
+             (vector `(simple-array ,(array-element-type sequence) (*))))))
+      (dotimes (i (array-total-size result))
+        (setf (row-major-aref result i)
+              (nreverse (coerce (row-major-aref result i) sequence-type)))))
+    result))

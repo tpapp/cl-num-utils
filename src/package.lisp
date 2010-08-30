@@ -12,7 +12,7 @@
    ;; seq-and-array
 
    vector* numseq vector-satisfies? cumsum sort-order make-similar-vector
-   make-similar-array rep concat displace-array
+   make-similar-array rep concat displace-array group
 
    ;; pretty
 

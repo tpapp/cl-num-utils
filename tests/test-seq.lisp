@@ -11,11 +11,11 @@ of the same type)."
            (and (listp a) (listp b)))
        (every #'eql a b)))
 
-(deftestsuite seq-tests (cl-num-utils-tests)
+(deftestsuite seq-and-array-tests (cl-num-utils-tests)
   ()
   (:equality-test #'sequence=))
 
-(addtest (seq-tests)
+(addtest (seq-and-array-tests)
   vector*
   (let* ((element-type 'double-float)
          (vector (vector* element-type 3 5 7)))
@@ -24,7 +24,7 @@ of the same type)."
                  :test #'equal)
     (ensure (every #'eql vector #(3d0 5d0 7d0)))))
 
-(addtest (seq-tests)
+(addtest (seq-and-array-tests)
   sequence=
   (ensure-same (vector* 'double-float 1 2 3)
                (vector* 'double-float 1 2.0 3d0))
@@ -32,7 +32,7 @@ of the same type)."
   (ensure-different '(1d0 2 3) '(1 2 3))
   (ensure-different '(1 2 3) (vector* 'fixnum 1 2 3)))
 
-(addtest (seq-tests)
+(addtest (seq-and-array-tests)
   seq
   ;; missing :LENGTH (default :BY)
   (ensure-same (numseq 0 5) 
@@ -49,7 +49,7 @@ of the same type)."
   (ensure-same (numseq 9 8 :by -0.5 :type 'list)
                '(9.0 8.5 8.0)))
 
-(addtest (seq-tests)
+(addtest (seq-and-array-tests)
   vector-satisfies?
   (ensure (vector-satisfies? #(1 2 3) #'<))
   (ensure (not (vector-satisfies? #(1 1 2) #'<)))
@@ -59,15 +59,27 @@ of the same type)."
   (ensure-error (vector-satisfies? 'not-a-vector #'<))
   (ensure-error (vector-satisfies? '(not a vector) #'<)))
 
-(addtest (seq-tests)
+(addtest (seq-and-array-tests)
   rep
   (ensure-same (rep '(1 2 3) 4 2)
                '(1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3))
   (ensure-same (rep #(1 2 3) 4 2)
                #(1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3 1 1 2 2 3 3)))
 
-(addtest (seq-tests)
+(addtest (seq-and-array-tests)
   concat-test
   (ensure-same (concat #(1 2 3) #(4 5 6) (list  7) '(8 9 10))
                (numseq 1 10 :type t) :test #'equalp))
 
+(addtest (seq-and-array-tests)
+  group-test
+  (let ((*lift-equality-test* #'equalp)
+        (v6 #(0 1 2 3 4 5)))
+    (ensure-same (group v6 #(0 1 2 0 1 0))
+                 #(#(0 3 5) #(1 4) #(2)))
+    (ensure-same (group v6 #(0 1 2 0 1 0) #(0 1 0 0 1 1))
+                 #2A((#(0 3) #(5))
+                     (#() #(1 4))
+                     (#(2) #())))
+    (ensure-error (group v6 #(1 2 3)))
+    (ensure-error (group v6 #(1 2 3 4 5 6) nil))))
