@@ -6,7 +6,7 @@
 ;;;
 ;;; This copyright notice pertains to all files in this library.
 
-(defsystem #:cl-num-utils
+(asdf:defsystem #:cl-num-utils
   :description "Numerical utilities for Common Lisp"
   :version "alpha"
   :author "Tamas K Papp <tkpapp@gmail.com>"
