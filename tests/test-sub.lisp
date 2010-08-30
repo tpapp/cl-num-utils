@@ -83,3 +83,13 @@
                      (4 9 3)
                      (8 2 7)
                      (1 6 11)))))
+
+(addtest (sub-tests)
+  rows-and-columns
+  (let ((a #2A((1 2)
+               (3 4)
+               (5 6)))
+        (rows (list #(1 2) #(3 4) #(5 6)))
+        (columns (list #(1 3 5) #(2 4 6))))
+    (ensure-same (rows a) rows)
+    (ensure-same (columns a) columns)))

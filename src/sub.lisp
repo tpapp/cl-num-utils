@@ -653,3 +653,31 @@ contain a single T, which is replaced to match sizes."))
           do (setf (row-major-aref result (result-index))
                    (row-major-aref array (array-index))))))
     result))
+
+(defgeneric rows (matrix &optional vector?)
+  (:documentation "Return the rows of MATRIX as separate vectors.  When VECTOR?,
+  the result is a SIMPLE-VECTOR, otherwise a LIST.")
+  (:method (matrix &optional vector?)
+    (bind (((:accessors-r/o nrow) matrix)
+           ((:flet row (row-index)) (sub matrix row-index t)))
+      (if vector?
+          (aprog1 (make-array nrow)
+            (dotimes (row-index nrow)
+              (setf (aref it row-index) (row row-index))))
+          (loop
+            for row-index :below nrow
+            collecting (row row-index))))))
+
+(defgeneric columns (matrix &optional vector?)
+  (:documentation "Return the columns of MATRIX as separate vectors.  When
+  VECTOR?, the result is a SIMPLE-VECTOR, otherwise a LIST.")
+  (:method (matrix &optional vector?)
+    (bind (((:accessors-r/o ncol) matrix)
+           ((:flet col (col-index)) (sub matrix t col-index)))
+      (if vector?
+          (aprog1 (make-array ncol)
+            (dotimes (col-index ncol)
+              (setf (aref it col-index) (col col-index))))
+          (loop
+            for col-index :below ncol
+            collecting (col col-index))))))
