@@ -681,3 +681,24 @@ contain a single T, which is replaced to match sizes."))
           (loop
             for col-index :below ncol
             collecting (col col-index))))))
+
+(defgeneric pref (object &rest indexes)
+  (:documentation "Return a vector, with elements from OBJECT, extracted using
+  INDEXES in parallel."))
+
+(defmethod pref ((array array) &rest indexes)
+  (let ((rank (array-rank array))
+        (element-type (array-element-type array)))
+    (assert (= rank (length indexes)))
+    (when (zerop rank)
+      (return-from pref (make-array 0 :element-type element-type)))
+    (let* ((length (length (first indexes)))
+           (result (make-array length :element-type element-type)))
+      (assert (every (lambda (index) (= (length index) length)) (cdr indexes)))
+      (loop
+        :for element-index :below length
+        :do (setf (aref result element-index)
+                  (apply #'aref array
+                                (mapcar (lambda (index) (aref index element-index))
+                                        indexes))))
+      result)))

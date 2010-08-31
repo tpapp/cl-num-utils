@@ -50,6 +50,7 @@
    column-major-coefficients drop-dimensions index-specification-dimension 
    with-indexing with-indexing* map-columns map-rows transpose create
    collect-rows collect-vector reshape reshape-calculate-dimensions rows columns
+   pref
 
    ;; ix
    

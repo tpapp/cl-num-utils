@@ -93,3 +93,14 @@
         (columns (list #(1 3 5) #(2 4 6))))
     (ensure-same (rows a) rows)
     (ensure-same (columns a) columns)))
+
+(addtest (sub-tests)
+  pref
+  (let ((matrix #2A((0 1)
+                    (2 3)
+                    (4 5)))
+        (vector #(0 1 2 3)))
+    (ensure-same (pref matrix #(0 2 1) #(1 0 1)) #(1 4 3))
+    (ensure-same (pref vector #(3 1 2 0)) #(3 1 2 0))
+    (ensure-error (pref vector #(1) #(0)))
+    (ensure-error (pref matrix #(1 0) #(0)))))
