@@ -22,7 +22,8 @@
     ((:file "test-seq")
      (:file "test-bins")
      (:file "test-sub")
-     (:file "test-statistics"))))
+     (:file "test-statistics")
+     (:file "test-ix"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :lift
                  :cl-num-utils))

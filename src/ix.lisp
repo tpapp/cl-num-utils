@@ -3,143 +3,235 @@
 (in-package #:cl-num-utils)
 
 (defclass ix ()
-  ((keys :reader ix-keys :initarg :keys)
-   (cum-indexes :initarg :cum-indexes)
-   (specs :reader ix-specs :initarg :specs)))
+  ((keys
+    :reader keys :documentation "Keys associated with positions (a hash
+    table), or NIL if there are no keys." :initarg :keys
+    :initform nil)
+   (cumulative-sizes 
+    :initarg :cumulative-sizes :documentation
+    "Cumulative sizes, same length as SUB-IXS, last one equal to the total size
+    of the index.")
+   (sub-ixs :reader sub-ixs :initarg :sub-ixs :documentation "Vector of
+   sub-indexes.  Elements may be NIL (no further sub-indexing), a
+   fixnum (indexing a vector), or another IX object."))
+  (:documentation "An IX instance maps a structured, recursive index to a range
+  of integers, starting from 0.  Use MAKE-IX to create them, from an index
+  specification."))
 
-(defun ix-size (ix)
-  "Number of elements addressed by an IX specification."
-  (etypecase ix
-    (null 1)
-    (fixnum ix)
-    (vector (reduce #'* ix))
-    (ix (with-slots (cum-indexes) ix
-          (aref cum-indexes (1- (length cum-indexes)))))))
-
-(defun flatten-ix (ix)
-  "Return a vector, which contains keys for each index."
-  (labels ((flatten (key spec)
-             (etypecase spec
-               (null (vector (list key)))
-               (fixnum (iter
-                         (for index :from 0 :below spec)
-                         (collecting (list key index) :result-type vector)))
-               (vector (error "internal error: case not defined yet"))
-               (ix (map 'vector (lambda (keys)
-                                  (cons key keys))
-                        (flatten-ix spec))))))
-    (apply #'concatenate 'vector 
-           (map 'list #'flatten (ix-keys ix) (ix-specs ix)))))
-
-(defun ix->spec (ix)
-  "Return the specification for an IX object."
-  (labels ((spec->list (key spec)
-             (etypecase spec
-               (null key)
-               ((or fixnum vector) (list key spec))
-               (ix (list key (ix->list spec)))))
-           (ix->list (ix)
-             (map 'list #'spec->list (ix-keys ix) (ix-specs ix))))
-    (ix->list ix)))
-
-(defun ix->labels (ix)
-  (map 'vector (lambda (name) (format nil "~(~{~a~^ ~}~)" name))
-       (flatten-ix ix)))
+(defun expanded-keys (ix)
+  "Return index keys as a vector.  When there are no keys corresponding to a
+position, return the position is used instead."
+  (bind (((:slots-r/o keys sub-ixs) ix)
+         (expanded-keys (iseq (length sub-ixs) t)))
+    (when keys
+      (iter
+        (for (key position) :in-hashtable keys)
+        (setf (aref expanded-keys position) key)))
+    expanded-keys))
 
 (defmethod print-object ((ix ix) stream)
   (print-unreadable-object (ix stream :type t)
-    (princ (ix->spec ix) stream)))
+    (labels ((print-ix (ix indent)
+               (bind (((:slots-r/o cumulative-sizes sub-ixs) ix)
+                      ((:accessors-r/o expanded-keys) ix)
+                      (indent-string (make-string indent :initial-element #\space)))
+                 (iter
+                   (for key :in-vector expanded-keys)
+                   (for end :in-vector cumulative-sizes)
+                   (for start :previous end :initially 0)
+                   (for sub-ix :in-vector sub-ixs :with-index position)
+                   (format stream "~%~A~A" indent-string position)
+                   (when (symbolp key) (format stream " (~A)" key))
+                   (if sub-ix
+                       (format stream ": ~A-~A" start end)
+                       (format stream ": ~A" start))
+                   (when (typep sub-ix 'ix)
+                     (print-ix sub-ix (+ indent 2)))))))
+      (print-ix ix 2))))
+
+(defun ix-size (ix)
+  "Number of elements addressed by IX."
+  (etypecase ix
+    (null 1)
+    (fixnum ix)
+    (ix (bind (((:slots-r/o cumulative-sizes) ix))
+          (aref cumulative-sizes (1- (length cumulative-sizes)))))))
+
+(defun repeat-ix (n ix)
+  "Create another index by repeating IX N times."
+  (let* ((cumulative-sizes (make-array n :element-type 'fixnum))
+         (size (ix-size ix)))
+    (loop
+      :for position :from 0 :below n
+      :for cumsum :from size :by size
+      :do (setf (aref cumulative-sizes position) cumsum))
+    (make-instance 'ix :cumulative-sizes cumulative-sizes
+                   :sub-ixs (make-array n :initial-element ix))))
+
+(defun row-major-ix (dimensions)
+  "Create an IX instance addressing a row major ordering with given
+dimensions (a vector).  SUB-IXS are reused and share structure."
+  (bind ((length (length dimensions))
+         result)
+    (iter
+      (for dimension :in-vector dimensions :downfrom (1- length))
+      (setf result
+            (if result
+                (repeat-ix dimension result)
+                dimension)))
+    result))
+
 
 (defun make-ix (specification)
-  "Create index.  SPEC is a list of the following: KEY for
-singletons, (KEY LENGTH) or (KEY DIMENSIONS-VECTOR) for vector or
-row-major-array indexing, (KEY IX-INSTANCE), or a list of these which
-is interpreted recursively."
-  (iter
-    (with cum-index := 0)
-    (for key-spec :in specification)
-    (bind (((:values key spec)
-            (if (atom key-spec)
-                (progn
-                  (check-type key-spec symbol)
-                  (values key-spec nil 1))
-                (bind (((key spec) key-spec))
-                  (check-type key symbol)
-                  (values key
-                          (typecase spec
-                            (fixnum spec)
-                            (vector (coerce spec 'simple-fixnum-vector))
-                            (ix spec)
-                            (list (make-ix spec)))))))
-           (size (ix-size spec)))
-      (collecting key :into keys :result-type vector)
-      (collecting spec :into specs :result-type vector)
-      (when (first-iteration-p)
-        (collecting 0 :into cum-indexes :result-type simple-fixnum-vector))
-      (incf cum-index size))
-      (collecting cum-index :into cum-indexes :result-type simple-fixnum-vector)
-    (finally
-     (return (make-instance 'ix :specs specs :cum-indexes cum-indexes :keys keys)))))
+  "Create an IX from the specification.
 
-(defun conforming-ix (instance &rest slots)
-  "Return an index conforming to the slots of INSTANCE."
-  (make-ix (mapcar (lambda (slot)
-                     (let ((value (slot-value instance slot)))
-                       (if (vectorp value)
-                           `(,slot ,(length value))
-                           slot)))
-                   slots)))
+  ix-specification = NIL | FIXNUM | list-ix-specification | VECTOR
+  list-ix-specification =  ((CONS key ix-specification) | ix-specification)*
 
-(defun ix (ix &rest keys-and-indexes)
-  "Resolve KEYS-AND-INDEXES in IX.  Return either a range
-specification (eg (CONS START END)) or a single index."
-  (labels ((resolve (ix keys-and-indexes acc)
+  KEYs are symbols.  NIL is a terminal specification, addressing a single
+  element.  FIXNUM addresses that many elements.  A VECTOR is shorthand for a
+  row-major mapping with given dimensions.
+
+  Examples:
+
+  (let* ((ix (make-ix '((alpha . 3) (beta) (gamma (delta . 4) (kappa . #(2 3))))))
+         (numbers (iseq (ix-size ix))))
+    (list
+     (sub numbers (ix ix 'alpha))
+     (sub numbers (ix ix 'alpha 2))
+     (sub numbers (ix ix 'beta))
+     (sub numbers (ix ix 'gamma))
+     (sub numbers (ix ix 'gamma 'delta))
+     (sub numbers (ix ix 'gamma 'kappa))
+     (sub numbers (ix ix 'gamma 'kappa 1))
+     (sub numbers (ix ix 'gamma 'kappa 1 0))))
+
+  =>
+
+  (#(0 1 2)
+    2
+    3
+    #(4 5 6 7 8 9 10 11 12 13)
+    #(4 5 6 7)
+    #(8 9 10 11 12 13)
+    #(11 12 13)
+    11)"
+  (etypecase specification
+    (null nil)
+    (fixnum specification)
+    (vector (row-major-ix specification))
+    (list (bind (keys
+                 (position 0)
+                 ((:flet add-key (key))
+                  (unless keys (setf keys (make-hash-table :test #'eq)))
+                  (when (gethash key keys)
+                    (error "Duplicate key ~A in index specification ~A."
+                           key specification))
+                   (setf (gethash key keys) position))
+                 (sub-ixs (map 'vector
+                               (lambda (sub-ix-specification)
+                                 ;; remove key when present
+                                 (when (consp sub-ix-specification)
+                                   (bind (((maybe-key . spec) 
+                                           sub-ix-specification))
+                                     (when (and (symbolp maybe-key) maybe-key)
+                                       (add-key maybe-key)
+                                       (setf sub-ix-specification spec))))
+                                 ;; process specification
+                                 (aprog1 (make-ix sub-ix-specification)
+                                   (incf position)))
+                               specification))
+                 (cumulative-size 0)
+                 (cumulative-sizes (map 'simple-fixnum-vector
+                                        (lambda (sub-ix)
+                                          (incf cumulative-size (ix-size sub-ix))
+                                          cumulative-size)
+                                        sub-ixs)))
+            (make-instance 'ix :keys keys :sub-ixs sub-ixs
+                           :cumulative-sizes cumulative-sizes)))))
+
+(defun ix->labels (ix)
+  "Return a vector of labels for the indexed range.  Each label is a list of
+ keys, addressing the corresponding fixnum."
+  (etypecase ix
+    (null nil)
+    (fixnum (iseq ix))
+    (ix (apply #'concatenate 'vector
+               (map 'list
+                    (lambda (sub-ix expanded-key)
+                      (map 'vector 
+                           (lambda (label) (cons expanded-key label))
+                           (ix->labels sub-ix)))
+                    (sub-ixs ix) (expanded-keys ix))))))
+
+(defun ix->specification (ix)
+  (etypecase ix
+    (null nil)
+    (fixnum ix)
+    (ix (bind (((:accessors-r/o expanded-keys sub-ixs) ix))
+          (iter
+            (for expanded-key :in-vector expanded-keys)
+            (for sub-ix :in-vector sub-ixs)
+            (let ((specification (ix->specification sub-ix)))
+              (collect 
+                  (if (symbolp expanded-key)
+                      (cons expanded-key specification)
+                      specification))))))))
+
+(defun ix-position (ix key)
+  "Resolve the key (a position or a symbol) into a position.  No boundary
+checking."
+  (check-type ix ix)
+  (etypecase key
+    (fixnum key)
+    (symbol (bind (((:slots-r/o keys) ix))
+              (aif (and keys (gethash key keys))
+                   it
+                   (error "Key ~A not found." key))))))
+
+(defun ix (ix &rest keys*)
+  "Resolve KEYS in IX.  Return a valid index specification."
+  (labels ((resolve (ix keys* acc)
              (etypecase ix
                (null
-                  (assert (null keys-and-indexes))
+                  (assert (null keys*) () "Unused keys ~A." keys*)
                   acc)
                (fixnum
-                  (if keys-and-indexes
-                      (bind (((key) keys-and-indexes))
-                        (assert (within? 0 key ix))
+                  (if keys*
+                      (bind (((key) keys*))
+                        (check-type key fixnum)
+                        (assert (within? 0 key ix) () "Key ~A outside [0,~A)."
+                                key ix)
                         (+ acc key))
                       (si acc (+ acc ix))))
-               (vector
-                  (error "not implemented yet"))
                (ix
-                  (if keys-and-indexes
-                      (bind (((:slots-r/o keys cum-indexes specs) ix)
-                             ((key . rest) keys-and-indexes)
-                             (position (position key keys :test #'eq)))
-                        (unless position
-                          (error "key ~A not found" key))
-                        (resolve (aref specs position) rest 
-                                 (+ acc (aref cum-indexes position))))
+                  (if keys*
+                      (bind (((:slots-r/o keys cumulative-sizes sub-ixs) ix)
+                             ((key . rest) keys*)
+                             (position
+                              (etypecase key
+                                (fixnum key)
+                                (symbol (aif (and keys 
+                                                  (gethash key keys))
+                                             it
+                                             )))))
+                        (resolve (aref sub-ixs (ix-position ix key)) rest 
+                                 (+ acc (if (zerop position)
+                                            0
+                                            (aref cumulative-sizes (1- position))))))
                       (si acc (+ acc (ix-size ix))))))))
-    (resolve ix keys-and-indexes 0)))
+    (resolve ix keys* 0)))
 
 (defmethod sub ((ix ix) &rest ranges)
-  ;; sub works on the specification
-  (bind (((range) ranges))
-    (make-ix (sub (ix->spec ix) range))))
-
-(defun sub-ix-process% (ix-specs)
-  "Process index specifications for SUB-IX and (SETF SUB-IX)."
-  (iter
-    (for (ix spec . rest) :on ix-specs :by #'cddr)
-    (collecting (if ix
-                    (apply #'ix ix (mklist spec))
-                    spec))))
-
-(defun sub-ix (object &rest ix-specs)
-  "(SUB OBJECT IX1 SPEC1 IX2 SPEC2 ...) applies each index on spec, then calls
-sub on the resulting coordinates.  NIL indexes just pass spec through."
-  (apply #'sub object (sub-ix-process% ix-specs)))
-
-(defun (setf sub-ix) (source target &rest ix-specs)
-  "(SUB OBJECT IX1 SPEC1 IX2 SPEC2 ...) applies each index on spec, then calls
-sub on the resulting coordinates.  NIL indexes just pass spec through."
-  (apply #'(setf sub) source target (sub-ix-process% ix-specs)))
+  ;; also resolve keys, when given as a fixnum or a vector
+  (bind (((range) ranges)
+         ((:flet ix-pos (key))
+          (ix-position ix key)))
+    (if (typep range '(or symbol fixnum))
+        (aref (sub-ixs ix) (ix-pos range))
+        (make-ix (sub (ix->specification ix) (if (vectorp range)
+                                                (map 'vector #'ix-pos range)
+                                                range))))))
 
 (metabang.bind::defbinding-form (:ix)
   (bind (((function &optional (variable (gensym (symbol-name function))))

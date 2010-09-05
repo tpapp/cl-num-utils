@@ -11,7 +11,7 @@
 
    ;; seq-and-array
 
-   vector* numseq vector-satisfies? cumsum sort-order make-similar-vector
+   vector* iseq numseq vector-satisfies? cumsum sort-order make-similar-vector
    make-similar-array rep concat displace-array group
 
    ;; pretty
@@ -54,7 +54,7 @@
 
    ;; ix
    
-   ix ix-keys make-ix conforming-ix flatten-ix ix->labels ix->spec sub-ix
+   ix expanded-keys ix-size make-ix ix->labels ix->specification
 
    ;; optimization
    

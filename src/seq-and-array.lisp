@@ -12,6 +12,15 @@ coerced to ELEMENT-TYPE."
       (setf (aref vector i) (coerce element element-type)))
     vector))
 
+(defun iseq (n &optional (type 'fixnum))
+  "Return a sequence of integers.  If type is LIST, a list is returned,
+otherwise a vector with the corresponding upgraded element type."
+  (if (eq type 'list)
+      (loop for i below n collect i)
+      (aprog1 (make-array n :element-type type)
+        (dotimes (i n)
+          (setf (aref it i) i)))))
+
 (defun numseq (from to &key length (by 1 by?) type)
   "Return a sequence between FROM and TO, progressing by BY, of the given
 LENGTH.  Only 3 of these a parameters should be given, the missing one (NIL)
