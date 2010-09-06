@@ -89,8 +89,15 @@ dimensions (a vector).  SUB-IXS are reused and share structure."
   list-ix-specification =  ((CONS key ix-specification) | ix-specification)*
 
   KEYs are symbols.  NIL is a terminal specification, addressing a single
-  element.  FIXNUM addresses that many elements.  A VECTOR is shorthand for a
-  row-major mapping with given dimensions.
+  element.  FIXNUM addresses that many elements.
+
+  There are two convenient abbreviations:
+  
+  - a VECTOR is shorthand for a row-major mapping with given dimensions.  Eg 
+    #(2 3 4) is equivalent to ((4 4 4) (4 4 4)).  Structure is shared, so this
+    is a  memory-efficient storage mechanism.
+
+  - a SYMBOL in a list is equivalent to (SYMBOL), ie naming a single element.
 
   Examples:
 
@@ -131,12 +138,16 @@ dimensions (a vector).  SUB-IXS are reused and share structure."
                  (sub-ixs (map 'vector
                                (lambda (sub-ix-specification)
                                  ;; remove key when present
-                                 (when (consp sub-ix-specification)
-                                   (bind (((maybe-key . spec) 
-                                           sub-ix-specification))
-                                     (when (and (symbolp maybe-key) maybe-key)
-                                       (add-key maybe-key)
-                                       (setf sub-ix-specification spec))))
+                                 (typecase sub-ix-specification
+                                   (symbol ; naming a single element
+                                      (add-key sub-ix-specification)
+                                      (setf sub-ix-specification nil))
+                                   (cons ; naming a sub-index
+                                      (bind (((maybe-key . spec) 
+                                              sub-ix-specification))
+                                        (when (and (symbolp maybe-key) maybe-key)
+                                          (add-key maybe-key)
+                                          (setf sub-ix-specification spec)))))
                                  ;; process specification
                                  (aprog1 (make-ix sub-ix-specification)
                                    (incf position)))
