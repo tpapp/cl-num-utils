@@ -113,19 +113,21 @@ so far."
     (with min := nil)
     (with max := nil)
     (for object :in objects)
-    (acond
-      ((null object))
-      ((typep object 'forced-interval)
-       (bind (((:interval left right) object))
-         (setf min left)
-         (setf max right)))
-      ((range object)
-       (bind (((:interval left right) it))
-         (if min 
-             (setf min (min min left)
-                   max (max max right))
-             (setf min left
-                   max right)))))
+    (flet ((update-with (interval)
+             (bind (((:interval left right) interval))
+               (if min 
+                   (setf min (min min left)
+                         max (max max right))
+                   (setf min left
+                         max right)))))
+      (typecase object
+        (nil)
+        (forced-interval
+           (bind (((:interval left right) object))
+             (setf min left)
+             (setf max right)))
+        (interval (update-with object))
+        (t (update-with (range object)))))
     (finally
      (return (make-interval-or-nil min max)))))
 
