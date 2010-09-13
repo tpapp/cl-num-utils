@@ -711,15 +711,17 @@ contain a single T, which is replaced to match sizes."))
   "Return a simple-fixnum-vector for the indexes of elements that satisfy
 predicate."
   (let (indexes
+        (count 0)
         (index 0))
     (map nil (lambda (element)
                (when (funcall predicate element)
-                 (push element indexes)
-                 (incf index)))
+                 (push index indexes)
+                 (incf count))
+               (incf index))
          sequence)
-    (let ((result (make-array index :element-type 'fixnum)))
+    (let ((result (make-array count :element-type 'fixnum)))
       (loop
-        :for i :from (1- index) :downto 0
+        :for i :from (1- count) :downto 0
         :for ix :in indexes
         :do (setf (aref result i) ix))
       result)))
