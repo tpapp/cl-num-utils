@@ -233,6 +233,13 @@ checking."
                       (si acc (+ acc (ix-size ix))))))))
     (resolve ix keys* 0)))
 
+(defun ix* (ix &rest keys*)
+  "Same as IX*, except that it always returns a vector."
+  (atypecase (apply #'ix ix keys*)
+    (fixnum (vector it))
+    (vector it)
+    (t (resolve-index-specification it nil t))))
+
 (defmethod sub ((ix ix) &rest ranges)
   ;; also resolve keys, when given as a fixnum or a vector
   (bind (((range) ranges)
