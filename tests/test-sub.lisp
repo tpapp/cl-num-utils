@@ -104,3 +104,18 @@
     (ensure-same (pref vector #(3 1 2 0)) #(3 1 2 0))
     (ensure-error (pref vector #(1) #(0)))
     (ensure-error (pref matrix #(1 0) #(0)))))
+
+(addtest (sub-tests)
+  which
+  (let ((vector (iseq 10))
+        (list (iseq 10 'list))
+        (even #(0 2 4 6 8))
+        (odd #(1 3 5 7 9))
+        (arbitrary #(0 2 3 5 9)))
+    (ensure-same (which #'oddp vector) odd)
+    (ensure-same (which #'oddp list) odd)
+    (ensure-same (which #'evenp vector) even)
+    (ensure-same (which #'evenp list) even)
+    (flet ((in? (element) (find element arbitrary)))
+      (ensure-same (which #'in? vector) arbitrary)
+      (ensure-same (which #'in? list) arbitrary))))

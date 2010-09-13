@@ -133,21 +133,25 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
   "Resolve delayed operations in INDEX-SPECIFICATION given the dimension.
 Return either a FIXNUM, a RESOLVED-SI object, or a SIMPLE-FIXNUM-VECTOR.  When
 FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
+  (when dimension
+   (check-type dimension (integer 0 #.most-positive-fixnum)))
   (bind (((:flet resolve-index (index &optional end?))
           (check-type index fixnum)
           (cond
             ((zerop index)
-             (if end? dimension 0))
+             (if end? 
+                 (progn
+                   (assert dimension () 
+                           "Can't resolve 0 at the end without a dimension.")
+                   dimension)
+                 0))
             ((minusp index)
+             (assert dimension () 
+                     "Can't resolve a negative index without a dimension.")
              (aprog1 (+ dimension index)
-                      (assert (<= 0 it) () 'sub-invalid-array-index
-                              :index index :dimension dimension)))
-            (t (assert (if end?
-                           (<= index dimension)
-                           (< index dimension))
-                       () 'sub-invalid-array-index
-                       :index index :dimension dimension)
-             index))))
+               (assert (<= 0 it) () 'sub-invalid-array-index
+                       :index index :dimension dimension)))
+            (t index))))
     (etypecase index-specification
       ((eql t) (resolve-t dimension))
       (fixnum (resolve-index index-specification))
@@ -701,4 +705,21 @@ contain a single T, which is replaced to match sizes."))
                   (apply #'aref array
                                 (mapcar (lambda (index) (aref index element-index))
                                         indexes))))
+      result)))
+
+(defun which (predicate sequence)
+  "Return a simple-fixnum-vector for the indexes of elements that satisfy
+predicate."
+  (let (indexes
+        (index 0))
+    (map nil (lambda (element)
+               (when (funcall predicate element)
+                 (push element indexes)
+                 (incf index)))
+         sequence)
+    (let ((result (make-array index :element-type 'fixnum)))
+      (loop
+        :for i :from (1- index) :downto 0
+        :for ix :in indexes
+        :do (setf (aref result i) ix))
       result)))
