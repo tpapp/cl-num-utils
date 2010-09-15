@@ -41,7 +41,7 @@ position, return the position is used instead."
                    (for start :previous end :initially 0)
                    (for sub-ix :in-vector sub-ixs :with-index position)
                    (format stream "~%~A~A" indent-string position)
-                   (when (symbolp key) (format stream " (~A)" key))
+                   (when (symbolp key) (format stream " [~A]" key))
                    (if sub-ix
                        (format stream ": ~A-~A" start end)
                        (format stream ": ~A" start))
