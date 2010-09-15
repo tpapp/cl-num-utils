@@ -48,6 +48,8 @@
   fixnum - Addressing a single element, also, the dimension is dropped, ie rank
     decreases by 1.
 
+  bit-vector - Addressing elements where the bit-vector is equal to 1.
+
   vector of fixnums - Elements at those coordinates.
 
   (si start end &optional by) - Sequence indexing, from START by BY, not
@@ -128,6 +130,24 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
   "Resolve a T index specification."
   (resolved-si 0 dimension 1))
 
+(defun bit-vector-positions (bit-vector &optional dimension)
+  "Convert a bit vector to a simple-fixnum-vector of positions.  If DIMENSION is
+given, it will be checked."
+  (check-type bit-vector bit-vector)
+  (when dimension
+    (assert (<= (length bit-vector) dimension)))
+  (iter
+    (for position :from 0)
+    (for bit :in-vector bit-vector)
+    (when (= bit 1)
+      (collect position :result-type simple-fixnum-vector))))
+
+(defun bitmap (predicate sequence)
+  "Map sequence into a simple-bit-vector, using 1 when PREDICATE yields true, 0
+otherwise."
+  (map 'simple-bit-vector (lambda (element) (if (funcall predicate element) 1 0))
+       sequence))
+
 (defun resolve-index-specification (index-specification dimension
                                     &optional force-vector?)
   "Resolve delayed operations in INDEX-SPECIFICATION given the dimension.
@@ -155,6 +175,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
     (etypecase index-specification
       ((eql t) (resolve-t dimension))
       (fixnum (resolve-index index-specification))
+      (bit-vector (bit-vector-positions index-specification dimension))
       (vector (map 'simple-fixnum-vector #'resolve-index index-specification))
       (si (bind (((:slots-r/o start end by strict-direction?) index-specification)
                   (start (resolve-index start))

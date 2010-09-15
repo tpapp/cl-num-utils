@@ -46,11 +46,11 @@
    ;; sub
 
    nrow ncol sub sub-incompatible-dimensions sub-invalid-array-index 
-   si cat rev resolve-index-specification row-major-coefficients
-   column-major-coefficients drop-dimensions index-specification-dimension 
-   with-indexing with-indexing* map-columns map-rows transpose create
-   collect-rows collect-vector reshape reshape-calculate-dimensions rows columns
-   pref which
+   si cat rev  bit-vector-positions bitmap resolve-index-specification
+   row-major-coefficients column-major-coefficients drop-dimensions
+   index-specification-dimension with-indexing with-indexing* map-columns
+   map-rows transpose create collect-rows collect-vector reshape
+   reshape-calculate-dimensions rows columns pref which
 
    ;; ix
    

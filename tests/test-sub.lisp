@@ -120,3 +120,17 @@
     (flet ((in? (element) (find element arbitrary)))
       (ensure-same (which #'in? vector) arbitrary-pos)
       (ensure-same (which #'in? list) arbitrary-pos))))
+
+(addtest (sub-tests)
+  bitspec
+  (let* ((vector (iseq 6))
+        (odd-bits (bitmap #'oddp vector))
+        (even-bits (bitmap #'evenp vector))
+        (div3-bits (bitmap (lambda (n) (divides? n 3)) vector)))
+    (ensure-same even-bits #*101010)
+    (ensure-same odd-bits #*010101)
+    (ensure-same div3-bits #*100100)
+    (ensure-same (sub vector even-bits) #(0 2 4))
+    (ensure-same (sub vector odd-bits) #(1 3 5))
+    (ensure-same (sub vector div3-bits) #(0 3))
+    (ensure-same (sub vector (bit-ior even-bits div3-bits)) #(0 2 3 4))))
