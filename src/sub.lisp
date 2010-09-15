@@ -526,7 +526,10 @@ COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
   vector, the values are collected in a vector instead of a matrix."))
 
 (defmethod map-columns (function (matrix array))
-  (bind (((nil ncol) (array-dimensions matrix))
+  (bind ((matrix (if (vectorp matrix)
+                     (reshape matrix '(1 t) :row-major :copy? nil)
+                     matrix))
+         ((nil ncol) (array-dimensions matrix))
          result
          result-nrow)
     (iter
@@ -548,7 +551,10 @@ COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
   (:documentation "Similar to MAP-ROWS, mutatis mutandis."))
 
 (defmethod map-rows (function (matrix array))
-  (bind (((nrow nil) (array-dimensions matrix))
+  (bind ((matrix (if (vectorp matrix)
+                     (reshape matrix '(t 1) :row-major :copy? nil)
+                     matrix))
+         ((nrow nil) (array-dimensions matrix))
          result
          result-ncol)
     (iter
