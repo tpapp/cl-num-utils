@@ -7,7 +7,7 @@
 
    ;; misc
    
-   divides? square nif anif bic xor multf as-integer common-supertype
+   divides? square nif anif bic xor multf as-integer common-supertype round*
 
    ;; seq-and-array
 

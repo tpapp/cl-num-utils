@@ -65,3 +65,11 @@ finding a common array element type."
     ((subtypep type-1 type-2) type-2)
     ((subtypep type-2 type-1) type-1)
     (t t)))
+
+(defun round* (number digits)
+  "Round NUMBER to the given number of decimal digits."
+  (let* ((pow10 (expt 10 (- digits)))
+         (rounded-number (* (round number pow10) pow10)))
+    (if (and (floatp number) (plusp digits))
+        (float rounded-number number)
+        rounded-number)))
