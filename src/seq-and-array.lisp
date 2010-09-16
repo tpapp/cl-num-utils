@@ -19,7 +19,7 @@ otherwise a vector with the corresponding upgraded element type."
       (loop for i below n collect i)
       (aprog1 (make-array n :element-type type)
         (dotimes (i n)
-          (setf (aref it i) i)))))
+          (setf (aref it i) (coerce i type))))))
 
 (defun numseq (from to &key length (by 1 by?) type)
   "Return a sequence between FROM and TO, progressing by BY, of the given
