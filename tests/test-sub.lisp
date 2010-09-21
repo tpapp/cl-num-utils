@@ -55,7 +55,8 @@
     (ensure-same (sub a (si 0 0 3)) #(0 3 6 9))
     (ensure-same (sub a (si 0 -1 3)) #(0 3 6))
     (ensure-same (sub a (si 1 -1 3)) #(1 4 7))
-    (ensure-same (sub a (si 1 7 3)) #(1 4))))
+    (ensure-same (sub a (si 1 7 3)) #(1 4))
+    (ensure-same (sub a (sub (rev (si 0 0 3)) #(0 1))) #(9 6))))
 
 (addtest (sub-tests)
   map-columns

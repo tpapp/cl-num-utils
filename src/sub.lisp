@@ -122,9 +122,13 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
     (vector (reverse index-specification))
     (otherwise (delayed-index-specification 'reverse index-specification))))
 
-(defmethod sub ((index-specification si) &rest index-specifications)
-  (assert (not (cdr index-specifications)) () 'sub-incompatible-dimensions)
-  (delayed-index-specification 'sub index-specification))
+(defmethod sub ((si si) &rest index-specifications)
+  (bind (((index-specification) index-specifications))
+    (delayed-index-specification 'sub (cons si index-specification))))
+
+(defmethod sub ((di delayed-index-specification) &rest index-specifications)
+  (bind (((index-specification) index-specifications))
+    (delayed-index-specification 'sub (cons di index-specification))))
 
 (defun resolve-t (dimension)
   "Resolve a T index specification."
@@ -148,11 +152,22 @@ otherwise."
   (map 'simple-bit-vector (lambda (element) (if (funcall predicate element) 1 0))
        sequence))
 
+(defun maybe-resolved-si (start length by force-vector?)
+  "When FORCE-VECTOR?, return a SIMPLE-FIXNUM-VECTOR, otherwise a RESOLVED-SI."
+  (if force-vector?
+      (let ((vector (make-array length :element-type 'fixnum))
+            (index start))
+        (dotimes (vector-index length vector)
+          (setf (aref vector vector-index) index)
+          (incf index by)))
+      (resolved-si start length by)))
+
 (defun resolve-index-specification (index-specification dimension
                                     &optional force-vector?)
   "Resolve delayed operations in INDEX-SPECIFICATION given the dimension.
 Return either a FIXNUM, a RESOLVED-SI object, or a SIMPLE-FIXNUM-VECTOR.  When
 FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
+  (declare (optimize debug))
   (when dimension
     (check-type dimension (integer 0 #.most-positive-fixnum)))
   (bind (((:flet resolve-index (index &optional end?))
@@ -185,15 +200,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                 (assert (plusp (* span by)) ()
                         "Invalid indexing ~A->~A by ~A." start end by)
                 (setf by (* (signum span) (abs by))))
-            (let ((length (ceiling span by)))
-              (if force-vector?
-                  (let ((vector (make-array length :element-type 'fixnum)))
-                    (loop
-                      for index :from start :by by :below end
-                      for vector-index :from 0
-                      do (setf (aref vector vector-index) index))
-                    vector)
-                  (resolved-si start length by)))))
+            (maybe-resolved-si start (ceiling span by) by force-vector?)))
       (delayed-index-specification
          (bind (((:slots-r/o type data) index-specification))
            (ecase type
@@ -213,10 +220,10 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                     (simple-fixnum-vector (reverse index-specification))
                     (resolved-si
                        (bind (((:slots-r/o start length by) index-specification))
-                         (resolved-si (+ start (* (1- length) by))
-                                      length (- by)))))))
-             (sub (sub (resolve-index-specification (first data) dimension t)
-                       (second data)))))))))
+                         (maybe-resolved-si (+ start (* (1- length) by))
+                                            length (- by) force-vector?))))))
+             (sub (sub (resolve-index-specification (car data) dimension t)
+                       (cdr data)))))))))
 
 (defun resolve-index-specifications (index-specifications dimensions)
   "Resolve multiple index-specifications."
