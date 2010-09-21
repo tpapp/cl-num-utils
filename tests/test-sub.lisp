@@ -42,6 +42,22 @@
       (ensure-error (setf (sub a 2 4) (vector 3))))))
 
 (addtest (sub-tests)
+  test-sub-si
+  (let ((a (iseq 10)))
+    (ensure-same (sub a (si 0 0)) a)
+    (ensure-same (sub a (si 0 0 1)) a)
+    (ensure-same (sub a (si 0 0 2)) #(0 2 4 6 8))
+    (ensure-same (sub a (si 0 9 2)) #(0 2 4 6 8))
+    (ensure-same (sub a (si 0 8 2)) #(0 2 4 6))
+    (ensure-same (sub a (si 1 9 2)) #(1 3 5 7))
+    (ensure-same (sub a (si 1 -1 2)) #(1 3 5 7))
+    (ensure-same (sub a (si 1 0 2)) #(1 3 5 7 9))
+    (ensure-same (sub a (si 0 0 3)) #(0 3 6 9))
+    (ensure-same (sub a (si 0 -1 3)) #(0 3 6))
+    (ensure-same (sub a (si 1 -1 3)) #(1 4 7))
+    (ensure-same (sub a (si 1 7 3)) #(1 4))))
+
+(addtest (sub-tests)
   map-columns
   (ensure-same (map-columns #'sum (ia 3 4))
                #(12 15 18 21))

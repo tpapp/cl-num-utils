@@ -154,46 +154,46 @@ otherwise."
 Return either a FIXNUM, a RESOLVED-SI object, or a SIMPLE-FIXNUM-VECTOR.  When
 FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
   (when dimension
-   (check-type dimension (integer 0 #.most-positive-fixnum)))
+    (check-type dimension (integer 0 #.most-positive-fixnum)))
   (bind (((:flet resolve-index (index &optional end?))
           (check-type index fixnum)
-          (cond
-            ((zerop index)
-             (if end? 
-                 (progn
-                   (assert dimension () 
-                           "Can't resolve 0 at the end without a dimension.")
-                   dimension)
-                 0))
-            ((minusp index)
-             (assert dimension () 
-                     "Can't resolve a negative index without a dimension.")
-             (aprog1 (+ dimension index)
-               (assert (<= 0 it) () 'sub-invalid-array-index
-                       :index index :dimension dimension)))
-            (t index))))
+           (cond
+             ((zerop index)
+              (if end? 
+                  (progn
+                    (assert dimension () 
+                            "Can't resolve 0 at the end without a dimension.")
+                    dimension)
+                  0))
+             ((minusp index)
+              (assert dimension () 
+                      "Can't resolve a negative index without a dimension.")
+              (aprog1 (+ dimension index)
+                (assert (<= 0 it) () 'sub-invalid-array-index
+                        :index index :dimension dimension)))
+             (t index))))
     (etypecase index-specification
       ((eql t) (resolve-t dimension))
       (fixnum (resolve-index index-specification))
       (bit-vector (bit-vector-positions index-specification dimension))
       (vector (map 'simple-fixnum-vector #'resolve-index index-specification))
       (si (bind (((:slots-r/o start end by strict-direction?) index-specification)
-                  (start (resolve-index start))
-                  (end (resolve-index end t))
-                  (span (- end start)))
-             (if strict-direction?
-                 (assert (plusp (* span by)) ()
-                         "Invalid indexing ~A->~A by ~A." start end by)
-                 (setf by (* (signum span) (abs by))))
-             (let ((length (floor span by)))
-               (if force-vector?
-                   (let ((vector (make-array length :element-type 'fixnum)))
-                     (loop
-                       for index :from start :by by :below end
-                       for vector-index :from 0
-                       do (setf (aref vector vector-index) index))
-                     vector)
-                   (resolved-si start length by)))))
+                 (start (resolve-index start))
+                 (end (resolve-index end t))
+                 (span (- end start)))
+            (if strict-direction?
+                (assert (plusp (* span by)) ()
+                        "Invalid indexing ~A->~A by ~A." start end by)
+                (setf by (* (signum span) (abs by))))
+            (let ((length (ceiling span by)))
+              (if force-vector?
+                  (let ((vector (make-array length :element-type 'fixnum)))
+                    (loop
+                      for index :from start :by by :below end
+                      for vector-index :from 0
+                      do (setf (aref vector vector-index) index))
+                    vector)
+                  (resolved-si start length by)))))
       (delayed-index-specification
          (bind (((:slots-r/o type data) index-specification))
            (ecase type
@@ -212,9 +212,9 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                     (fixnum index-specification)
                     (simple-fixnum-vector (reverse index-specification))
                     (resolved-si
-                     (bind (((:slots-r/o start length by) index-specification))
-                       (resolved-si (+ start (* (1- length) by))
-                                    length (- by)))))))
+                       (bind (((:slots-r/o start length by) index-specification))
+                         (resolved-si (+ start (* (1- length) by))
+                                      length (- by)))))))
              (sub (sub (resolve-index-specification (first data) dimension t)
                        (second data)))))))))
 
