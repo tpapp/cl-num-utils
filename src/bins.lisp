@@ -47,7 +47,8 @@
         (declare (type (function (real) integer) ,bin-function))
         (flet ((,var (value)
                  (funcall ,bin-function value)))
-                     ,(metabang-bind::bind-filter-declarations declarations variable-form)
+                     ,(metabang-bind::bind-filter-declarations declarations
+                                                               variable-form)
           ,@(metabang-bind::bind-macro-helper 
              remaining-bindings declarations body))))))
 

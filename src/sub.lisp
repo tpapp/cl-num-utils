@@ -424,7 +424,6 @@ COLUMN-MAJOR? uses column-major indexing."
               (,end? (every #'zerop ,dimensions))
               ((:flet ,next-index ())
                (aprog1 (map-counters* ,coefficients ,counters ,cumsums ,valid-end)
-                 (d:v ,counters)
                  (setf (values ,valid-end ,end?)
                        (increment-index-counters ,counters ,dimensions)))))
          ,@body))))
