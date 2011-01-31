@@ -107,6 +107,13 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
 (deftype simple-fixnum-vector ()
   '(simple-array fixnum (*)))
 
+(defun as-simple-fixnum-vector (sequence &optional copy?)
+  "Convert SEQUENCE to a SIMPLE-FIXNUM-VECTOR.  When COPY?, make sure that the
+they don't share structure."
+  (if (and (typep sequence 'simple-fixnum-vector) copy?)
+      (copy-seq sequence)
+      (coerce sequence 'simple-fixnum-vector)))
+
 (defun cat (&rest index-specifications)
   "Concatenation of index-specifications."
   (if (cdr index-specifications)
@@ -240,17 +247,6 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
             cumprod (* cumprod (aref dimensions axis-number))))
     coefficients))
 
-(defun column-major-coefficients (dimensions)
-  "Calculate coefficients for a column-major mapping."
-  (let* ((cumprod 1)
-         (rank (length dimensions))
-         (coefficients (make-array rank :element-type 'fixnum)))
-    (iter
-      (for axis-number :from 0 :below rank)
-      (setf (aref coefficients axis-number) cumprod
-            cumprod (* cumprod (aref dimensions axis-number))))
-    coefficients))
-
 (defun drop-dimensions (index-specifications coefficients)
   "Drop single dimensions.  Return (values OFFSET NEW-INDEX-SPECIFICATIONS
 NEW-COEFFICIENTS)."
@@ -376,7 +372,7 @@ comments on implementation details."
   (check-type end? symbol)
   (once-only (dimensions index-specifications)
     (with-unique-names (coefficients offset rank cumsums valid-end)
-      `(bind ((,dimensions (coerce ,dimensions 'simple-fixnum-vector))
+      `(bind ((,dimensions (as-simple-fixnum-vector ,dimensions))
               (,rank (length ,index-specifications)))
          (assert (= ,rank (length ,dimensions)) () 'sub-incompatible-dimensions)
          (bind ((,index-specifications (resolve-index-specifications
@@ -404,29 +400,34 @@ comments on implementation details."
            ,@body)))))
 
 (defmacro with-indexing* ((dimensions next-index &key (end? (gensym "END"))
-                                      column-major? reverse?)
+                                      column-major?)
                           &body body)
   "A simpler version of WITH-INDEXING, with all index-specifications as T.  
-COLUMN-MAJOR? uses column-major indexing, while REVERSE? reverses dimensions."
-  (once-only (dimensions)
+COLUMN-MAJOR? uses column-major indexing."
+  ;; Implementation note: for column-major traversal, we simply reverse both the
+  ;; coefficients and the dimensions.
+  (check-type end? symbol)
+  (once-only (dimensions column-major?)
     (with-unique-names (coefficients rank counters cumsums valid-end)
-      `(bind ((,dimensions (coerce ,dimensions 'simple-fixnum-vector))
-              (,rank (length ,dimensions)))
-         (when ,reverse?
-           (setf ,dimensions (nreverse ,dimensions)))
-         (bind ((,coefficients (if ,column-major?
-                                   (column-major-coefficients ,dimensions)
-                                   (row-major-coefficients ,dimensions)))
-                (,counters (make-array ,rank :element-type 'fixnum
-                                       :initial-element 0))
-                (,cumsums (make-array ,rank :element-type 'fixnum))
-                (,valid-end 0)
-                (,end? (every #'zerop ,dimensions))
-                ((:flet ,next-index ())
-                 (aprog1 (map-counters* ,coefficients ,counters ,cumsums ,valid-end)
-                   (setf (values ,valid-end ,end?)
-                         (increment-index-counters ,counters ,dimensions)))))
-           ,@body)))))
+      `(bind (((:flet nreverse-if-cm (vector))
+               (if ,column-major?
+                   (nreverse vector)
+                   vector))
+              (,dimensions (as-simple-fixnum-vector ,dimensions t))
+              (,coefficients (nreverse-if-cm (row-major-coefficients ,dimensions)))
+              (,dimensions (nreverse-if-cm ,dimensions))
+              (,rank (length ,dimensions))
+              (,counters (make-array ,rank :element-type 'fixnum
+                                     :initial-element 0))
+              (,cumsums (make-array ,rank :element-type 'fixnum))
+              (,valid-end 0)
+              (,end? (every #'zerop ,dimensions))
+              ((:flet ,next-index ())
+               (aprog1 (map-counters* ,coefficients ,counters ,cumsums ,valid-end)
+                 (d:v ,counters)
+                 (setf (values ,valid-end ,end?)
+                       (increment-index-counters ,counters ,dimensions)))))
+         ,@body))))
 
 (defmethod sub ((array array) &rest index-specifications)
   (with-indexing (index-specifications (array-dimensions array) next-index
@@ -683,9 +684,8 @@ contain a single T, which is replaced to match sizes."))
   (let* ((size (array-total-size array))
          (dimensions (reshape-calculate-dimensions dimensions size))
          (result (make-similar-array array (coerce dimensions 'list))))
-    (with-indexing* ((array-dimensions array) array-index
-                     :column-major? t :reverse? t)
-      (with-indexing* (dimensions result-index :column-major? t :reverse? t)
+    (with-indexing* ((array-dimensions array) array-index :column-major? t)
+      (with-indexing* (dimensions result-index :column-major? t)
         (loop 
           repeat size
           do (setf (row-major-aref result (result-index))
