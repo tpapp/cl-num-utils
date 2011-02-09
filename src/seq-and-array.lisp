@@ -167,6 +167,23 @@ COMMON-SUPERTYPE."
   (make-array dimensions :displaced-to array :displaced-index-offset offset
               :element-type (array-element-type array)))
 
+(defun displace-subarray (array &rest subscripts)
+  "Given a partial list of subscripts, return a displaced array that starts
+  there, with all the other subscripts set to 0, dimensions inferred from the
+  original.  If no subscripts are given, the original array is returned."
+  (let* ((rank (array-rank array))
+         (drop (length subscripts)))
+    (cond
+      ((zerop drop) array)
+      ((<= drop rank)
+       (let ((sub-dimensions (subseq (array-dimensions array) drop))
+             (offset (apply #'array-row-major-index array
+                            (append subscripts
+                                    (make-sequence 'list (- rank drop)
+                                                   :initial-element 0)))))
+         (displace-array array sub-dimensions offset)))
+      (t (error "Too many subscripts (~A) for array of rank ~A." drop rank)))))
+
 (defun group (sequence &rest indexes)
   "Return an array, which contains sequences of the same type as SEQUENCE, with
 elements grouped according to the indexes (which are expected to be nonnegative
