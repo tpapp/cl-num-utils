@@ -73,3 +73,9 @@ finding a common array element type."
     (if (and (floatp number) (plusp digits))
         (float rounded-number number)
         rounded-number)))
+
+(defun maybe-copy-array (array copy?)
+  "If COPY?, return a copy of array, otherwise the original."
+  (if copy?
+      (copy-array array :undisplace t)
+      array))
