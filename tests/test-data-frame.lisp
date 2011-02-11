@@ -21,3 +21,13 @@
     (ensure-same (sub df t #(0 2)) sub-matrix)
     (ensure-same (sub df t (si 0 nil)) matrix)))
 
+(addtest (data-frame-tests)
+  data-frame-setf-tests
+  (let* ((matrix (ia 3 4))
+         (keys '(a b c d))
+         (df (make-data-frame (copy-array matrix) keys :copy? t))
+         (sub-vector (ia 3)))
+    (setf (sub df t 'c) sub-vector
+          (sub matrix t 2) sub-vector)
+    (ensure-same (data-frame-matrix df) matrix)))
+

@@ -58,7 +58,7 @@
 
    ;; data-frame
 
-   make-data-frame matrix column-index
+   make-data-frame data-frame-matrix data-frame-column-index
 
    ;; optimization
    
