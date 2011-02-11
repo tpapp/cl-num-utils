@@ -2,30 +2,40 @@
 
 (in-package #:cl-num-utils)
 
-;;; Generic functions for querying dimensions and element types.
+;;; Generic functions for querying dimensions and element types.  Only DIMS and
+;;; ELEMENT-TYPE need to be defined, the rest fall back to these.
 
 (defgeneric dims (object)
   (:documentation "Return the dimensions of object as a list.")
   (:method ((array array))
     (array-dimensions array)))
 
+(defgeneric element-type (object)
+  (:documentation "Return the element type of object.  Accessors return and
+  allow setting subtypes of this type."))
+
+;;; 
+
 (defgeneric dim (object axis-number)
   (:documentation "Return the dimension of object along axis-number.")
+  (:method (object axis-number)
+    (aref (dims object) axis-number))
   (:method ((array array) axis-number)
     (array-dimension array axis-number)))
 
 (defgeneric rank (object)
   (:documentation "Return the number of dimensions.")
+  (:method (object)
+    (length (dims object)))
   (:method ((array array))
     (array-rank array)))
-
-(defgeneric element-type (object)
-  (:documentation "Return the element type of object.  Accessors return and
-  allow setting subtypes of this type."))
 
 (defgeneric nrow (object)
   (:documentation "Return number of rows in object.  Signal an error if OBJECT
   doesn't have exactly two dimensions.")
+  (:method (object)
+    (bind (((nrow nil) (dims object)))
+      nrow))
   (:method ((array array))
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
     (array-dimension array 0)))
@@ -33,6 +43,9 @@
 (defgeneric ncol (object)
   (:documentation "Return number of columns in object.  Signal an error if
   OBJECT doesn't have exactly two dimensions.")
+  (:method (object)
+    (bind (((nil ncol) (dims object)))
+      ncol))
   (:method ((array array))
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
     (array-dimension array 1)))
@@ -89,7 +102,7 @@
 may be delayed until dimension is known, so any sign of BY can be used.  Unless
 STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
   (start 0 :type fixnum)
-  (end 0 :type fixnum)
+  (end 0 :type (or fixnum null))
   (by 1 :type fixnum)
   (strict-direction? nil :type boolean))
 
@@ -178,15 +191,19 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
   (when dimension
     (check-type dimension (integer 0 #.most-positive-fixnum)))
   (bind (((:flet resolve-index (index &optional end?))
-          (check-type index fixnum)
+          "Resolve an atomic index.  If END?, 0 and NIL stand for the dimension."
+          (check-type index (or fixnum null))
            (cond
-             ((zerop index)
-              (if end? 
+             ((or (null index) (zerop index))
+              (if end?
                   (progn
                     (assert dimension () 
                             "Can't resolve 0 at the end without a dimension.")
                     dimension)
-                  0))
+                  (progn
+                    (assert index ()
+                            "NIL only has a meaning as an end delimiter.")
+                    0)))
              ((minusp index)
               (assert dimension () 
                       "Can't resolve a negative index without a dimension.")
