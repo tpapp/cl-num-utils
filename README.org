@@ -1,1 +1,11 @@
-This library will replace cl-numlib.  It is still experimental though.
+* cl-num-utils
+
+This library will replace cl-numlib.  It is still experimental, and
+the interface changes constantly.  Nevertheless, parts that are
+available are usually tested and usable.  Comments are welcome.
+
+** Tasks
+*** TODO finish histogram code, write tests
+*** TODO decide whether SUB should pass on keys for DATA-FRAME
+*** TODO decide whether recursive indexes are practical
+    code is still there, but commented out
