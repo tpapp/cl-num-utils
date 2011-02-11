@@ -73,6 +73,10 @@ to share structure, call this function with a copy."
 (defmethod ix-keys ((hashed-index hashed-index) &optional (start 0) end)
   (subseq (hashed-index-keys hashed-index) start end))
 
+(defmethod sub ((hashed-index hashed-index) &rest index-specifications)
+  (bind (((index-specification) index-specifications))
+    (make-hashed-index (sub (ix-keys hashed-index) index-specification))))
+
 ;; (defparameter *hi* (make-hashed-index #(x y)))
 ;; (ix *hi* 'y)
 ;; (ix-key *hi* 2)

@@ -20,7 +20,8 @@
     (ensure-error (ix index 'foo))
     (ensure-same (ix-keys index) keys)
     (ensure-same (ix-keys index 1 3) #((alpha 1) (beta)))
-    (ensure-same (ix-key index 2) '(beta))))
+    (ensure-same (ix-key index 2) '(beta))
+    (ensure-same (ix-keys (sub index (si 0 2))) (subseq keys 0 2))))
 
 ;; (addtest (ix-tests)
 ;;   simple-ix-tests
