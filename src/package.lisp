@@ -54,7 +54,11 @@
 
    ;; ix
    
-   ix expanded-keys ix-size make-ix ix->labels ix->specification ix*
+   ix ix-start ix-end ix-key ix-keys hashed-index make-hashed-index
+
+   ;; data-frame
+
+   make-data-frame matrix column-index
 
    ;; optimization
    
