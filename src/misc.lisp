@@ -79,3 +79,7 @@ finding a common array element type."
   (if copy?
       (copy-array array :undisplace t)
       array))
+
+(defun convex-combination (a b alpha)
+  "Convex combination (1-alpha)*a+alpha*b."
+  (+ (* (- 1 alpha) a) (* alpha b)))

@@ -8,6 +8,7 @@
    ;; misc
    
    divides? square nif anif bic xor multf as-integer common-supertype round*
+   convex-combination
 
    ;; seq-and-array
 
@@ -28,6 +29,7 @@
    ;; statistics
 
    size sum sse mean sample-var sample-sd sample-cov sample-corr
+   sample-quantiles
 
    ;; interval
    

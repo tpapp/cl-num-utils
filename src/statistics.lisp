@@ -81,3 +81,25 @@ variance methods."
   (iter
     (for index :from 0 :below (array-total-size array))
     (summing (expt (- (row-major-aref array index) mean) 2))))
+
+(defun sample-quantiles (vector quantiles &key destructive? sorted?)
+  "Empirical quantiles of VECTOR.  QUANTILES has to be a sequence, and the
+result is of the same type.  Elements are interpolated linearly.  If SORTED?,
+copying and sorting is skipped (and of course the vector is not modified).  If
+DESTRUCTIVE?, vector is sorted in place."
+  (check-type vector vector)
+  (let* ((vector (cond
+                   (sorted? vector)
+                   (destructive? (sort vector #'<=))
+                   (t (sort (copy-seq vector) #'<=))))
+         (n (length vector)))
+    (map (type-of quantiles)
+         (lambda (q)
+           (assert (<= 0 q 1) () "Quantile ~A is not in [0,1]." q)
+           (bind ((r (* q (1- n)))
+                  ((:values int frac) (floor r))
+                  (left (aref vector int)))
+             (if (zerop frac)
+                 left
+                 (convex-combination left (aref vector (1+ int)) frac))))
+         quantiles)))
