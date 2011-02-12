@@ -22,9 +22,7 @@
 
    ;; bins
 
-   bin-range bin-index bin-function bin-domain-error
-   evenly-distributed-bins pretty-bins integer-bins sturges-bins 
-   irregular-bins within? breaks
+   even-bins pretty-bins integer-bins sturges-bins within? irregular-bins
 
    ;; statistics
 
