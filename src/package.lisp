@@ -1,14 +1,14 @@
 (defpackage #:cl-num-utils
     (:nicknames #:clnu)
-  (:use #:cl #:cl-utilities #:iterate #:metabang-bind #:anaphora
-        #:tpapp-utils)
-  (:shadowing-import-from :iterate #:collecting #:collect)
+  (:use #:cl #:iterate #:metabang-bind #:anaphora #:alexandria)
+  (:shadowing-import-from #:iterate #:collecting #:collect)
+  (:shadowing-import-from #:alexandria #:mean)
   (:export
 
    ;; misc
    
    divides? square nif anif bic xor multf as-integer common-supertype round*
-   convex-combination
+   convex-combination vector-last
 
    ;; seq-and-array
 
