@@ -279,20 +279,18 @@ valid index."
                     (* counter (resolved-si-by index-specification))))
     (vector (aref index-specification counter))))
 
-(defun increment-index-counters (counters index-specification-dimensions)
+(defun increment-index-counters (counters dimensions)
   "Increment index counters, beginning from the end.  Return the index
 of the last one that was changed.  The second value is T when the
 first index has reached its limit, ie the array has been walked and
 all the counters are zero again."
   (iter
-    (for axis-number :from (1- (length index-specification-dimensions))
-         :downto 0)
+    (for axis-number :from (1- (length dimensions)) :downto 0)
     (if (= (incf (aref counters axis-number))
-           (aref index-specification-dimensions axis-number))
+           (aref dimensions axis-number))
         (setf (aref counters axis-number) 0)
         (return-from increment-index-counters axis-number)))
   (values 0 t))
-
 
 (defun map-counters (offset index-specifications coefficients counters cumsums
                      valid-end)
@@ -309,35 +307,22 @@ all the counters are zero again."
       (setf (aref cumsums axis-number) cumsum))
     cumsum))
 
-(defun map-counters* (coefficients counters cumsums valid-end)
-  "Recalculate cumsums, return flat index.  No offset, no index specification,
-counters map to themselves."
-  (let ((cumsum (if (zerop valid-end) 0 (aref cumsums (1- valid-end)))))
-    (iter
-      (for counter :in-vector counters :from valid-end
-           :with-index axis-number)
-      (for coefficient :in-vector coefficients :from valid-end)
-      (incf cumsum (* coefficient counter))
-      (setf (aref cumsums axis-number) cumsum))
-    cumsum))
-
-(defmacro with-indexing ((index-specifications dimensions next-index &key
-                         (end? (gensym "END")) 
+(defmacro with-indexing ((index-specifications dimensions index next &key
                          (effective-dimensions (gensym "EFFECTIVE-DIMENSIONS"))
                          (counters (gensym "COUNTERS")))
                          &body body)
   "Establish incrementation and index-calculation functions within BODY.  The
 sequence INDEX-SPECIFICATIONS constains the index specifications, and DIMENSIONS
-contains the dimensions of the object indexed.  NEXT-INDEX is function that
-returns (and steps to) the next index.  END? is a boolean that can be used to
-check termination.  EFFECTIVE-DIMENSIONS is a vector of fixnums that contains
-the effective dimensions traversed (may be shorted than DIMENSIONS, or have
-length zero, if dimensions are dropped).  It may be used to check for
+contains the dimensions of the object indexed.  The current index is bound to
+INDEX, which you can step with NEXT.  When NEXT returns non-nil, you have
+reached the last valid index.  EFFECTIVE-DIMENSIONS is a vector of fixnums that
+contains the effective dimensions traversed (may be shorted than DIMENSIONS, or
+have length zero, if dimensions are dropped).  It may be used to check for
 termination by calculating its product (the number of elements traversed), but
-END? is recommended.  COUNTERS gives access to counters.
+the return value of NEXT is recommended.  COUNTERS gives access to counters.
 
-The consequences are undefined if COUNTERS or END? are modified.  See source for
-comments on implementation details."
+The consequences are undefined if COUNTERS is modified.  See source for comments
+on implementation details."
 ;;; WITH-INDEXING is the user interface of an iteration construct that walks the
 ;;; (indexes of the) elements on an array.  Indexing can be row- or
 ;;; column-major, or even represent axis permutations, etc, but order of
@@ -359,10 +344,10 @@ comments on implementation details."
 ;;;    incremented with each step.  The set of indices changed is kept track of.
 ;;;    The sum of coefficients is calculated, using partial sums from previous
 ;;;    iterations to the extent it is possible.
-  (check-type next-index symbol)
-  (check-type end? symbol)
+  (check-type index symbol)
+  (check-type next symbol)
   (once-only (dimensions index-specifications)
-    (with-unique-names (coefficients offset rank cumsums valid-end)
+    (with-unique-names (coefficients offset rank cumsums valid-end map-counters%)
       `(bind ((,dimensions (as-simple-fixnum-vector ,dimensions))
               (,rank (length ,index-specifications)))
          (assert (= ,rank (length ,dimensions)) () 'sub-incompatible-dimensions)
@@ -377,29 +362,44 @@ comments on implementation details."
                                        :initial-element 0))
                 (,cumsums (make-array ,rank :element-type 'fixnum))
                 (,valid-end 0)
-                (,end? (every #'zerop ,effective-dimensions))
-                ((:flet ,next-index ())
-                 (aprog1 (map-counters ,offset ,index-specifications
-                                       ,coefficients ,counters ,cumsums 
-                                       ,valid-end)
-                   (setf (values ,valid-end ,end?)
-                         (increment-index-counters 
-                          ,counters
-                          ,effective-dimensions)))))
+                ((:flet ,map-counters% ())
+                 (map-counters ,offset ,index-specifications ,coefficients
+                               ,counters ,cumsums ,valid-end))
+                (,index (,map-counters%))
+                ((:flet ,next ())
+                 (bind (((:values valid-end end?)
+                         (increment-index-counters ,counters ,effective-dimensions)))
+                   (setf ,valid-end valid-end
+                         ,index (,map-counters%))
+                   end?)))
            ;; !!! dynamic extent & type declarations
            ;; !!! check optimizations
            ,@body)))))
 
-(defmacro with-indexing* ((dimensions next-index &key (end? (gensym "END"))
-                                      column-major?)
+(defun map-counters* (coefficients counters cumsums valid-end)
+  "Recalculate cumsums, return flat index.  No offset, no index specification,
+counters map to themselves."
+  (let ((cumsum (if (zerop valid-end) 0 (aref cumsums (1- valid-end)))))
+    (iter
+      (for counter :in-vector counters :from valid-end
+           :with-index axis-number)
+      (for coefficient :in-vector coefficients :from valid-end)
+      (incf cumsum (* coefficient counter))
+      (setf (aref cumsums axis-number) cumsum))
+    cumsum))
+
+(defmacro with-indexing* ((dimensions index next &key
+                                      column-major?
+                                      (counters (gensym "COUNTERS")))
                           &body body)
   "A simpler version of WITH-INDEXING, with all index-specifications as T.  
 COLUMN-MAJOR? uses column-major indexing."
   ;; Implementation note: for column-major traversal, we simply reverse both the
   ;; coefficients and the dimensions.
-  (check-type end? symbol)
+  (check-type index symbol)
+  (check-type next symbol)
   (once-only (dimensions column-major?)
-    (with-unique-names (coefficients rank counters cumsums valid-end)
+    (with-unique-names (coefficients rank cumsums valid-end)
       `(bind (((:flet nreverse-if-cm (vector))
                (if ,column-major?
                    (nreverse vector)
@@ -412,106 +412,103 @@ COLUMN-MAJOR? uses column-major indexing."
                                      :initial-element 0))
               (,cumsums (make-array ,rank :element-type 'fixnum))
               (,valid-end 0)
-              (,end? (every #'zerop ,dimensions))
-              ((:flet ,next-index ())
-               (aprog1 (map-counters* ,coefficients ,counters ,cumsums ,valid-end)
-                 (setf (values ,valid-end ,end?)
-                       (increment-index-counters ,counters ,dimensions)))))
+              (,index 0)
+              ((:flet ,next ())
+               (bind (((:values valid-end end?)
+                       (increment-index-counters ,counters ,dimensions)))
+                 (setf ,valid-end valid-end
+                       ,index
+                       (map-counters* ,coefficients ,counters ,cumsums 
+                                      ,valid-end))
+                 end?)))
          ,@body))))
 
 (defmethod sub ((array array) &rest index-specifications)
-  (with-indexing (index-specifications (array-dimensions array) next-index
-                               :end? end?
-                               :effective-dimensions dimensions)
+  (with-indexing (index-specifications (array-dimensions array) index
+                                       next-index
+                                       :effective-dimensions dimensions)
     (if (zerop (length dimensions))
-        (row-major-aref array (next-index))
+        (row-major-aref array index)
         (let ((result (make-array (coerce dimensions 'list)
                                   :element-type
                                   (array-element-type array))))
           (iter
             (for result-index :from 0)
             (setf (row-major-aref result result-index)
-                  (row-major-aref array (next-index)))
-            (until end?))
+                  (row-major-aref array index))
+            (until (next-index)))
           result))))
 
 (defmethod sub ((list list) &rest index-specifications)
-  (with-indexing (index-specifications (vector (length list)) next-index
-                                       :end? end?
+  (with-indexing (index-specifications (vector (length list)) index next-index
                                        :effective-dimensions dimensions)
     (if (zerop (length dimensions))
-        (nth (next-index) list)
+        (nth index list)
         ;; not very efficient, but lists are not ideal for random access
         (iter
-          (collecting (nth (next-index) list))
-          (until end?)))))
+          (collecting (nth index list))
+          (until (next-index))))))
 
 ;;; (setf sub) with array target
 
 (defmethod (setf sub) (source (target array) &rest index-specifications)
-  (with-indexing (index-specifications (array-dimensions target) next-index
-                               :end? end? 
+  (with-indexing (index-specifications (array-dimensions target) index next-index
                                :effective-dimensions dimensions)
     (iter
-      (setf (row-major-aref target (next-index)) source)
-      (until end?)))
+      (setf (row-major-aref target index) source)
+      (until (next-index))))
   source)
 
 (defmethod (setf sub) ((source array) (target array) &rest index-specifications)
-  (with-indexing (index-specifications (array-dimensions target) next-index
-                                       :end? end? 
+  (with-indexing (index-specifications (array-dimensions target) index next-index
                                        :effective-dimensions dimensions)
     (assert (equalp dimensions (coerce (array-dimensions source) 'vector))
             () 'sub-incompatible-dimensions)
     (iter
       (for source-index :from 0)
-      (setf (row-major-aref target (next-index))
+      (setf (row-major-aref target index)
             (row-major-aref source source-index))
-      (until end?)))
+      (until (next-index))))
   source)
 
 (defmethod (setf sub) ((source list) (target array) &rest index-specifications)
-  (with-indexing (index-specifications (array-dimensions target) next-index
-                                       :end? end? 
+  (with-indexing (index-specifications (array-dimensions target) index next-index
                                        :effective-dimensions dimensions)
     (assert (equalp dimensions (vector (length source)))
             () 'sub-incompatible-dimensions)
     (iter
       (for element :in source)
-      (setf (row-major-aref target (next-index)) element)
-      (until end?)))
+      (setf (row-major-aref target index) element)
+      (until (next-index))))
   source)
 
 ;;; (setf sub) with list target
 
 (defmethod (setf sub) (source (list list) &rest index-specifications)
-  (with-indexing (index-specifications (vector (length list)) next-index
-                                       :end? end?)
+  (with-indexing (index-specifications (vector (length list)) index next-index)
     (iter
-      (setf (nth (next-index) list) source)
-      (until end?))))
+      (setf (nth index list) source)
+      (until (next-index)))))
 
 (defmethod (setf sub) ((source list) (list list) &rest index-specifications)
-  (with-indexing (index-specifications (vector (length list)) next-index
-                                       :end? end?
+  (with-indexing (index-specifications (vector (length list)) index next-index
                                        :effective-dimensions dimensions)
     (assert (equalp dimensions (vector (length source))) ()
             'sub-incompatible-dimensions)
     (iter
       (for element :in source)
-      (setf (nth (next-index) list) element)
-      (until end?))))
+      (setf (nth index list) element)
+      (until (next-index)))))
 
 (defmethod (setf sub) ((source vector) (list list) &rest index-specifications)
-  (with-indexing (index-specifications (vector (length list)) next-index
-                                       :end? end?
+  (with-indexing (index-specifications (vector (length list)) index next-index
                                        :effective-dimensions dimensions)
     (assert (equalp dimensions (vector (length source))) ()
             'sub-incompatible-dimensions)
     (iter
       (for element :in-vector source)
-      (setf (nth (next-index) list) element)
-      (until end?))))
+      (setf (nth index list) element)
+      (until (next-index)))))
 
 ;;; convenience functions 
 
@@ -674,12 +671,14 @@ contain a single T, which is replaced to match sizes."))
   (let* ((size (array-total-size array))
          (dimensions (reshape-calculate-dimensions dimensions size))
          (result (make-similar-array array (coerce dimensions 'list))))
-    (with-indexing* ((array-dimensions array) array-index :column-major? t)
-      (with-indexing* (dimensions result-index :column-major? t)
+    (with-indexing* ((array-dimensions array) array-index array-next :column-major? t)
+      (with-indexing* (dimensions result-index result-next :column-major? t)
         (loop 
           repeat size
-          do (setf (row-major-aref result (result-index))
-                   (row-major-aref array (array-index))))))
+          do (progn (setf (row-major-aref result result-index)
+                          (row-major-aref array array-index))
+                    (array-next)
+                    (result-next)))))
     result))
 
 (defgeneric rows (matrix &optional vector?)
