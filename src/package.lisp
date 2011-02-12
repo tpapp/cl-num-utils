@@ -2,7 +2,7 @@
     (:nicknames #:clnu)
   (:use #:cl #:iterate #:metabang-bind #:anaphora #:alexandria)
   (:shadowing-import-from #:iterate #:collecting #:collect)
-  (:shadowing-import-from #:alexandria #:mean)
+  (:shadow #:mean)
   (:export
 
    ;; misc
@@ -23,6 +23,8 @@
    ;; bins
 
    even-bins pretty-bins integer-bins sturges-bins within? irregular-bins
+   binned-data indexes bin-limit bin-origin continuous-binned-data breaks
+   bin-using-breaks bin-using-quantiles discrete-binned-data keys bin-discrete
 
    ;; statistics
 
@@ -61,6 +63,10 @@
 
    data-frame make-data-frame data-frame-matrix data-frame-column-index
    with-filter-data-frame
+
+   ;; interaction
+   
+   interaction
 
    ;; optimization
    

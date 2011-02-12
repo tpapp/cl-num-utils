@@ -33,6 +33,7 @@
      (:file "sub")
      (:file "ix")
      (:file "data-frame")
+     (:file "interaction")
      (:file "optimization"))))
   :depends-on
   (:alexandria :iterate :metabang-bind :anaphora))

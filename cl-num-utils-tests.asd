@@ -24,7 +24,8 @@
      (:file "test-sub")
      (:file "test-statistics")
      (:file "test-ix")
-     (:file "test-data-frame"))))
+     (:file "test-data-frame")
+     (:file "test-interactions"))))
   :depends-on
   (:cl-utilities :iterate :metabang-bind :anaphora :lift
                  :cl-num-utils))
