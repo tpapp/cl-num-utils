@@ -77,7 +77,7 @@ finding a common array element type."
 (defun maybe-copy-array (array copy?)
   "If COPY?, return a copy of array, otherwise the original."
   (if copy?
-      (copy-array array))
+      (copy-array array)
       array))
 
 (defun convex-combination (a b alpha)
