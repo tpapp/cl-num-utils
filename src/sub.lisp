@@ -117,16 +117,6 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
   "A index-specification with relayed resolution."
   type data)
 
-(deftype simple-fixnum-vector ()
-  '(simple-array fixnum (*)))
-
-(defun as-simple-fixnum-vector (sequence &optional copy?)
-  "Convert SEQUENCE to a SIMPLE-FIXNUM-VECTOR.  When COPY?, make sure that the
-they don't share structure."
-  (if (and (typep sequence 'simple-fixnum-vector) copy?)
-      (copy-seq sequence)
-      (coerce sequence 'simple-fixnum-vector)))
-
 (defun cat (&rest index-specifications)
   "Concatenation of index-specifications."
   (if (cdr index-specifications)
@@ -153,24 +143,6 @@ they don't share structure."
 (defun resolve-t (dimension)
   "Resolve a T index specification."
   (resolved-si 0 dimension 1))
-
-(defun bit-vector-positions (bit-vector &optional dimension)
-  "Convert a bit vector to a simple-fixnum-vector of positions.  If DIMENSION is
-given, it will be checked."
-  (check-type bit-vector bit-vector)
-  (when dimension
-    (assert (<= (length bit-vector) dimension)))
-  (iter
-    (for position :from 0)
-    (for bit :in-vector bit-vector)
-    (when (= bit 1)
-      (collect position :result-type simple-fixnum-vector))))
-
-(defun bitmap (predicate sequence)
-  "Map sequence into a simple-bit-vector, using 1 when PREDICATE yields true, 0
-otherwise."
-  (map 'simple-bit-vector (lambda (element) (if (funcall predicate element) 1 0))
-       sequence))
 
 (defun maybe-resolved-si (start length by force-vector?)
   "When FORCE-VECTOR?, return a SIMPLE-FIXNUM-VECTOR, otherwise a RESOLVED-SI."
@@ -214,7 +186,9 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
     (etypecase index-specification
       ((eql t) (resolve-t dimension))
       (fixnum (resolve-index index-specification))
-      (bit-vector (bit-vector-positions index-specification dimension))
+      (bit-vector (progn
+                    (assert (= dimension (length index-specification)))
+                    (positions index-specification)))
       (vector (map 'simple-fixnum-vector #'resolve-index index-specification))
       (si (bind (((:slots-r/o start end by strict-direction?) index-specification)
                  (start (resolve-index start))
@@ -757,21 +731,35 @@ contain a single T, which is replaced to match sizes."))
                                         indexes))))
       result)))
 
-(defun which (predicate sequence)
-  "Return a simple-fixnum-vector for the indexes of elements that satisfy
-predicate."
-  (let (indexes
-        (count 0)
-        (index 0))
-    (map nil (lambda (element)
-               (when (funcall predicate element)
-                 (push index indexes)
-                 (incf count))
-               (incf index))
-         sequence)
-    (let ((result (make-array count :element-type 'fixnum)))
-      (loop
-        :for i :from (1- count) :downto 0
-        :for ix :in indexes
-        :do (setf (aref result i) ix))
-      result)))
+(defgeneric filter-rows (predicate object)
+  (:documentation "Filter rows of a matrix, with predicate applied to each row 
+as vectors (which should not be modified).")
+  (:method (predicate (object array))
+    (sub object (which-rows predicate object) t)))
+
+(defmacro with-filter-rows (matrix (&rest name-column-pairs) &body body)
+  "Use BODY to filter rows of MATRIX, binding NAMEs to the given COLUMNs.
+
+Example:
+ (with-filter-rows #2A((0 1)
+                       (101 80)
+                       (203 200))
+     ((a 0)
+      (b 1))
+     (and (oddp a) (< 100 b)))    ; => #2A((203 200))"
+  (with-unique-names (vector)
+    (let ((name-var-values (mapcar (lambda (name-column-pair)
+                                     (bind (((name column) name-column-pair))
+                                       (check-type name symbol)
+                                       (list name
+                                             (gensym (symbol-name name))
+                                             column)))
+                                   name-column-pairs)))
+      `(let ,(mapcar #'cdr name-var-values)
+         (filter-rows (lambda (,vector)
+                        (let ,(mapcar (lambda (name-var-value)
+                                        (bind (((name nil var) name-var-value))
+                                          `(,name (aref ,vector ,var))))
+                               name-var-values)
+                          ,@body))
+                      ,matrix)))))

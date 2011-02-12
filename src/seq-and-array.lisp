@@ -2,6 +2,16 @@
 
 (in-package #:cl-num-utils)
 
+(deftype simple-fixnum-vector ()
+  '(simple-array fixnum (*)))
+
+(defun as-simple-fixnum-vector (sequence &optional copy?)
+  "Convert SEQUENCE to a SIMPLE-FIXNUM-VECTOR.  When COPY?, make sure that the
+they don't share structure."
+  (if (and (typep sequence 'simple-fixnum-vector) copy?)
+      (copy-seq sequence)
+      (coerce sequence 'simple-fixnum-vector)))
+
 (defun vector* (element-type &rest elements)
   "Return a (SIMPLE-ARRAY ELEMENT-TYPE (*)) containing elements,
 coerced to ELEMENT-TYPE."
@@ -213,3 +223,52 @@ they detemine the dimensions of the result.  Order of the elements is preserved.
         (setf (row-major-aref result i)
               (nreverse (coerce (row-major-aref result i) sequence-type)))))
     result))
+
+(declaim (inline boolean-to-bit predicate-as-flag))
+
+(defun boolean-to-bit (boolean)
+  "Convert a boolean to a bit."
+  (if boolean 1 0))
+
+(defun predicate-as-flag (predicate)
+  "For convert a predicate to a function that returns a bit."
+  (lambda (object) (boolean-to-bit (funcall predicate object))))
+
+(defun positions (bit-vector)
+  "Return the indexes for nonzero elements in increasing order."
+  (check-type bit-vector bit-vector)
+  (iter
+    (for element :in-vector bit-vector :with-index position)
+    (unless (zerop element)
+      (collect position :result-type simple-fixnum-vector))))
+
+(defun which (predicate sequence)
+  "Map sequence into a simple-bit-vector, using 1 when PREDICATE yields true, 0
+otherwise."
+  (map 'simple-bit-vector (predicate-as-flag predicate) sequence))
+
+(defun which-positions (predicate sequence)
+  "Return an index of the positions in SEQUENCE which satisfy PREDICATE."
+  (let ((index 0)
+        positions)
+    (map nil (lambda (element)
+               (when (funcall predicate element)
+                 (push index positions))
+               (incf index))
+         sequence)
+    (coerce (nreverse positions) 'simple-fixnum-vector)))
+
+(defgeneric which-rows (predicate object)
+  (:documentation "Return a simple-bit-vector, flagging the rows of a matrix 
+using predicate."))
+
+(defmethod which-rows (predicate (matrix array))
+  (bind (((n-row nil) (array-dimensions matrix))
+         (flag (predicate-as-flag predicate))
+         (result (make-array n-row :element-type 'bit)))
+    (dotimes (row-index n-row)
+      (setf (aref result row-index)
+            (funcall flag (displace-subarray matrix row-index))))
+    result))
+
+;;; !!! compiler macros for (support (which...)), or maybe even name them

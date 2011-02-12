@@ -12,7 +12,8 @@
    ;; seq-and-array
 
    vector* iseq numseq vector-satisfies? cumsum sort-order make-similar-vector
-   make-similar-array rep concat displace-array displace-subarray group
+   make-similar-array rep concat displace-array displace-subarray group positions
+   which which-positions which-rows 
 
    ;; pretty
 
@@ -46,11 +47,11 @@
    ;; sub
 
    nrow ncol sub sub-incompatible-dimensions sub-invalid-array-index 
-   si cat rev  bit-vector-positions bitmap resolve-index-specification
-   row-major-coefficients column-major-coefficients drop-dimensions
-   index-specification-dimension with-indexing with-indexing* map-columns
-   map-rows transpose create collect-rows collect-vector reshape
-   reshape-calculate-dimensions rows columns pref which
+   si cat rev resolve-index-specification row-major-coefficients
+   column-major-coefficients drop-dimensions index-specification-dimension
+   with-indexing with-indexing* map-columns map-rows transpose create
+   collect-rows collect-vector reshape reshape-calculate-dimensions rows columns
+   pref filter-rows with-filter-rows
 
    ;; ix
    
@@ -58,7 +59,8 @@
 
    ;; data-frame
 
-   make-data-frame data-frame-matrix data-frame-column-index
+   data-frame make-data-frame data-frame-matrix data-frame-column-index
+   with-filter-data-frame
 
    ;; optimization
    

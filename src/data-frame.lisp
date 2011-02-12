@@ -60,9 +60,10 @@
   (data-frame-with-resolved-index-specification 
       (((matrix column-index) data-frame)
        ((is0 is1) index-specifications))
-    (make-data-frame% 
-     (sub matrix is0 is1)
-     (sub column-index is1))))
+    (let ((sub-matrix (sub matrix is0 is1)))
+      (if (vectorp sub-matrix)
+          sub-matrix
+          (make-data-frame% sub-matrix (sub column-index is1))))))
 
 (defmethod (setf sub) ((array array) (data-frame data-frame)
                        &rest index-specifications)
@@ -70,6 +71,29 @@
       (((matrix column-index) data-frame)
        ((is0 is1) index-specifications))
     (setf (sub matrix is0 is1) array)))
+
+(defmethod filter-rows (predicate (data-frame data-frame))
+  (bind (((:structure data-frame- matrix column-index) data-frame))
+    (make-data-frame% (filter-rows predicate matrix) column-index)))
+
+(defmacro with-filter-data-frame (data-frame (&rest name-key-pairs) &body body)
+  "Similar to WITH-FILTER-ROWS, but also allows keys.  If the latter is not
+given, the quoted name will be used instead."
+  (with-unique-names (resolve index)
+    (let ((name-column-pairs
+           (mapcar (lambda (name-key-pair)
+                     (bind (((name &optional (key `',name))
+                             (alexandria:ensure-list name-key-pair)))
+                       `(,name (,resolve ,key))))
+                   name-key-pairs)))
+      (once-only (data-frame)
+        `(let ((,index (data-frame-column-index ,data-frame)))
+           (flet ((,resolve (key)
+                    (if (typep key 'fixnum)
+                        key
+                        (ix ,index key))))
+             (with-filter-rows ,data-frame ,name-column-pairs
+               ,@body)))))))
 
 ;;; !! maybe write compiler macro for
 ;;; !! (setf (sub data-frame ..) (matrix data-frame ...))
