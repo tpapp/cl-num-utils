@@ -758,7 +758,7 @@ Example:
       `(let ,(mapcar #'cdr name-var-values)
          (filter-rows (lambda (,vector)
                         (let ,(mapcar (lambda (name-var-value)
-                                        (bind (((name nil var) name-var-value))
+                                        (bind (((name var nil) name-var-value))
                                           `(,name (aref ,vector ,var))))
                                name-var-values)
                           ,@body))
