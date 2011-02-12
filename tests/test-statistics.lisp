@@ -20,3 +20,10 @@
   test-sample-cov
  (ensure-same (sample-cov (ia 9) (ia 9)) (sample-var (ia 9)))
  (ensure-same (sample-cov #(2 3 5) #(7 11 13)) 13/3))
+
+(addtest (statistics-tests)
+  quantiles
+  (let ((sample #(0.0 1.0))
+        (quantiles (numseq 0 1 :length 11 :type 'double-float)))
+    (ensure-same (sample-quantiles sample quantiles)
+                 quantiles)))
