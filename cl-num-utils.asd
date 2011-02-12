@@ -29,10 +29,10 @@
      (:file "bins")
      (:file "statistics")
      (:file "interval")
-     (:file "histogram")
+     ;; (:file "histogram")
      (:file "sub")
      (:file "ix")
      (:file "data-frame")
      (:file "optimization"))))
   :depends-on
-  (:cl-utilities :iterate :metabang-bind :anaphora :tpapp-utils))
+  (:alexandria :iterate :metabang-bind :anaphora))
