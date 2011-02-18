@@ -50,6 +50,13 @@ of the same type)."
                '(9.0 8.5 8.0)))
 
 (addtest (seq-and-array-tests)
+  map-array
+  (let ((a (map-array #'1+ (ia 3 4) 'fixnum))
+        (*lift-equality-test* #'equalp))
+    (ensure-same a (ia* 1 3 4))
+    (ensure-same (array-element-type a) 'fixnum)))
+
+(addtest (seq-and-array-tests)
   vector-satisfies?
   (ensure (vector-satisfies? #(1 2 3) #'<))
   (ensure (not (vector-satisfies? #(1 1 2) #'<)))

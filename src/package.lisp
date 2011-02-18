@@ -12,9 +12,9 @@
 
    ;; seq-and-array
 
-   vector* iseq numseq vector-satisfies? cumsum sort-order make-similar-vector
-   make-similar-array rep concat displace-array displace-subarray group positions
-   which which-positions which-rows 
+   vector* iseq numseq vector-satisfies? map-array cumsum sort-order
+   make-similar-vector make-similar-array rep concat displace-array
+   displace-subarray group positions which which-positions which-rows 
 
    ;; pretty
 

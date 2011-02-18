@@ -79,6 +79,13 @@ implementation may upgrade the element type."
                length)))
       (t (error "Only 3 of FROM, TO, LENGTH and BY are needed.")))))
 
+(defun map-array (function array &optional (element-type t))
+  "Map array elementwise."
+  (aprog1 (make-array (array-dimensions array) :element-type element-type)
+    (dotimes (index (array-total-size array))
+      (setf (row-major-aref it index)
+            (funcall function (row-major-aref array index))))))
+
 (defun vector-satisfies? (vector predicate)
   "Return non-nil iff vector satisfies predicate elementwise.
 Example: (vector-elementwise? vector #'<) tests if vector is strictly
