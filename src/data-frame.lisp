@@ -95,5 +95,12 @@ given, the quoted name will be used instead."
              (with-filter-rows ,data-frame ,name-column-pairs
                ,@body)))))))
 
+(defmethod map-columns (function (data-frame data-frame))
+  (bind (((:structure data-frame- matrix column-index) data-frame)
+         (result (map-columns function matrix)))
+    (if (vectorp result)
+        result
+        (make-data-frame% result column-index))))
+
 ;;; !! maybe write compiler macro for
 ;;; !! (setf (sub data-frame ..) (matrix data-frame ...))
