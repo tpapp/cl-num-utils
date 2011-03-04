@@ -279,3 +279,16 @@ using predicate."))
     result))
 
 ;;; !!! compiler macros for (support (which...)), or maybe even name them
+
+(defmacro define-vector-accessors (&optional (n 10))
+  (flet ((accessor-name (i)
+           (intern (format nil "~:@(~:r~)*" i))))
+    `(progn
+       ,@(loop for i from 1 to n
+               collect 
+               `(defun ,(accessor-name i) (array)
+                  (row-major-aref array ,(1- i))))
+       (declaim (inline ,@(loop for i from 1 to n
+                                collect (accessor-name i)))))))
+
+(define-vector-accessors)
