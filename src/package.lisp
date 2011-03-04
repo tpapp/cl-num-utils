@@ -23,8 +23,9 @@
    ;; bins
 
    even-bins pretty-bins integer-bins sturges-bins within? irregular-bins
-   binned-data indexes bin-limit bin-origin continuous-binned-data breaks
-   bin-using-breaks bin-using-quantiles discrete-binned-data keys bin-discrete
+   binned-data indexes bin-limit bin-origin bin-origins continuous-binned-data
+   breaks bin-using-breaks bin-using-quantiles discrete-binned-data keys
+   bin-discrete
 
    ;; statistics
 

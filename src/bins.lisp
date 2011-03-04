@@ -106,10 +106,19 @@ accordingly, otherwise an error is signalled."
 (defgeneric bin-origin (binned-data bin-index)
   (:documentation "Return information on the particular bin (what value/range is
   mapped to this bin) if available.")
-  (:method ((binned-data binned-data) bin-index)
+  (:method ((vector vector) bin-index)
     bin-index)
   (:method ((binned-data binned-data) bin-index)
     bin-index))
+
+(defgeneric bin-origins (binned-data)
+  (:documentation "Bin origin for all bins.")
+  (:method (binned-data)
+    (iter
+      (for bin-index :below (bin-limit binned-data))
+      (collect (bin-origin binned-data bin-index) :result-type vector))))
+
+;;; continuous bins
 
 (defclass continuous-binned-data (binned-data)
   ((breaks :accessor breaks :initarg :breaks))
@@ -144,6 +153,8 @@ element is put in the last bin."
   (bin-using-breaks vector (sample-quantiles vector quantiles)
                     :skip-check? t))
 
+;;; discrete bins
+
 (defclass discrete-binned-data (binned-data)
   ((keys :accessor keys :initarg :keys)))
 
@@ -152,6 +163,9 @@ element is put in the last bin."
 
 (defmethod bin-origin ((binned-data discrete-binned-data) bin-index)
   (aref (keys binned-data) bin-index))
+
+(defmethod bin-origins ((binned-data discrete-binned-data))
+  (keys binned-data))
 
 (defun bin-discrete (vector &key (test #'eql))
   "Bin discrete data, using TEST.  The implementation uses a hash-table, and
@@ -167,7 +181,3 @@ TEST has to be acceptable to MAKE-HASH-TABLE."
       (make-instance 'discrete-binned-data
                      :indexes (map 'vector (lambda (v) (gethash v table)) vector)
                      :keys keys))))
-
-;; (bin-using-quantiles (numseq 0 10 :length 20) (numseq 0 1 :by 1/4))
-
-;; (bin-discrete #(1 1 2 4 7))
