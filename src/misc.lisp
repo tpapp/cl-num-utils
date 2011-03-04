@@ -87,3 +87,21 @@ finding a common array element type."
 (defun vector-last (vector &optional (n 1))
   "Like LAST, but for vectors."
   (aref vector (- (length vector) n)))
+
+(defun common (sequence &key (key #'identity) (test #'eql))
+  "If the elements of sequence are the same (converted with KEY, compared with
+TEST), return that, otherwise NIL."
+  (reduce (lambda (a b)
+            (if (funcall test a b)
+                a
+                (return-from common nil)))
+          sequence
+          :key key))
+
+(defun common-length (sequences)
+  "If sequences have the same length, return that, otherwise NIL."
+  (common sequences :key #'length :test #'=))
+
+(defun common-dimensions (arrays)
+  "If arrays have the same dimensions, return that, otherwise NIL."
+  (common arrays :key #'array-dimensions :test #'equalp))

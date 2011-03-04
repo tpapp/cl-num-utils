@@ -31,6 +31,7 @@
      (:file "interval")
      ;; (:file "histogram")
      (:file "sub")
+     (:file "array")
      (:file "ix")
      (:file "data-frame")
      (:file "interaction")

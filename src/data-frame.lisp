@@ -102,5 +102,8 @@ given, the quoted name will be used instead."
         result
         (make-data-frame% result column-index))))
 
+(defmethod as-array ((data-frame data-frame) &key copy?)
+  (maybe-copy-array (data-frame-matrix data-frame) copy?))
+
 ;;; !! maybe write compiler macro for
 ;;; !! (setf (sub data-frame ..) (matrix data-frame ...))

@@ -22,6 +22,7 @@
     ((:file "test-seq")
      (:file "test-bins")
      (:file "test-sub")
+     (:file "test-array")
      (:file "test-statistics")
      (:file "test-ix")
      (:file "test-data-frame")
