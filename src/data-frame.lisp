@@ -28,22 +28,11 @@
 (defmethod element-type ((data-frame data-frame))
   (array-element-type (data-frame-matrix data-frame)))
 
-(defun data-frame-resolve-index-specification (data-frame index-specification)
-  (bind (((:structure data-frame- column-index) data-frame)
-         ((:flet resolve (key))
-          (typecase key
-            ((eql t) key)
-            ((or symbol list) (ix column-index key))
-            (otherwise key))))
-    (if (vectorp index-specification)
-        (map 'vector #'resolve index-specification)
-        (resolve index-specification))))
-
 (defmacro data-frame-with-resolved-index-specification
     ((((matrix column-index) data-frame)
       ((is0 is1) index-specifications))
      &body body)
-  ""
+  "Wrapper macro for resolving column index specifications."
   (check-type matrix symbol)
   (check-type column-index symbol)
   (check-type is0 symbol)
@@ -52,7 +41,8 @@
     `(bind (((:structure data-frame- (,matrix matrix)
                          (,column-index column-index)) data-frame)
             ((,is0 ,is1) ,index-specifications)
-            (,is1 (data-frame-resolve-index-specification ,data-frame ,is1)))
+            (,is1 (resolve-ix-index-specification
+                   (data-frame-column-index ,data-frame) ,is1)))
        (declare (ignorable ,matrix ,column-index ,is0 ,is1))
        ,@body)))
 

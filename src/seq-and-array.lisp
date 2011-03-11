@@ -292,3 +292,6 @@ using predicate."))
                                 collect (accessor-name i)))))))
 
 (define-vector-accessors)
+
+(defgeneric as-array (object &key copy?)
+  (:documentation "Convert object to a Lisp array."))

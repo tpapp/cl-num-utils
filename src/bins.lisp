@@ -95,6 +95,9 @@ accordingly, otherwise an error is signalled."
 (defmethod indexes ((vector vector))
   vector)
 
+(defmethod as-array ((binned-data binned-data) &key copy?)
+  (maybe-copy-array (indexes binned-data) copy?))
+
 (defgeneric bin-limit (binned-data)
   (:documentation "Return an integer which larger than all indexes (but does not
   have to be the smallest of such values).")

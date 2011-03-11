@@ -24,6 +24,18 @@
   (:documentation "Return a vector of keys in the given range.  Result may share
   structure, don't modify.  Defaults return all keys."))
 
+(defun resolve-ix-index-specification (ix index-specification)
+  "Resolve an index specification which may use keys in IX, returning an object
+that is understood by SUB."
+  (bind (((:flet resolve (key))
+          (typecase key
+            ((eql t) key)
+            ((or symbol list) (ix ix key))
+            (otherwise key))))
+    (if (vectorp index-specification)
+        (map 'vector #'resolve index-specification)
+        (resolve index-specification))))
+
 ;; (define-condition ix-key-not-found (error)
 ;;   ((object :accessor object :initarg :object)
 ;;    (key :accessor key :initarg :key)))

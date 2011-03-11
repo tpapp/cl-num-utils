@@ -421,6 +421,7 @@ COLUMN-MAJOR? uses column-major indexing."
                        (map-counters* ,coefficients ,counters ,cumsums 
                                       ,valid-end))
                  end?)))
+         (declare (ignorable (function ,next)))
          ,@body))))
 
 (defmethod sub ((array array) &rest index-specifications)

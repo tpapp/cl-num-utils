@@ -8,7 +8,7 @@
    ;; misc
    
    divides? square nif anif bic xor multf as-integer common-supertype round*
-   convex-combination vector-last
+   convex-combination vector-last common common-length common-dimension
 
    ;; seq-and-array
 
@@ -16,7 +16,7 @@
    make-similar-vector make-similar-array rep concat displace-array
    displace-subarray group positions which which-positions which-rows 
    #:first* #:second* #:third* #:fourth* #:fifth* #:sixth* #:seventh* #:eighth*
-   #:ninth* #:tenth*
+   #:ninth* #:tenth* as-array
 
    ;; pretty
 
@@ -64,6 +64,7 @@
    ;; ix
    
    ix ix-start ix-end ix-key ix-keys hashed-index make-hashed-index
+   resolve-ix-index-specification
 
    ;; data-frame
 
