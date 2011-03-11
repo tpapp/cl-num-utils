@@ -32,10 +32,6 @@
        ,@(when zero
            `((t ,zero))))))
 
-(defun xor (a b)
-  "Exclusive or."
-  (if a (not b) b))
-
 (defun bic (a b)
   "Biconditional."
   (if a b (not b)))
