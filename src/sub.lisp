@@ -163,7 +163,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
   (when dimension
     (check-type dimension (integer 0 #.most-positive-fixnum)))
   (bind (((:flet resolve-index (index &optional end?))
-          "Resolve an atomic index.  If END?, 0 and NIL stand for the dimension."
+          ;; Resolve an atomic index.  If END?, 0 and NIL stand for the dimension.
           (check-type index (or fixnum null))
            (cond
              ((or (null index) (zerop index))
