@@ -184,6 +184,11 @@ COMMON-SUPERTYPE."
   (make-array dimensions :displaced-to array :displaced-index-offset offset
               :element-type (array-element-type array)))
 
+(defun flatten-array (array &key copy?)
+  "Return ARRAY flattened to a vector, copyied if COPY?, otherwise displaced."
+  (let ((vector (displace-array array (array-total-size array))))
+    (if copy? (copy-seq vector) vector)))
+
 (defun displace-subarray (array &rest subscripts)
   "Given a partial list of subscripts, return a displaced array that starts
   there, with all the other subscripts set to 0, dimensions inferred from the
