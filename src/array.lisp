@@ -257,3 +257,64 @@ Example:
                                name-var-values)
                           ,@body))
                       ,matrix)))))
+
+;;;; dot product
+
+(defgeneric dot (a b)
+  (:documentation "Dot product."))
+
+(defun sum-of-squares% (vector)
+  (reduce #'+ vector :key (lambda (x) (* x (conjugate x)))))
+
+(defmethod dot ((a vector) (b (eql t)))
+  (sum-of-squares% a))
+
+(defmethod dot ((a (eql t)) (b vector))
+  (sum-of-squares% b))
+
+(defmethod dot ((a vector) (b vector))
+  (check-types (a b) vector)
+  (let ((n (length a)))
+    (assert (= n (length b)))
+    (iter
+      (for a-elt :in-vector a)
+      (for b-elt :in-vector b)
+      (summing (* (conjugate a-elt) b-elt)))))
+
+;;; outer product
+
+(defun outer (a b &key (function #'*) (element-type t))
+  "Generalized outer product of A and B, using FUNCTION.  If either one is T, it is
+replaced by the other one.  ELEMENT-TYPE can be used to give the element type."
+  (cond
+    ((and (eq t a) (eq t b)) (error "A and B can't both be T!"))
+    ((eq t a) (setf a b))
+    ((eq t b) (setf b a)))
+  (check-types (a b) vector)
+  (let* ((a-length (length a))
+         (b-length (length b))
+         (result (make-array (list a-length b-length) :element-type element-type))
+         (result-index 0))
+    (iter
+      (for a-element :in-vector a)
+      (iter
+        (for b-element :in-vector b)
+        (setf (row-major-aref result result-index)
+              (funcall function a-element b-element))
+        (incf result-index)))
+    result))
+
+;;; norms
+
+;;; !! matrix norms would be nice, in that case we need to make these generic
+;;; !! functions.
+
+(defun norm1 (a)
+  (reduce #'+ a :key #'abs))
+
+(defun norm2 (a)
+  "L2 norm."
+  (sqrt (sum-of-squares% a)))
+
+(defun normsup (a)
+  (reduce #'max a :key #'abs))

@@ -65,6 +65,7 @@
 
    map-columns map-rows transpose create collect-rows collect-vector reshape
    reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
+   dot outer norm1 norm2 normsup
 
    ;; ix
    
