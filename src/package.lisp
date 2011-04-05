@@ -5,6 +5,11 @@
   (:shadow #:mean)
   (:export
 
+   ;; macros
+   
+   silent check-types define-with-multiple-bindings concatenate-as-strings
+   make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol%
+
    ;; misc
    
    divides? square nif anif bic multf as-integer common-supertype round*

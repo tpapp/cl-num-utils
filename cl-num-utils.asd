@@ -23,7 +23,8 @@
     :pathname #P"src/"
     :serial t
     :components
-    ((:file "misc")
+    ((:file "macros")
+     (:file "misc")
      (:file "seq-and-array")
      (:file "pretty")
      (:file "bins")
