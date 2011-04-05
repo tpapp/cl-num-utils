@@ -28,5 +28,4 @@
      (:file "test-data-frame")
      (:file "test-interactions"))))
   :depends-on
-  (:cl-utilities :iterate :metabang-bind :anaphora :lift
-                 :cl-num-utils))
+  (iterate metabang-bind anaphora lift alexandria cl-num-utils))
