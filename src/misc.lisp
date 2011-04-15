@@ -2,6 +2,14 @@
 
 (in-package #:cl-num-utils)
 
+(defun nonnegative? (x)
+  "Returns T if x >= 0, otherwise NIL."
+  (<= 0 x))
+
+(defun nonpositive? (x)
+  "Returns T if x <= 0, otherwise NIL."
+  (>= 0 x))
+
 (defun divides? (number divisor)
   "Test if DIVISOR divides NUMBER without remainder, and if so, return the
   quotient.  Works generally, but makes most sense for rationals."

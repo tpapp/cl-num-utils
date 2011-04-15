@@ -11,8 +11,9 @@
 
    ;; misc
    
-   divides? square nif anif bic multf as-integer common-supertype round*
-   convex-combination vector-last common common-length common-dimension
+   nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
+   common-supertype round* convex-combination vector-last common common-length
+   common-dimension
 
    ;; seq-and-array
 
