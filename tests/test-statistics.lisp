@@ -12,14 +12,14 @@
   (ensure-same (mean (ia 9)) 4))
 
 (addtest (statistics-tests)
-  test-sample-var
- (ensure-same (sample-var (ia 9)) 15/2)
- (ensure-same (sample-var (ia 20)) 35))
+  test-variance
+ (ensure-same (variance (ia 9)) 15/2)
+ (ensure-same (variance (ia 20)) 35))
 
-(addtest (statistics-tests)
-  test-sample-cov
- (ensure-same (sample-cov (ia 9) (ia 9)) (sample-var (ia 9)))
- (ensure-same (sample-cov #(2 3 5) #(7 11 13)) 13/3))
+;; (addtest (statistics-tests)
+;;   test-covariance
+;;  (ensure-same (covariance (ia 9) (ia 9)) (variance (ia 9)))
+;;  (ensure-same (covariance #(2 3 5) #(7 11 13)) 13/3))
 
 (addtest (statistics-tests)
   quantiles

@@ -1,14 +1,13 @@
-(defpackage #:cl-num-utils
-    (:nicknames #:clnu)
-  (:use #:cl #:iterate #:metabang-bind #:anaphora #:alexandria)
-  (:shadowing-import-from #:iterate #:collecting #:collect)
-  (:shadow #:mean)
+(defpackage cl-num-utils
+  (:nicknames clnu)
+  (:use cl iterate metabang-bind anaphora alexandria)
+  (:shadow mean variance)
   (:export
 
    ;; macros
    
    silent check-types define-with-multiple-bindings concatenate-as-strings
-   make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol%
+   make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol% lazy-let*
 
    ;; misc
    
@@ -17,11 +16,11 @@
 
    ;; seq-and-array
 
-   vector* iseq numseq vector-satisfies? map-array cumsum sort-order
+   vector* iseq numseq vector-satisfies? map-array sum cumulative-sum sort-order
    make-similar-vector make-similar-array rep concat displace-array flatten-array
    displace-subarray group positions which which-positions which-rows 
-   #:first* #:second* #:third* #:fourth* #:fifth* #:sixth* #:seventh* #:eighth*
-   #:ninth* #:tenth* as-array
+   first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
+   as-array
 
    ;; pretty
 
@@ -36,8 +35,7 @@
 
    ;; statistics
 
-   size sum sse mean sample-var sample-sd sample-cov sample-corr
-   sample-quantiles
+   mean variance mean-and-variance sample-quantiles
 
    ;; interval
    

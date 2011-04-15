@@ -98,14 +98,23 @@ increasing."
     (for element-p :previous element :initially (aref vector 0))
     (always (funcall predicate element-p element))))
 
-(defgeneric cumsum (object)
-  (:documentation "The cumulative sum of the elements.  Always starts
-  with the first element, and ends with the total."))
+(defgeneric sum (object)
+  (:documentation "Sum of elements in object."))
 
-(defmethod cumsum ((sequence sequence))
+(defmethod sum ((sequence sequence))
+  (reduce #'+ sequence))
+
+(defmethod sum ((array array))
+  (reduce #'+ (flatten-array array)))
+
+(defun cumulative-sum (sequence &key 
+                       (result-type (etypecase sequence
+                                      (list 'list)
+                                      (vector 'vector))))
+  "Cumulative sum of sequence.  Return a sequence of the same kind and length; last element is the total."
   (let ((sum 0))
-    (map (type-of sequence) (lambda (element)
-                              (incf sum element))
+    (map result-type (lambda (element)
+                       (incf sum element))
          sequence)))
 
 (defun sort-order (sequence predicate &key key)

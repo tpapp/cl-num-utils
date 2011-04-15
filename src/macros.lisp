@@ -19,18 +19,19 @@ place, or a list of a place and a type-string."
                          (bind (((place type-string) argument))
                            `(check-type ,place ,type ,type-string)))))))
 
-(defmacro define-with-multiple-bindings (macro)
+(defmacro define-with-multiple-bindings (macro &key 
+                                         (plural (intern (format nil "~aS" macro)))
+                                         (docstring (format nil "Multiple binding version of ~(~a~)." macro)))
   "Define a version of `macro' with multiple arguments, given as a
 list.  Application of `macro' will be nested.  The new name is the 
-plural of the old one (generated using format)."
-  (let ((plural (intern (format nil "~aS" macro))))
-    `(defmacro ,plural (bindings &body body)
-       ,(format nil "Multiple binding version of ~(~a~)." macro)
-       (if bindings
-	   `(,',macro ,(car bindings)
-		     (,',plural ,(cdr bindings)
+plural of the old one (generated using format by default)."
+  `(defmacro ,plural (bindings &body body)
+     ,docstring
+     (if bindings
+         `(,',macro ,(car bindings)
+                    (,',plural ,(cdr bindings)
 			       ,@body))
-	   `(progn ,@body)))))
+         `(progn ,@body))))
 
 (defun concatenate-as-strings (args)
   (apply #'concatenate 'string (mapcar #'string args)))
@@ -61,3 +62,18 @@ plural of the old one (generated using format)."
      ,(format nil "Build a symbol by concatenating each element of ~
                    ARGS as strings, and intern it in ~A." package)
      (intern (concatenate-as-strings args) ,package)))
+
+
+(defmacro lazy-let-block ((variable init-form) &body body)
+  "Building block for LAZY-LET*.  Not exported."
+  (with-unique-names (value flag)
+    `(let (,value ,flag)
+       (symbol-macrolet ((,variable (if ,flag 
+                                        ,value
+                                        (setf ,flag t 
+                                              ,value ,init-form))))
+         ,@body))))
+
+(define-with-multiple-bindings lazy-let-block 
+    :plural lazy-let*
+    :docstring "Similar to LET*, except that the values are evaluated on demand.")
