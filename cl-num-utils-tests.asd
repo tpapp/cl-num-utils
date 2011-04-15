@@ -19,13 +19,13 @@
     "tests"
     :pathname #P"tests/"
     :components
-    ((:file "test-seq")
-     (:file "test-bins")
-     (:file "test-sub")
-     (:file "test-array")
-     (:file "test-statistics")
-     (:file "test-ix")
-     (:file "test-data-frame")
-     (:file "test-interactions"))))
+    ((:file "seq")
+     (:file "bins")
+     (:file "sub")
+     (:file "array")
+     (:file "statistics")
+     (:file "ix")
+     (:file "data-frame")
+     (:file "interactions"))))
   :depends-on
   (iterate metabang-bind anaphora lift alexandria cl-num-utils))
