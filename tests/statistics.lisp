@@ -16,6 +16,33 @@
  (ensure-same (variance (ia 9)) 15/2)
  (ensure-same (variance (ia 20)) 35))
 
+(defun naive-weighted-variance (sample weights)
+  "Calculate weighted variance (and mean, returned as the second value) using the
+naive method."
+  (let* ((sw (sum weights))
+         (mean (/ (reduce #'+ (map 'vector #'* sample weights)) sw))
+         (variance (/ (reduce #'+ (map 'vector 
+                                       (lambda (s w) (* (expt (- s mean) 2) w))
+                                       sample weights))
+                      (1- sw))))
+    (values variance mean)))
+
+(addtest (statistics-tests)
+  test-weighted
+  (let ((s1 #(1 2 3))
+        (w1 #(4 5 6))
+        ;; (*lift-equality-test* #'approx=)
+        (s2 (random-vector 50 'double-float))
+        (w2 (random-vector 50 'double-float)))
+    (ensure-same (naive-weighted-variance s1 w1) (weighted-variance s1 w1))
+    (ensure-same (naive-weighted-variance s2 w2) (weighted-variance s2 w2)
+                 :test (lambda (x y)
+                         (< (/ (abs (- x y))
+                               (max 1 (abs x) (abs y)))
+                            1d-5)))
+    (ensure-same (second (multiple-value-list (weighted-variance s1 w1)))
+                 (weighted-mean s1 w1))))
+
 ;; (addtest (statistics-tests)
 ;;   test-covariance
 ;;  (ensure-same (covariance (ia 9) (ia 9)) (variance (ia 9)))

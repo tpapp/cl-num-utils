@@ -36,7 +36,8 @@
 
    ;; statistics
 
-   mean variance mean-and-variance sample-quantiles
+   mean variance mean-and-variance weighted-mean weighted-variance
+   weighted-mean-and-variance sample-quantiles
 
    ;; interval
    

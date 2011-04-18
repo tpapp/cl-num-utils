@@ -53,7 +53,47 @@
   (multiple-value-bind (variance mean) (variance object)
     (values (if mean mean (mean object)) variance)))
 
-;;; !!! TODO: mean and variance for matrices
+(defgeneric weighted-mean (object weights)
+  (:documentation "Return the weighted sample mean.")
+  (:method ((sequence sequence) weights)
+    ;; West (1979)
+    (let ((n 0)
+          (mean 0)
+          (sw 0))
+      (map nil (lambda (x w)
+                 (incf n)
+                 (incf sw w)
+                 (incf mean (/ (* (- x mean) w) sw)))
+           sequence weights)
+      mean)))
+
+(defgeneric weighted-variance (object weights)
+  (:documentation "Return the weighted sample mean.  If there are second and third
+  values, they are the mean and the sum of weights.")
+  (:method ((sequence sequence) weights)
+    ;; West (1979)
+    (let ((n 0)
+          (mean 0)
+          (ss 0)
+          (sw 0))
+      (map nil (lambda (x w)
+                 (incf n)
+                 (let ((previous-sw sw))
+                   (incf sw w)
+                   (let* ((q (- x mean))
+                          (r (/ (* q w) sw)))
+                     (incf ss (* previous-sw q r))
+                     (incf mean r))))
+           sequence weights)
+      (values (/ ss (1- sw)) mean sw))))
+
+(defun weighted-mean-and-variance (object weights)
+  "Return weighted mean and variance as values."
+  (multiple-value-bind (variance mean) (weighted-variance object weights)
+    (values (if mean mean (weighted-mean object weights)) variance)))
+
+
+;;; !!! todo: mean and variance for matrices
 ;;;           covariance (by stacking vectors?)
 ;;;           correlation (matrix)
 
