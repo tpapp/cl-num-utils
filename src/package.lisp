@@ -1,5 +1,5 @@
 (defpackage cl-num-utils
-  (:nicknames clnu)
+    (:nicknames clnu)
   (:use cl iterate metabang-bind anaphora alexandria)
   (:shadow mean variance)
   (:export
@@ -54,6 +54,11 @@
    histogram-counter with-histogram-counter histogram-count
    hash-key-range hash-key-range2 hash-table->array hash-table->array2
 
+   ;; elementwise
+
+   emap-dimensions emap-next emap e+ e- e* e/ eexpt eexp elog esqrt
+   ereduce emax emin
+
    ;; sub
 
    nrow ncol sub sub-incompatible-dimensions sub-invalid-array-index 
@@ -63,8 +68,8 @@
 
    ;; array
 
-   map-columns map-rows transpose create collect-rows collect-vector reshape
-   reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
+   map-columns map-rows transpose create collect-rows collect-vector as-row as-column
+   reshape reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
    dot outer norm1 norm2 normsup
 
    ;; ix

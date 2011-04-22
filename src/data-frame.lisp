@@ -6,6 +6,13 @@
   matrix
   column-index)
 
+(defmethod embedded-ix ((data-frame data-frame))
+  (data-frame-column-index data-frame))
+
+(defmacro define-column-index-function (function &optional args)
+  `(defmethod ,function ((data-frame data-frame) ,@args)
+     (,function (data-frame-column-index data-frame) ,@args)))
+
 (defgeneric make-data-frame (matrix column-index &key copy?)
   (:documentation "Create a data frame using MATRIX and COLUMN-INDEX (the latter
   may be used to create an index, if it isn't one).  COPY? forces copying of the

@@ -4,25 +4,39 @@
 
 ;;; general indexing interface
 
-(defgeneric ix (object key)
-  (:documentation "Map KEY to an integer."))
+(defgeneric embedded-ix (object)
+  (:documentation "Some objects have an \"default\" embedded index.  This method is
+  for retrieving that, which makes all functions below work."))
 
 ;; (defgeneric ix-partial (object &rest key)
 ;;   (:documentation ""))
 
+(defgeneric ix (object key)
+  (:documentation "Map KEY to an integer.")
+  (:method (ix key)
+    (ix (embedded-ix ix) key)))
+
 (defgeneric ix-start (object)
-  (:documentation "Minimum of range."))
+  (:documentation "Minimum of range.")
+  (:method (ix)
+    (ix-start (embedded-ix ix))))
 
 (defgeneric ix-end (object)
-  (:documentation "Maximum of range + 1."))
+  (:documentation "Maximum of range + 1.")
+  (:method (ix)
+    (ix-end (embedded-ix ix))))
 
 (defgeneric ix-key (object index)
   (:documentation "Return the key corresponding to INDEX.  Result may share
-  structure, don't modify."))
+  structure, don't modify.")
+  (:method (ix index)
+    (ix-key (embedded-ix ix) index)))
 
 (defgeneric ix-keys (object &optional start end)
   (:documentation "Return a vector of keys in the given range.  Result may share
-  structure, don't modify.  Defaults return all keys."))
+  structure, don't modify.  Defaults return all keys.")
+  (:method (ix &optional start end)
+    (ix-keys (embedded-ix ix) start end)))
 
 (defun resolve-ix-index-specification (ix index-specification)
   "Resolve an index specification which may use keys in IX, returning an object

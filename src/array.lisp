@@ -173,6 +173,16 @@ a sequence of length 1."
         (coerce dimensions 'list)
         dimensions)))
 
+(defun as-row (vector &key copy?)
+  "Return vector as a matrix with one row."
+  (check-type vector vector)
+  (maybe-copy-array (displace-array vector (list 1 (length vector))) copy?))
+
+(defun as-column (vector &key copy?)
+  "Return vector as a matrix with one column."
+  (check-type vector vector)
+  (maybe-copy-array (displace-array vector (list (length vector) 1)) copy?))
+
 (defgeneric reshape (object dimensions order &key copy? &allow-other-keys)
   (:documentation "Rearrange elements of an array-like object to new dimensions.
 Order is :ROW-MAJOR or :COLUMN-MAJOR, the object will be treated as if it was
