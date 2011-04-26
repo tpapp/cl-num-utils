@@ -3,6 +3,8 @@
 (in-package #:cl-num-utils)
 
 (defgeneric emap-dimensions (object)
+  (:documentation "Return dimensions of OBJECT, in a format that is understood by
+  COMMON-DIMENSIONS.")
   (:method ((array array))
     (array-dimensions array))
   (:method ((sequence sequence))
@@ -10,25 +12,8 @@
   (:method (object)
     nil))
 
-(defgeneric emap-next (object)
-  (:method ((array array))
-    (let ((index 0))
-      (lambda ()
-        (prog1 (row-major-aref array index)
-          (incf index)))))
-  (:method ((list list))
-    (lambda ()
-      (prog1 (car list)
-        (setf list (cdr list)))))
-  (:method ((sequence sequence))
-    (let ((index 0))
-      (lambda ()
-        (prog1 (nth index sequence)
-          (incf index)))))
-  (:method (object)
-    (constantly object)))
-
 (defun common-dimensions (dimensions1 dimensions2)
+  "Unify dimensions or signal an error."
   (cond
     ((and dimensions1 dimensions2)
      (assert (common-length (list dimensions1 dimensions2)) ()
@@ -45,6 +30,26 @@
              dimensions1 dimensions2))
     (dimensions1 dimensions1)
     (t dimensions2)))
+
+(defgeneric emap-next (object)
+  (:documentation "Return a closure that returns successive elements of OBJECT, in
+  row-major order.")
+  (:method ((array array))
+    (let ((index 0))
+      (lambda ()
+        (prog1 (row-major-aref array index)
+          (incf index)))))
+  (:method ((list list))
+    (lambda ()
+      (prog1 (car list)
+        (setf list (cdr list)))))
+  (:method ((sequence sequence))
+    (let ((index 0))
+      (lambda ()
+        (prog1 (nth index sequence)
+          (incf index)))))
+  (:method (object)
+    (constantly object)))
 
 (defun emap (element-type function &rest objects)
   "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has the
@@ -97,6 +102,7 @@ given ELEMENT-TYPE."
   (emap #'sqrt t arg))
 
 (defgeneric ereduce (function object &key key initial-value)
+  (:documentation "Elementwise reduce, traversing in row-major order.")
   (:method (function (array array) &key key initial-value)
     (reduce function (flatten-array array) :key key :initial-value initial-value))
   (:method (function (sequence sequence) &key key initial-value)
