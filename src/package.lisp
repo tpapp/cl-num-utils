@@ -72,6 +72,11 @@
    reshape reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
    dot outer norm1 norm2 normsup
 
+   ;; elementwise
+
+   emap-dimensions common-dimensions emap-next emap e+ e- e* e/ eexpt elog esqrt
+   ereduce emin emax
+
    ;; ix
    
    ix ix-start ix-end ix-key ix-keys hashed-index make-hashed-index

@@ -33,6 +33,7 @@
      ;; (:file "histogram")
      (:file "sub")
      (:file "array")
+     (:file "elementwise")
      (:file "ix")
      (:file "data-frame")
      (:file "interaction")
