@@ -132,15 +132,14 @@ FIXNUM (*)).  Functional and nondestructive."
     (values (map (type-of sequence) #'car paired)
             (map '(simple-array fixnum (*)) #'cdr paired))))
 
-(defun make-similar-vector (vector &optional (length (array-total-size vector)))
-  "Make a simple-array1 with the given lengh and element-type similar
-to vector."
-  (make-array length :element-type (array-element-type vector)))
-
-(defun make-similar-array (array &optional (dimensions (array-dimensions array)))
+(defun make-similar-array (array &key (dimensions (array-dimensions array)) (initial-element nil initial-element?))
   "Make a simple-array with the given dimensions and element-type
 similar to array."
-  (make-array dimensions :element-type (array-element-type array)))
+  (let ((element-type (array-element-type array)))
+    (if initial-element?
+        (make-array dimensions :element-type element-type
+                    :initial-element (coerce initial-element element-type))
+        (make-array dimensions :element-type element-type))))
 
 (defgeneric rep (sequence times &optional each)
   (:documentation "Return a new sequence, which contains SEQUENCE repeated TIMES
@@ -158,7 +157,7 @@ times, repeating each element EACH times (default is 1)."))
 
 (defmethod rep ((vector vector) times &optional (each 1))
   (let* ((n (length vector))
-         (result (make-similar-vector vector (* n times each)))
+         (result (make-similar-array vector :dimensions (* n times each)))
          (result-index 0))
     (dotimes (outer times)
       (dotimes (vector-index n)
@@ -306,6 +305,3 @@ using predicate."))
                                 collect (accessor-name i)))))))
 
 (define-vector-accessors)
-
-(defgeneric as-array (object &key copy?)
-  (:documentation "Convert object to a Lisp array."))

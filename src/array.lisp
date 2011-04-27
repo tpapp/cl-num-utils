@@ -194,7 +194,7 @@ contain a single T, which is replaced to match sizes."))
   (let* ((size (array-total-size array))
          (dimensions (reshape-calculate-dimensions dimensions size t)))
     (if copy?
-        (aprog1 (make-similar-array array dimensions)
+        (aprog1 (make-similar-array array :dimensions dimensions)
           (replace (displace-array it size) (displace-array array size)))
         (displace-array array dimensions))))
 
@@ -203,7 +203,7 @@ contain a single T, which is replaced to match sizes."))
   (declare (ignore copy?))
   (let* ((size (array-total-size array))
          (dimensions (reshape-calculate-dimensions dimensions size))
-         (result (make-similar-array array (coerce dimensions 'list))))
+         (result (make-similar-array array :dimensions (coerce dimensions 'list))))
     (with-indexing* ((array-dimensions array) array-index array-next :column-major? t)
       (with-indexing* (dimensions result-index result-next :column-major? t)
         (loop 
