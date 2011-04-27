@@ -4,7 +4,7 @@
 
 (defgeneric emap-dimensions (object)
   (:documentation "Return dimensions of OBJECT, in a format that is understood by
-  COMMON-DIMENSIONS.")
+  EMAP-COMMON-DIMENSIONS.")
   (:method ((array array))
     (array-dimensions array))
   (:method ((sequence sequence))
@@ -12,7 +12,7 @@
   (:method (object)
     nil))
 
-(defun common-dimensions (dimensions1 dimensions2)
+(defun emap-common-dimensions (dimensions1 dimensions2)
   "Unify dimensions or signal an error."
   (cond
     ((and dimensions1 dimensions2)
@@ -54,7 +54,7 @@
 (defun emap (element-type function &rest objects)
   "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has the
 given ELEMENT-TYPE."
-  (bind ((dimensions (reduce #'common-dimensions objects :key #'emap-dimensions))
+  (bind ((dimensions (reduce #'emap-common-dimensions objects :key #'emap-dimensions))
          (next-functions (mapcar #'emap-next objects))
          ((:flet next-result ())
           (apply function (mapcar #'funcall next-functions))))
