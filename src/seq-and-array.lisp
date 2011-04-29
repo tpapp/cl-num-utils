@@ -12,15 +12,23 @@ they don't share structure."
       (copy-seq sequence)
       (coerce sequence 'simple-fixnum-vector)))
 
-(defun vector* (element-type &rest elements)
-  "Return a (SIMPLE-ARRAY ELEMENT-TYPE (*)) containing elements,
+(defun array* (dimensions element-type &rest elements)
+  "Return a (SIMPLE-ARRAY ELEMENT-TYPE dimensions) containing ELEMENTS,
 coerced to ELEMENT-TYPE."
-  (let ((vector (make-array (length elements) :element-type element-type)))
-    (iter
-      (for i :from 0)
-      (for element :in elements)
-      (setf (aref vector i) (coerce element element-type)))
-    vector))
+  (aprog1 (make-array (reduce #'* (ensure-list dimensions))
+                      :element-type element-type)
+    (dotimes (index (array-total-size it))
+      (assert elements () "Not enough elements.")
+      (setf (row-major-aref it index) (coerce (car elements) element-type)
+            elements (cdr elements)))
+    (assert (not elements) () "Too many elements (~A)." elements)))
+
+(defun vector* (element-type &rest elements)
+  "Return a (SIMPLE-ARRAY ELEMENT-TYPE (*)) containing ELEMENTS,
+coerced to ELEMENT-TYPE."
+  (apply #'array* (length elements) element-type elements))
+
+;;; !! define compiler macros for VECTOR* and ARRAY*
 
 (defun iseq (n &optional (type 'fixnum))
   "Return a sequence of integers.  If type is LIST, a list is returned,

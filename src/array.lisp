@@ -2,6 +2,12 @@
 
 (in-package #:cl-num-utils)
 
+(defun array-element-type-available (type)
+  "Return a boolean indicating whether TYPE upgraded to itself for arrays.
+  Naturally, the result is implementation-dependent and constant within the same
+  implementation."
+  (type= (upgraded-array-element-type type) type))
+
 (defgeneric as-array (object &key copy?)
   (:documentation "Return OBJECT as an array.  May share structure.")
   (:method ((array array) &key copy?)

@@ -17,9 +17,9 @@
 
    ;; seq-and-array
 
-   vector* iseq numseq vector-satisfies? map-array sum cumulative-sum sort-order
-   make-similar-vector make-similar-array rep concat displace-array flatten-array
-   displace-subarray group positions which which-positions which-rows 
+   array* vector* iseq numseq vector-satisfies? map-array sum cumulative-sum
+   sort-order make-similar-vector make-similar-array rep concat displace-array
+   flatten-array displace-subarray group positions which which-positions which-rows 
    first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
    as-array
 
@@ -68,9 +68,9 @@
 
    ;; array
 
-   map-columns map-rows transpose create collect-rows collect-vector as-row as-column
-   reshape reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
-   dot outer norm1 norm2 normsup
+   array-element-type-available map-columns map-rows transpose create collect-rows
+   collect-vector as-row as-column reshape reshape-calculate-dimensions rows columns
+   pref filter-rows with-filter-rows dot outer norm1 norm2 normsup
 
    ;; elementwise
 
