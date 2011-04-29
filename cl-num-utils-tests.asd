@@ -20,7 +20,7 @@
     "tests"
     :pathname #P"tests/"
     :components
-    ((:file "seq")
+    ((:file "seq-and-array")
      (:file "bins")
      (:file "sub")
      (:file "array")

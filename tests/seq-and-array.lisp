@@ -16,13 +16,18 @@ of the same type)."
   (:equality-test #'sequence=))
 
 (addtest (seq-and-array-tests)
-  vector*
-  (let* ((element-type 'double-float)
-         (vector (vector* element-type 3 5 7)))
-    (ensure-same (type-of vector) 
-                 `(simple-array ,(upgraded-array-element-type element-type) (3))
-                 :test #'equal)
-    (ensure (every #'eql vector #(3d0 5d0 7d0)))))
+  vector*-and-array*
+  (bind ((*lift-equality-test* 
+          (lambda (array spec)
+            "Test that array conforms to spec, which is (element-type array)."
+            (and (type= (array-element-type array)
+                        (upgraded-array-element-type (first spec)))
+                 (equalp array (second spec))))))
+    (ensure-same (vector* 'fixnum 3 5 7) '(fixnum #(3 5 7)))
+    (ensure-same (array* '(2 3) 'double-float
+                         3 5 7
+                         11 13 17)
+                 '(double-float #2A((3d0 5d0 7d0) (11d0 13d0 17d0))))))
 
 (addtest (seq-and-array-tests)
   sequence=
