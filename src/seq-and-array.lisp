@@ -15,8 +15,7 @@ they don't share structure."
 (defun array* (dimensions element-type &rest elements)
   "Return a (SIMPLE-ARRAY ELEMENT-TYPE dimensions) containing ELEMENTS,
 coerced to ELEMENT-TYPE."
-  (aprog1 (make-array (reduce #'* (ensure-list dimensions))
-                      :element-type element-type)
+  (aprog1 (make-array dimensions :element-type element-type)
     (dotimes (index (array-total-size it))
       (assert elements () "Not enough elements.")
       (setf (row-major-aref it index) (coerce (car elements) element-type)
