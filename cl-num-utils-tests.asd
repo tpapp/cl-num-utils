@@ -24,6 +24,7 @@
      (:file "bins")
      (:file "sub")
      (:file "array")
+     (:file "elementwise")
      (:file "statistics")
      (:file "ix")
      (:file "data-frame")

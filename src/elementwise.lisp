@@ -64,49 +64,114 @@ given ELEMENT-TYPE."
             (setf (row-major-aref it index) (next-result))))
         (next-result))))
 
-(defmacro define-elementwise-operation (name arglist documentation form)
-  `(defun ,name ,arglist
-     ,documentation
-     ,form))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro define-emap-common-numeric-type (&optional 
+                                             (real-float-types '(single-float double-float)))
+    "Given REAL-FLOAT-TYPES in order of increasing precision (this is important),
+keep those which are available as array element types, and define a lookup table and
+a function for determining the narrowest common numeric type amoung floats, also
+allowing for complex versions of these types.  If no such float type can be found in
+the list, return T."
+    (let* ((real-float-types (remove-if (complement #'array-element-type-available)
+                                        real-float-types))
+           (n (length real-float-types))
+           (2n (* 2 n))
+           (all-float-types (concatenate 'vector real-float-types 
+                                         (mapcar (curry #'list 'complex)
+                                                 real-float-types)))
+           (matrix (make-array (list 2n 2n) :element-type 'fixnum)))
+      ;; fill matrix
+      (dotimes (a 2n)
+        (dotimes (b 2n)
+          (bind (((:values a-complex a-i) (floor a n))
+                 ((:values b-complex b-i) (floor b n)))
+            (setf (aref matrix a b) (+ (* (max a-complex b-complex) n)
+                                       (max a-i b-i))))))
+      ;; define function
+      `(defun emap-common-numeric-type (type-a type-b)
+         (bind (((:flet type-id (type))
+                 (cond
+                   ,@(loop for id :from 0
+                           for float-type :across all-float-types
+                           collect `((subtypep type ',float-type) ,id))
+                   ((subtypep type 'integer) :integer)
+                   (t nil)))
+                (a-id (type-id type-a))
+                (b-id (type-id type-b))
+                (float-types (load-time-value ,all-float-types))
+                (matrix (load-time-value ,matrix)))
+           ;; !! should be extended to handle integers, integer & float combinations
+           (if (and a-id b-id)
+               (cond
+                 ((and (eq a-id :integer) (eq b-id :integer))
+                  (load-time-value (upgraded-array-element-type 'integer)))
+                 ((eq a-id :integer) (aref float-types b-id))
+                 ((eq b-id :integer) (aref float-types a-id))
+                 (t (aref float-types (aref matrix a-id b-id))))
+               t)))))
+  (define-emap-common-numeric-type))
 
-(define-elementwise-operation e+ (object &rest objects)
-  "Elementwise +."
-  (apply #'emap t #'+ object objects))
+(defun emap-type-of (object)
+  (typecase object
+    (array (array-element-type object))
+    (otherwise (type-of object))))
 
-(define-elementwise-operation e- (object &rest objects)
-  "Elementwise -."
-  (apply #'emap t #'- object objects))
+(defun as-array-or-scalar (object)
+  "Prepare argument for emap.  Needed for the extremely crude implementation that is
+used at the moment."
+  (typecase object
+    (standard-object (as-array object))
+    (array object)
+    (otherwise object)))
 
-(define-elementwise-operation e* (object &rest objects)
-  "Elementwise *."
-  (apply #'emap t #'* object objects))
+(defmacro define-elementwise-operation (function arglist docstring elementwise-function)
+  "Define elementwise operation FUNCTION with ARGLIST (should be a flat list of
+arguments, no optional, key, rest etc)."
+  ;; !! implementation note: this is the place to optimize, not done at all at the
+  ;; !! moment, 
+  `(defgeneric ,function ,arglist
+     (:documentation ,docstring)
+     (:method ,arglist
+       (let ,(loop :for argument :in arglist :collect
+                   `(,argument (as-array-or-scalar ,argument)))
+         (emap (reduce #'emap-common-numeric-type (list ,@arglist) :key #'emap-type-of)
+               #',elementwise-function ,@arglist)))))
 
-(define-elementwise-operation e/ (object &rest objects)
-  "Elementwise /."
-  (apply #'emap t #'/ object objects))
+(defmacro define-elementwise-reducing-operation (function bivariate-function
+                                                  elementwise-function
+                                                  documentation-verb)
+  (check-type documentation-verb string)
+  (check-types (function bivariate-function elementwise-function) symbol)
+  `(progn
+     (define-elementwise-operation ,bivariate-function (a b)
+       ,(format nil "~:(~A~) A and B elementwise." documentation-verb)
+       ,elementwise-function)
+     (defun ,function (&rest objects)
+       ,(format nil "~:(~A~) objects elementwise." documentation-verb)
+       (assert objects () "Need at least one object.")
+       (reduce #',bivariate-function objects))))
 
-(define-elementwise-operation eexpt (base power)
-  "Elementwise EXPT."
-  (emap #'expt t base power))
+(define-elementwise-reducing-operation e+ e2+ + "add")
+(define-elementwise-reducing-operation e* e2* * "multiply")
+(define-elementwise-reducing-operation e- e2- - "subtract")
+(define-elementwise-reducing-operation e/ e2/ / "divide")
 
-(define-elementwise-operation eexp (arg)
-  "Elementwise EXP."
-  (emap #'exp t arg))
+(define-elementwise-operation eexpt (base power) "Elementwise EXPT." expt)
 
-(define-elementwise-operation elog (arg)
-  "Elementwise LOG."
-  (emap #'log t arg))
+(define-elementwise-operation eexp (arg) "Elementwise EXP." exp)
 
-(define-elementwise-operation esqrt (arg)
-  "Elementwise SQRT."
-  (emap #'sqrt t arg))
+(define-elementwise-operation elog (arg) "Elementwise LOG." log)
+
+(define-elementwise-operation esqrt (arg) "Elementwise SQRT." sqrt)
 
 (defgeneric ereduce (function object &key key initial-value)
   (:documentation "Elementwise reduce, traversing in row-major order.")
   (:method (function (array array) &key key initial-value)
     (reduce function (flatten-array array) :key key :initial-value initial-value))
   (:method (function (sequence sequence) &key key initial-value)
-    (reduce function sequence :key key :initial-value initial-value)))
+    (reduce function sequence :key key :initial-value initial-value))
+  (:method (function object &key key initial-value)
+    (reduce function (as-array object :copy? nil) :key key :initial-value initial-value)))
 
 (defmacro define-elementwise-reduction (name function &optional 
                                         (docstring 

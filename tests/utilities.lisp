@@ -6,3 +6,9 @@
   (aprog1 (make-array length :element-type element-type)
     (dotimes (index length)
       (setf (aref it index) (random arg)))))
+
+(defun array= (array1 array2)
+  "Test that arrays are equal and have the same element type."
+  (and (type= (array-element-type array1)
+              (array-element-type array2))
+       (equalp array1 array2)))

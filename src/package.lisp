@@ -74,8 +74,8 @@
 
    ;; elementwise
 
-   emap-dimensions common-dimensions emap-next emap e+ e- e* e/ eexpt elog esqrt
-   ereduce emin emax
+   emap-dimensions emap-common-dimensions emap-next emap emap-common-numeric-type
+   emap-type-of e+ e- e* e/ e2+ e2- e2* e2/ eexpt elog esqrt ereduce emin emax
 
    ;; ix
    
