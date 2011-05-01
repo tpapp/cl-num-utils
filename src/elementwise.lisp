@@ -164,6 +164,8 @@ arguments, no optional, key, rest etc)."
 
 (define-elementwise-operation esqrt (arg) "Elementwise SQRT." sqrt)
 
+(define-elementwise-operation econjugate (arg) "Elementwise CONJUGATE." conjugate)
+
 (defgeneric ereduce (function object &key key initial-value)
   (:documentation "Elementwise reduce, traversing in row-major order.")
   (:method (function (array array) &key key initial-value)

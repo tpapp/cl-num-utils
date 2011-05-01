@@ -56,7 +56,7 @@
 
    ;; elementwise
 
-   emap-dimensions emap-next emap e+ e- e* e/ eexpt eexp elog esqrt
+   emap-dimensions emap-next emap e+ e- e* e/ eexpt eexp elog esqrt econjugate
    ereduce emax emin
 
    ;; sub
