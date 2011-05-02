@@ -115,14 +115,17 @@ increasing."
   (reduce #'+ (flatten-array array)))
 
 (defun cumulative-sum (sequence &key 
-                       (result-type (etypecase sequence
-                                      (list 'list)
-                                      (vector 'vector))))
-  "Cumulative sum of sequence.  Return a sequence of the same kind and length; last element is the total."
+                       (result-type 
+                        (etypecase sequence
+                          (list 'list)
+                          (vector `(simple-array ,(array-element-type sequence) (*))))))
+  "Cumulative sum of sequence.  Return a sequence of the same kind and length; last
+element is the total.  The total is returned as the second value."
   (let ((sum 0))
-    (map result-type (lambda (element)
-                       (incf sum element))
-         sequence)))
+    (values (map result-type (lambda (element)
+                               (incf sum element))
+                 sequence)
+            sum)))
 
 (defun sort-order (sequence predicate &key key)
   "Sort elements of SEQUENCE using PREDICATE (and optionally, KEY).  Return the
