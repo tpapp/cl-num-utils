@@ -38,3 +38,40 @@
     ))
 
 
+(addtest (elementwise-tests)
+  stack-tests
+  (let ((a (array* '(2 3) t
+                   1 2 3
+                   4 5 6))
+        (b (array* '(2 2) t
+                   3 5
+                   7 9)))
+    (ensure-same (stack 'double-float :h a b)
+                 (array* '(2 5) 'double-float
+                         1 2 3 3 5
+                         4 5 6 7 9))
+    (ensure-same (stack t :v (transpose a) b)
+                 #2A((1 4)
+                     (2 5)
+                     (3 6)
+                     (3 5)
+                     (7 9)))
+    (ensure-same (stack 'fixnum :v a #(7 8 9) 10)
+                 (array* '(4 3) 'fixnum
+                          1 2 3
+                          4 5 6
+                          7 8 9
+                          10 10 10))
+    (ensure-same (stack t :h b #(1 2) b 9 b)
+                 (array* '(2 8) t
+                         3 5 1 3 5 9 3 5
+                         7 9 2 7 9 9 7 9))))
+
+
+
+
+
+
+
+(stack 'double-float :h 1 *a*)
+(stack 'double-float :v *a* 11)
