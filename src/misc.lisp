@@ -102,10 +102,10 @@ TEST), return that, otherwise NIL."
           sequence
           :key key))
 
-(defun common-length (sequences)
+(defun common-length (&rest sequences)
   "If sequences have the same length, return that, otherwise NIL."
   (common sequences :key #'length :test #'=))
 
-(defun common-dimensions (arrays)
+(defun common-dimensions (&rest arrays)
   "If arrays have the same dimensions, return that, otherwise NIL."
   (common arrays :key #'array-dimensions :test #'equalp))
