@@ -35,7 +35,7 @@
 (defgeneric ix-keys (object &optional start end)
   (:documentation "Return a vector of keys in the given range.  Result may share
   structure, don't modify.  Defaults return all keys.")
-  (:method (ix &optional start end)
+  (:method (ix &optional (start 0) end)
     (ix-keys (embedded-ix ix) start end)))
 
 (defun resolve-ix-index-specification (ix index-specification)
