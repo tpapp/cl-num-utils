@@ -32,21 +32,31 @@
            sequence)
       mean)))
 
+(defgeneric sum-of-squared-errors (object &optional mean)
+  (:documentation "Return the sum of (element-mean)^2 for each element in OBJECT.  If
+  MEAN is not given, it is calculated and returned as a second value, with the number
+  of elements as the third value.")
+  (:method ((sequence sequence) &optional mean)
+    (if mean
+        (reduce #'+ sequence :key (lambda (x) (expt (- x mean) 2)))
+        (let ((n 0)
+              (mean 0)
+              (ss 0))
+          ;; Welford's online algorithm
+          (map nil (lambda (x)
+                     (incf n)
+                     (let ((previous-mean mean))
+                       (incf mean (/ (- x mean) n))
+                       (incf ss (* (- x mean) (- x previous-mean)))))
+               sequence)
+          (values ss mean n)))))
+
 (defgeneric variance (object)
   (:documentation "Return the (sample or theoretial) variance.  If a second value is
   returned, that is the mean.")
   (:method ((sequence sequence))
-    ;; Welford's online algorithm
-    (let ((n 0)
-          (mean 0)
-          (ss 0))
-      (map nil (lambda (x)
-                 (incf n)
-                 (let ((previous-mean mean))
-                   (incf mean (/ (- x mean) n))
-                   (incf ss (* (- x mean) (- x previous-mean)))))
-           sequence)
-      (values (/ ss (1- n)) mean))))
+    (bind (((:values ss nil n) (sum-of-squared-errors sequence)))
+      (/ ss (1- n)))))
 
 (defun mean-and-variance (object)
   "Return mean and variance as values."
