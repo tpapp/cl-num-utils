@@ -13,7 +13,7 @@
    
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* convex-combination vector-last common common-length
-   common-dimension
+   common-dimension == *==-tolerance*
 
    ;; seq-and-array
 
@@ -36,8 +36,8 @@
 
    ;; statistics
 
-   mean variance mean-and-variance weighted-mean weighted-variance
-   weighted-mean-and-variance sample-quantiles
+   mean sum-of-squared-errors variance mean-and-variance weighted-mean
+   weighted-variance weighted-mean-and-variance sample-quantiles
 
    ;; interval
    
@@ -61,10 +61,10 @@
 
    ;; sub
 
-   nrow ncol sub sub-incompatible-dimensions sub-invalid-array-index 
-   si cat rev resolve-index-specification row-major-coefficients
-   column-major-coefficients drop-dimensions index-specification-dimension
-   with-indexing with-indexing* 
+   nrow ncol matrix matrix? square? sub sub-incompatible-dimensions
+   sub-invalid-array-index si cat rev resolve-index-specification 
+   row-major-coefficients column-major-coefficients drop-dimensions
+   index-specification-dimension with-indexing with-indexing* 
 
    ;; array
 

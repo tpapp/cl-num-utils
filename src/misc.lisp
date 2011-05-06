@@ -109,3 +109,22 @@ TEST), return that, otherwise NIL."
 (defun common-dimensions (&rest arrays)
   "If arrays have the same dimensions, return that, otherwise NIL."
   (common arrays :key #'array-dimensions :test #'equalp))
+
+(defparameter *==-tolerance* 1d-5)
+
+(defgeneric == (a b &optional tolerance)
+  (:documentation "Compare A and B for approximate equality at the level of
+elements (using TOLERANCE), checking that they have the same class, same dimensions,
+etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
+  (:method (a b &optional (tolerance *==-tolerance*))
+    (declare (ignore tolerance))
+    nil)
+  (:method ((a number) (b number) &optional (tolerance *==-tolerance*))
+    (<= (abs (- a b)) (* (max 1 (abs a) (abs b)) tolerance)))
+  (:method ((a array) (b array) &optional (tolerance *==-tolerance*))
+    (and (equal (array-dimensions a) (array-dimensions b))
+         (iter
+           (for index :below (array-total-size a))
+           (always (== (row-major-aref a index)
+                       (row-major-aref b index)
+                       tolerance))))))
