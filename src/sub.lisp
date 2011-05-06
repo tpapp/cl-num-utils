@@ -50,6 +50,18 @@
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
     (array-dimension array 1)))
 
+(deftype matrix (&optional (m '*) (n '*))
+  `(array * (,m ,n)))
+
+(deftype matrix? (object)
+  "Return a boolean indicating whether OBJECT is a MATRIX."
+  (typep object 'matrix))
+
+(defun square? (matrix)
+  "Test if a matrix (in the generalized sense, ie an object that has nrow and ncol)
+is square."
+  (= (nrow matrix) (ncol matrix)))
+
 ;;; SUB -- extracting subsets of objects with rectilinear indexing
 
 (defgeneric sub (object &rest index-specifications)
