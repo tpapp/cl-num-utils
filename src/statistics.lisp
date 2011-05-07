@@ -51,6 +51,13 @@
                sequence)
           (values ss mean n)))))
 
+(defgeneric sum-of-squares (object)
+  (:documentation "Return the sum of squared elements.")
+  (:method ((vector vector))
+    (reduce #'+ vector :key (rcurry #'expt 2)))
+  (:method ((array array))
+    (sum-of-squares% (flatten-array array))))
+
 (defgeneric variance (object)
   (:documentation "Return the (sample or theoretial) variance.  If a second value is
   returned, that is the mean.")

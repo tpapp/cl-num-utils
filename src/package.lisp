@@ -36,8 +36,8 @@
 
    ;; statistics
 
-   mean sum-of-squared-errors variance mean-and-variance weighted-mean
-   weighted-variance weighted-mean-and-variance sample-quantiles
+   mean sum-of-squared-errors sum-of-squares variance mean-and-variance
+   weighted-mean weighted-variance weighted-mean-and-variance sample-quantiles
 
    ;; interval
    
