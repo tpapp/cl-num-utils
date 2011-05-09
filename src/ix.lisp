@@ -11,6 +11,12 @@
 ;; (defgeneric ix-partial (object &rest key)
 ;;   (:documentation ""))
 
+(defun ix-key? (object)
+  "Return a boolean that indicates whether OBJECT is recognized as a valid KEY.  The
+primary purpose is to determine if OBJECT can be used directly (eg as an
+index-specification in SUB) or needs to be resolved."
+  (typep object '(or symbol list string)))
+
 (defgeneric ix (object key)
   (:documentation "Map KEY to an integer.")
   (:method (ix key)
@@ -42,13 +48,14 @@
   "Resolve an index specification which may use keys in IX, returning an object
 that is understood by SUB."
   (bind (((:flet resolve (key))
-          (typecase key
-            ((eql t) key)
-            ((or symbol list) (ix ix key))
-            (otherwise key))))
-    (if (vectorp index-specification)
-        (map 'vector #'resolve index-specification)
-        (resolve index-specification))))
+          (cond
+            ((eq key t) t)
+            ((ix-key? key) (ix ix key))
+            (t key))))
+    (cond
+      ((ix-key? index-specification) (resolve index-specification))
+      ((vectorp index-specification) (map 'vector #'resolve index-specification))
+      (t (resolve index-specification)))))
 
 ;; (define-condition ix-key-not-found (error)
 ;;   ((object :accessor object :initarg :object)
