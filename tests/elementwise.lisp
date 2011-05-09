@@ -66,12 +66,3 @@
                  (array* '(2 8) t
                          3 5 1 3 5 9 3 5
                          7 9 2 7 9 9 7 9))))
-
-
-
-
-
-
-
-(stack 'double-float :h 1 *a*)
-(stack 'double-float :v *a* 11)
