@@ -13,7 +13,7 @@
    
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* convex-combination vector-last common common-length
-   common-dimension == *==-tolerance*
+   common-dimension == *==-tolerance* format-number
 
    ;; seq-and-array
 
@@ -29,10 +29,8 @@
 
    ;; bins
 
-   even-bins pretty-bins integer-bins sturges-bins within? irregular-bins
-   binned-data indexes bin-limit bin-origin bin-origins continuous-binned-data
-   breaks bin-using-breaks bin-using-quantiles discrete-binned-data keys
-   bin-discrete
+   bin-index bin-locations bin-location even-bins even-bins-p pretty-bins sturges-bins integer-bins integer-bins-p add-observation total-frequency frequency relative-frequency
+   subscript-limits subscript-limit subscript-rank hashed-frequencies *frequency-print-width* histogram-locations hashed-histogram make-hashed-histogram histogram-from-sequence histogram-from-matrix
 
    ;; statistics
 
@@ -80,7 +78,7 @@
 
    ;; ix
    
-   ix ix-start ix-end ix-key ix-keys hashed-index make-hashed-index
+   ix-key? ix ix-start ix-end ix-key ix-keys hashed-index make-hashed-index
    resolve-ix-index-specification
 
    ;; data-frame
