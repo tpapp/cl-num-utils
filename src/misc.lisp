@@ -128,3 +128,9 @@ etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
            (always (== (row-major-aref a index)
                        (row-major-aref b index)
                        tolerance))))))
+
+(defun format-number (number &key (int-digits 3) (exp-digits 1))
+  "Format number nicely."
+  (if (integerp number)
+      (format nil "~d" number)
+      (format nil "~,v,v,,g" int-digits exp-digits number)))
