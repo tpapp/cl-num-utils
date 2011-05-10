@@ -28,6 +28,7 @@
      (:file "statistics")
      (:file "ix")
      (:file "data-frame")
-     (:file "interactions"))))
+     ;; (:file "interactions")
+     )))
   :depends-on
   (iterate metabang-bind anaphora lift alexandria cl-num-utils))
