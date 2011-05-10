@@ -4,6 +4,10 @@ This library will replace cl-numlib.  It is still experimental, and
 the interface changes constantly.  Nevertheless, parts that are
 available are usually tested and usable.  Comments are welcome.
 
+** Reporting bugs
+
+   Bugs are tracked on Github, please [[https://github.com/tpapp/cl-num-utils/issues][open an issue]] if you find one.
+
 ** Tasks
 *** TODO finish histogram code, write tests
 *** TODO decide whether SUB should pass on keys for DATA-FRAME
