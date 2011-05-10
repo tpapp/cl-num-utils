@@ -82,3 +82,16 @@
                      ((a 0))
                    (evenp a))
                  expected-result)))
+
+(addtest (array-tests)
+  shrink-rows-test
+  (ensure-same (shrink-rows (array* '(2 5) t
+                                    nil 1 2 nil nil
+                                    nil nil 3 4 nil))
+               (values (array* '(2 3) t
+                               1 2 nil
+                               nil 3 4)
+                       1 4))
+  (ensure-same (shrink-rows (make-array '(2 3) :initial-element 'foo)
+                            :predicate (lambda (x) (not (eq x 'foo))))
+               nil))

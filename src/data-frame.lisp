@@ -102,5 +102,10 @@ given, the quoted name will be used instead."
 (defmethod as-array ((data-frame data-frame) &key copy?)
   (maybe-copy-array (data-frame-matrix data-frame) copy?))
 
+(defmethod shrink-rows ((data-frame data-frame) &key (predicate #'identity))
+  (bind (((:structure data-frame- matrix column-index) data-frame)
+         ((:values matrix start end) (shrink-rows matrix :predicate predicate)))
+    (make-data-frame% matrix (sub column-index (si start end)))))
+
 ;;; !! maybe write compiler macro for
 ;;; !! (setf (sub data-frame ..) (matrix data-frame ...))

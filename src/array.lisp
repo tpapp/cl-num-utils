@@ -288,6 +288,27 @@ Example:
                           ,@body))
                       ,matrix)))))
 
+(defgeneric shrink-rows (matrix &key predicate)
+  (:documentation "Drop columns where no element satisfies predicate from both sides
+  of MATRIX.  The default predicate is the identity function, ie columns of all NILs
+  are dropped.  If no element satisfies PREDICATE, NIL is returned, otherwise the
+  shrunk array, the start index and the end index are returned as values.")
+  (:method ((matrix array) &key (predicate #'identity))
+    (bind (((nrow nil) (array-dimensions matrix)))
+      (iterate
+        (for row-index :below nrow)
+        (let* ((row (displace-subarray matrix row-index))
+               (row-left (position-if predicate row)))
+          (when row-left
+            (let ((row-right (position-if predicate row :from-end t)))
+              (minimize row-left :into left)
+              (maximize row-right :into right))))
+        (finally
+         (return 
+           (when (and left right)
+             (let ((end (1+ right)))
+               (values (sub matrix t (si left end)) left end)))))))))
+
 ;;;; dot product
 
 (defgeneric dot (a b)

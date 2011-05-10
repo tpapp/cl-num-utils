@@ -43,3 +43,13 @@
     (ensure-same (with-filter-data-frame df (a (c '(c foo)))
                    (and (evenp a) (= c 8)))
                  expected-result)))
+
+(addtest (data-frame-tests)
+  (let* ((matrix (array* '(2 3) t
+                         1 2 3
+                         5 6 7))
+         (shrunk-matrix (array* '(2 1) t 2 6))
+         (data-frame (make-data-frame matrix '(a b c)))
+         (shrunk-data-frame (shrink-rows data-frame :predicate #'evenp)))
+    (ensure-same (as-array shrunk-data-frame) shrunk-matrix)
+    (ensure-same (ix-keys shrunk-data-frame) (sub (ix-keys data-frame) (si 1 2)))))

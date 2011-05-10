@@ -68,7 +68,8 @@
 
    array-element-type-available map-columns map-rows transpose transpose* create
    collect-rows collect-vector as-row as-column reshape reshape-calculate-dimensions
-   rows columns pref filter-rows with-filter-rows dot outer norm1 norm2 normsup
+   rows columns pref filter-rows with-filter-rows shrink-rows dot outer norm1 norm2
+   normsup
 
    ;; elementwise
 
