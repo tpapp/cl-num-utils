@@ -10,59 +10,121 @@
 ;; (defgeneric size (object)
 ;;   (:documentation "Number of elements in object."))
 
-;; (defgeneric sum (object)
-;;   (:documentation "Sum of elements in object."))
-
-;; (defgeneric sse (object &optional mean)
-;;   (:documentation "Sum of squared errors.  When MEAN is given, it is
-;;   used directly."))
 
 ;;; mean and variance, can be specialized, but have sensible default
 ;;; definitions
 
+;;; Accumulators
+;;; 
+
+(defun apply-accumulator (accumulator &rest sequences)
+  "Accumulators are are closures that can be used to calculate summary statistics
+online.  When called with no arguments, they return the desired summary statistics as
+values.  This is a convenience function for that purpose."
+  (apply #'map nil accumulator sequences)
+  (funcall accumulator))
+
+(defun mean-accumulator ()
+  "Accumulator for online calculation of the mean of observations.  Called with
+X (a real number) for accumulating the mean.  When called with no
+arguments, return (values MEAN N), MEAN is double-float, N is fixnum."
+  ;; uses Welford's online algorithm
+  (declare (optimize speed (safety 0)))
+  (let ((n 0)
+        (mean 0d0))
+    (declare (fixnum n)
+             (double-float mean))
+    (lambda (&optional x)
+      (if x
+          (progn
+            (incf n)
+            (incf mean (/ (- (coerce x 'double-float) mean) n)))
+          (values mean n)))))
+
+(defun weighted-mean-accumulator ()
+  "Accumulator for online calculation of the weighted mean of observations.  Called
+with X (a real number) for accumulating the mean.  When called with no
+arguments, return (values MEAN SW N), MEAN is double-float, SW (sum of weights) is
+double-float, N is fixnum."
+  ;; West (1979)
+  (let ((n 0)
+        (mean 0)
+        (sw 0))
+    (lambda (&optional x w)
+      (if x
+          (let ((x (coerce x 'double-float))
+                (w (coerce w 'double-float)))
+            (incf n)
+            (incf sw w)
+            (incf mean (/ (* (- x mean) w) sw)))
+          (values mean sw n)))))
+
+(defun sse-accumulator ()
+  "Accumulator for sum of squared errors.  When called without arguments,
+return (values SSE MEAN N)."
+  ;; Welford's online algorithm
+  (declare (optimize speed))
+  (let ((n 0)
+        (mean 0d0)
+        (sse 0d0))
+    (declare (fixnum n)
+             (double-float mean sse))
+    (lambda (&optional x)
+      (if x
+          (let ((previous-mean mean)
+                (x (coerce x 'double-float)))
+            (incf n)
+            (incf mean (/ (- x mean) n))
+            (incf sse (* (- x mean) (- x previous-mean))))
+          (values sse mean n)))))
+
+(defun weighted-sse-accumulator ()
+  "Accumulator for weighted sum of squared errors.  When called without arguments,
+return (values SSE SW MEAN N), where SW is the sum of weights."
+  ;; West (1979)
+  (declare (optimize speed))
+  (let ((n 0)
+        (mean 0d0)
+        (sse 0d0)
+        (sw 0d0))
+    (declare (fixnum n)
+             (double-float mean sse sw))
+    (lambda (&optional x w)
+      (if x
+          (let ((previous-sw sw)
+                (x (coerce x 'double-float))
+                (w (coerce w 'double-float)))
+            (incf n)
+            (incf sw w)
+            (let* ((q (- x mean))
+                   (r (/ (* q w) sw)))
+              (incf sse (* previous-sw q r))
+              (incf mean r)))
+          (values sse sw mean n)))))
+
 (defgeneric mean (object)
   (:documentation "Return the mean.")
   (:method ((sequence sequence))
-    ;; Welford's online algorithm
-    (let ((n 0)
-          (mean 0))
-      (map nil (lambda (x)
-                 (incf n)
-                 (incf mean (/ (- x mean) n)))
-           sequence)
-      mean)))
+    (apply-accumulator (mean-accumulator) sequence)))
 
-(defgeneric sum-of-squared-errors (object &optional mean)
+(defgeneric sse (object &optional mean)
   (:documentation "Return the sum of (element-mean)^2 for each element in OBJECT.  If
   MEAN is not given, it is calculated and returned as a second value, with the number
   of elements as the third value.")
   (:method ((sequence sequence) &optional mean)
     (if mean
-        (reduce #'+ sequence :key (lambda (x) (expt (- x mean) 2)))
-        (let ((n 0)
-              (mean 0)
-              (ss 0))
-          ;; Welford's online algorithm
-          (map nil (lambda (x)
-                     (incf n)
-                     (let ((previous-mean mean))
-                       (incf mean (/ (- x mean) n))
-                       (incf ss (* (- x mean) (- x previous-mean)))))
-               sequence)
-          (values ss mean n)))))
-
-(defgeneric sum-of-squares (object)
-  (:documentation "Return the sum of squared elements.")
-  (:method ((vector vector))
-    (reduce #'+ vector :key (rcurry #'expt 2)))
-  (:method ((array array))
-    (sum-of-squares% (flatten-array array))))
+        (let ((mean (coerce mean 'double-float)))
+          (reduce #'+ sequence 
+                  :key (lambda (x) (expt (- (coerce x 'double-float) mean) 2))))
+        (apply-accumulator (sse-accumulator) sequence)))
+  (:method ((array array) &optional mean)
+    (call-next-method (flatten-array array) mean)))
 
 (defgeneric variance (object)
   (:documentation "Return the (sample or theoretial) variance.  If a second value is
   returned, that is the mean.")
-  (:method ((sequence sequence))
-    (bind (((:values ss nil n) (sum-of-squared-errors sequence)))
+  (:method (object)
+    (bind (((:values ss nil n) (sse object)))
       (/ ss (1- n)))))
 
 (defun mean-and-variance (object)
@@ -72,43 +134,21 @@
 
 (defgeneric weighted-mean (object weights)
   (:documentation "Return the weighted sample mean.")
-  (:method ((sequence sequence) weights)
-    ;; West (1979)
-    (let ((n 0)
-          (mean 0)
-          (sw 0))
-      (map nil (lambda (x w)
-                 (incf n)
-                 (incf sw w)
-                 (incf mean (/ (* (- x mean) w) sw)))
-           sequence weights)
-      mean)))
+  (:method ((sequence sequence) (weights sequence))
+    (apply-accumulator (weighted-mean-accumulator) sequence weights)))
 
 (defgeneric weighted-variance (object weights)
   (:documentation "Return the weighted sample mean.  If there are second and third
   values, they are the mean and the sum of weights.")
-  (:method ((sequence sequence) weights)
-    ;; West (1979)
-    (let ((n 0)
-          (mean 0)
-          (ss 0)
-          (sw 0))
-      (map nil (lambda (x w)
-                 (incf n)
-                 (let ((previous-sw sw))
-                   (incf sw w)
-                   (let* ((q (- x mean))
-                          (r (/ (* q w) sw)))
-                     (incf ss (* previous-sw q r))
-                     (incf mean r))))
-           sequence weights)
-      (values (/ ss (1- sw)) mean sw))))
+  (:method ((sequence sequence) (weights sequence))
+    (bind (((:values sse sw mean)
+            (apply-accumulator (weighted-sse-accumulator) sequence weights)))
+      (values (/ sse (1- sw)) mean))))
 
 (defun weighted-mean-and-variance (object weights)
   "Return weighted mean and variance as values."
   (multiple-value-bind (variance mean) (weighted-variance object weights)
     (values (if mean mean (weighted-mean object weights)) variance)))
-
 
 ;;; !!! todo: mean and variance for matrices
 ;;;           covariance (by stacking vectors?)

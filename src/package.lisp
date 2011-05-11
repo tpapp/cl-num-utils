@@ -13,7 +13,7 @@
    
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* convex-combination vector-last common common-length
-   common-dimension == *==-tolerance* format-number
+   common-dimension == *==-tolerance* format-number ignore-error
 
    ;; seq-and-array
 
@@ -34,7 +34,8 @@
 
    ;; statistics
 
-   mean sum-of-squared-errors sum-of-squares variance mean-and-variance
+   mean-accumulator weighted-mean-accumulator sse-accumulator
+   weighted-sse-accumulator mean sse variance mean-and-variance
    weighted-mean weighted-variance weighted-mean-and-variance sample-quantiles
 
    ;; interval

@@ -25,7 +25,7 @@ naive method."
                                        (lambda (s w) (* (expt (- s mean) 2) w))
                                        sample weights))
                       (1- sw))))
-    (values variance mean)))
+    (values (float variance 1d0) (float mean 1d0))))
 
 (addtest (statistics-tests)
   test-weighted

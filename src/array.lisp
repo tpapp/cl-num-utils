@@ -314,14 +314,14 @@ Example:
 (defgeneric dot (a b)
   (:documentation "Dot product."))
 
-(defun sum-of-squares% (vector)
+(defun sum-of-conjugate-squares (vector)
   (reduce #'+ vector :key (lambda (x) (* x (conjugate x)))))
 
 (defmethod dot ((a vector) (b (eql t)))
-  (sum-of-squares% a))
+  (sum-of-conjugate-squares a))
 
 (defmethod dot ((a (eql t)) (b vector))
-  (sum-of-squares% b))
+  (sum-of-conjugate-squares b))
 
 (defmethod dot ((a vector) (b vector))
   (check-types (a b) vector)
@@ -365,7 +365,7 @@ replaced by the other one.  ELEMENT-TYPE can be used to give the element type."
 
 (defun norm2 (a)
   "L2 norm."
-  (sqrt (sum-of-squares% a)))
+  (sqrt (sum-of-conjugate-squares a)))
 
 (defun normsup (a)
   (reduce #'max a :key #'abs))
