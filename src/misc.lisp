@@ -134,3 +134,10 @@ etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
   (if (integerp number)
       (format nil "~d" number)
       (format nil "~,v,v,,g" int-digits exp-digits number)))
+
+(defun ignore-error (function &key replacement-value)
+  "Wrap function to return REPLACEMENT-VALUE in case of errors."
+  ;; ?? maybe write a compiler macro
+  (lambda (&rest arguments)
+    (handler-case (apply function arguments)
+      (error () replacement-value))))
