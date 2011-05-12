@@ -214,7 +214,7 @@ of arguments, no optional, key, rest etc)."
 ;;; stack
 ;;; 
 ;;; In order to extend STACK for other objects, define methods for
-;;; STACK-DIMENSIONS and STACK-INTO.
+;;; STACK-DIMENSIONS (or EMAP-DIMENSIONS) and STACK-INTO.
 
 (defgeneric stack-dimensions (h? object)
   (:documentation "Return (cons unified-dimension other-dimension), where
