@@ -287,8 +287,9 @@ arguments, no optional, key, rest etc)."
         (incf result-index offset)))))
 
 (defun stack (element-type direction &rest objects)
-  "Stack OBJECTS into an array with given ELEMENT-TYPE.  Directions can
-be :VERTICAL (:V) or :HORIZONTAL (:H)."
+  "Stack OBJECTS into an array with given ELEMENT-TYPE (NIL means figuring out
+the type automatically).  Directions can be :VERTICAL (:V)
+or :HORIZONTAL (:H)."
   (declare (optimize debug))
   (let* ((h? (ecase direction
                ((:h :horizontal) t)
