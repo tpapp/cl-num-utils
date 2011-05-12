@@ -65,4 +65,10 @@
     (ensure-same (stack t :h b #(1 2) b 9 b)
                  (array* '(2 8) t
                          3 5 1 3 5 9 3 5
-                         7 9 2 7 9 9 7 9))))
+                         7 9 2 7 9 9 7 9))
+    (ensure-same (stack nil :h
+                        (vector* 'double-float 1 2)
+                        (vector* 'double-float 3 4))
+                 (array* '(2 2) 'double-float
+                         1 3
+                         2 4))))
