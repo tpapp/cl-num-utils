@@ -125,6 +125,10 @@ the list, return T."
                t)))))
   (define-emap-common-numeric-type))
 
+(defun emap-common-type (&rest objects)
+  "Return the type that all OBJECTS can be coerced to."
+  (reduce #'emap-common-numeric-type objects :key #'emap-type-of))
+
 (defun emap-type-of (object)
   (typecase object
     (array (array-element-type object))
@@ -148,8 +152,8 @@ arguments, no optional, key, rest etc)."
      (:method ,arglist
        (let ,(loop :for argument :in arglist :collect
                    `(,argument (as-array-or-scalar ,argument)))
-         (emap (reduce #'emap-common-numeric-type (list ,@arglist) :key #'emap-type-of)
-               #',elementwise-function ,@arglist)))))
+         (emap (emap-common-type ,@arglist) #',elementwise-function
+               ,@arglist)))))
 
 (defmacro define-elementwise-reducing-operation (function bivariate-function
                                                   elementwise-function
@@ -290,8 +294,10 @@ be :VERTICAL (:V) or :HORIZONTAL (:H)."
                ((:h :horizontal) t)
                ((:v :vertical) nil)))
          (dimensions (mapcar (curry #'stack-dimensions h?) objects))
-         (unified-dimension (reduce #'emap-unify-dimension dimensions :key #'car))
+         (unified-dimension (reduce #'emap-unify-dimension dimensions
+                                    :key #'car))
          (other-dimension (reduce #'+ dimensions :key #'cdr))
+         (element-type (aif element-type it (apply #'emap-common-type objects)))
          (result (make-array (if h?
                                  (list unified-dimension other-dimension)
                                  (list other-dimension unified-dimension))
