@@ -3,8 +3,8 @@
 (in-package #:cl-num-utils)
 
 (defgeneric emap-dimensions (object)
-  (:documentation "Return dimensions of OBJECT, in a format that is understood by
-  EMAP-UNIFY-DIMENSIONS (see its documentation).")
+  (:documentation "Return dimensions of OBJECT, in a format that is understood
+  by EMAP-UNIFY-DIMENSIONS (see its documentation).")
   (:method ((array array))
     (array-dimensions array))
   (:method ((sequence sequence))
@@ -46,8 +46,8 @@ specifications:
     (t dimensions2)))
 
 (defgeneric emap-next (object)
-  (:documentation "Return a closure that returns successive elements of OBJECT, in
-  row-major order.")
+  (:documentation "Return a closure that returns successive elements of
+  OBJECT, in row-major order.")
   (:method ((array array))
     (let ((index 0))
       (lambda ()
@@ -66,9 +66,10 @@ specifications:
     (constantly object)))
 
 (defun emap (element-type function &rest objects)
-  "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has the
-given ELEMENT-TYPE."
-  (bind ((dimensions (reduce #'emap-unify-dimensions objects :key #'emap-dimensions))
+  "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has
+the given ELEMENT-TYPE."
+  (bind ((dimensions (reduce #'emap-unify-dimensions objects
+                             :key #'emap-dimensions))
          (next-functions (mapcar #'emap-next objects))
          ((:flet next-result ())
           (apply function (mapcar #'funcall next-functions))))
@@ -79,15 +80,16 @@ given ELEMENT-TYPE."
         (next-result))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defmacro define-emap-common-numeric-type (&optional 
-                                             (real-float-types '(single-float double-float)))
-    "Given REAL-FLOAT-TYPES in order of increasing precision (this is important),
-keep those which are available as array element types, and define a lookup table and
-a function for determining the narrowest common numeric type amoung floats, also
-allowing for complex versions of these types.  If no such float type can be found in
-the list, return T."
-    (let* ((real-float-types (remove-if (complement #'array-element-type-available)
-                                        real-float-types))
+  (defmacro define-emap-common-numeric-type 
+      (&optional (real-float-types '(single-float double-float)))
+    "Given REAL-FLOAT-TYPES in order of increasing precision (this is
+important), keep those which are available as array element types, and define
+a lookup table and a function for determining the narrowest common numeric
+type amoung floats, also allowing for complex versions of these types.  If no
+such float type can be found in the list, return T."
+    (let* ((real-float-types 
+            (remove-if (complement #'array-element-type-available)
+                       real-float-types))
            (n (length real-float-types))
            (2n (* 2 n))
            (all-float-types (concatenate 'vector real-float-types 
@@ -114,7 +116,8 @@ the list, return T."
                 (b-id (type-id type-b))
                 (float-types (load-time-value ,all-float-types))
                 (matrix (load-time-value ,matrix)))
-           ;; !! should be extended to handle integers, integer & float combinations
+           ;; !! should be extended to handle integers, integer & float
+           ;; combinations
            (if (and a-id b-id)
                (cond
                  ((and (eq a-id :integer) (eq b-id :integer))
@@ -135,18 +138,19 @@ the list, return T."
     (otherwise (type-of object))))
 
 (defun as-array-or-scalar (object)
-  "Prepare argument for emap.  Needed for the extremely crude implementation that is
-used at the moment."
+  "Prepare argument for emap.  Needed for the extremely crude implementation
+that is used at the moment."
   (typecase object
     (standard-object (as-array object))
     (array object)
     (otherwise object)))
 
-(defmacro define-elementwise-operation (function arglist docstring elementwise-function)
-  "Define elementwise operation FUNCTION with ARGLIST (should be a flat list of
-arguments, no optional, key, rest etc)."
-  ;; !! implementation note: this is the place to optimize, not done at all at the
-  ;; !! moment, 
+(defmacro define-elementwise-operation
+    (function arglist docstring elementwise-function)
+  "Define elementwise operation FUNCTION with ARGLIST (should be a flat list
+of arguments, no optional, key, rest etc)."
+  ;; !! implementation note: this is the place to optimize, not done at all at
+  ;; !! the moment,
   `(defgeneric ,function ,arglist
      (:documentation ,docstring)
      (:method ,arglist
@@ -182,20 +186,23 @@ arguments, no optional, key, rest etc)."
 
 (define-elementwise-operation esqrt (arg) "Elementwise SQRT." sqrt)
 
-(define-elementwise-operation econjugate (arg) "Elementwise CONJUGATE." conjugate)
+(define-elementwise-operation econjugate (arg)
+  "Elementwise CONJUGATE." conjugate)
 
 (defgeneric ereduce (function object &key key initial-value)
   (:documentation "Elementwise reduce, traversing in row-major order.")
   (:method (function (array array) &key key initial-value)
-    (reduce function (flatten-array array) :key key :initial-value initial-value))
+    (reduce function (flatten-array array) :key key
+            :initial-value initial-value))
   (:method (function (sequence sequence) &key key initial-value)
     (reduce function sequence :key key :initial-value initial-value))
   (:method (function object &key key initial-value)
-    (reduce function (as-array object :copy? nil) :key key :initial-value initial-value)))
+    (reduce function (as-array object :copy? nil) :key key
+            :initial-value initial-value)))
 
-(defmacro define-elementwise-reduction (name function &optional 
-                                        (docstring 
-                                         (format nil "Elementwise ~A." function)))
+(defmacro define-elementwise-reduction 
+    (name function 
+     &optional (docstring (format nil "Elementwise ~A." function)))
   `(defun ,name (object)
      ,docstring
      (ereduce #',function object)))
@@ -206,12 +213,13 @@ arguments, no optional, key, rest etc)."
 
 ;;; stack
 ;;; 
-;;; In order to extend STACK for other objects, define methods for STACK-DIMENSIONS
-;;; and STACK-INTO.
+;;; In order to extend STACK for other objects, define methods for
+;;; STACK-DIMENSIONS and STACK-INTO.
 
 (defgeneric stack-dimensions (h? object)
   (:documentation "Return (cons unified-dimension other-dimension), where
-  unified-dimension can be NIL.  If H?, stacking is horizontal, otherwise vertical.")
+  unified-dimension can be NIL.  If H?, stacking is horizontal, otherwise
+  vertical.")
   (:method (h? (vector vector))
     (declare (ignore h?))
     (cons (length vector) 1))
@@ -225,7 +233,8 @@ arguments, no optional, key, rest etc)."
 
 (defgeneric stack-into (object h? result cumulative-index)
   (:documentation "Used by STACK to copy OBJECT to RESULT, starting at
-  CUMULATIVE-INDEX (if H?, this is the column index, otherwise the vector index).")
+  CUMULATIVE-INDEX (if H?, this is the column index, otherwise the vector
+  index).")
   ;; atom
   (:method (atom (h? (eql nil)) result cumulative-index)
     ;; stack vertically
@@ -239,7 +248,8 @@ arguments, no optional, key, rest etc)."
     (bind ((atom (coerce atom (array-element-type result)))
            ((nrow ncol) (array-dimensions result)))
       (loop
-        for result-index from (array-row-major-index result 0 cumulative-index) 
+        for result-index :from
+                         (array-row-major-index result 0 cumulative-index) 
           by ncol
         repeat nrow
         do (setf (row-major-aref result result-index) atom))))
@@ -257,17 +267,20 @@ arguments, no optional, key, rest etc)."
     (bind ((element-type (array-element-type result))
            ((nrow ncol) (array-dimensions result)))
       (loop
-        for result-index from (array-row-major-index result 0 cumulative-index) 
+        for result-index :from
+                         (array-row-major-index result 0 cumulative-index) 
           by ncol
         for v across vector
         repeat nrow
-        do (setf (row-major-aref result result-index) (coerce v element-type)))))
+        do (setf (row-major-aref result result-index)
+                 (coerce v element-type)))))
   ;; array
   (:method ((array array) (h? (eql nil)) result cumulative-index)
     ;; stack vertically
     (let* ((element-type (array-element-type result)))
       (loop
-        for result-index :from (array-row-major-index result cumulative-index 0)
+        for result-index :from
+                         (array-row-major-index result  cumulative-index 0)
         for array-index :from 0 :below (array-total-size array)
         do (setf (row-major-aref result result-index)
                  (coerce (row-major-aref array array-index) element-type)))))
@@ -298,7 +311,9 @@ or :HORIZONTAL (:H)."
          (unified-dimension (reduce #'emap-unify-dimension dimensions
                                     :key #'car))
          (other-dimension (reduce #'+ dimensions :key #'cdr))
-         (element-type (aif element-type it (apply #'emap-common-type objects)))
+         (element-type (aif element-type 
+                            it 
+                            (apply #'emap-common-type objects)))
          (result (make-array (if h?
                                  (list unified-dimension other-dimension)
                                  (list other-dimension unified-dimension))
