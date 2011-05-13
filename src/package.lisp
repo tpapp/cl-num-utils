@@ -21,7 +21,7 @@
    cumulative-sum sort-order make-similar-vector make-similar-array rep concat
    displace-array flatten-array displace-subarray group positions which
    which-positions which-rows first* second* third* fourth* fifth* sixth*
-   seventh* eighth* ninth* tenth* as-array
+   seventh* eighth* ninth* tenth* as-array row-major-loop
 
    ;; pretty
 
@@ -72,7 +72,7 @@
 
    ;; array
 
-   row-major-loop array-element-type-available map-columns map-rows transpose
+   array-element-type-available map-columns map-rows transpose
    transpose* create collect-rows collect-vector as-row as-column reshape
    reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
    shrink-rows dot outer norm1 norm2
