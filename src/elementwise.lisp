@@ -199,16 +199,14 @@ of arguments, no optional, key, rest etc)."
 (define-elementwise-operation econjugate (arg)
   "Elementwise CONJUGATE." conjugate)
 
-(defgeneric ereduce (function object &key key initial-value)
+(defgeneric ereduce (function object &key key)
   (:documentation "Elementwise reduce, traversing in row-major order.")
-  (:method (function (array array) &key key initial-value)
-    (reduce function (flatten-array array) :key key
-            :initial-value initial-value))
-  (:method (function (sequence sequence) &key key initial-value)
-    (reduce function sequence :key key :initial-value initial-value))
-  (:method (function object &key key initial-value)
-    (reduce function (as-array object :copy? nil) :key key
-            :initial-value initial-value)))
+  (:method (function (array array) &key key)
+    (reduce function (flatten-array array) :key key))
+  (:method (function (sequence sequence) &key key)
+    (reduce function sequence :key key))
+  (:method (function object &key key)
+    (reduce function (as-array object :copy? nil) :key key)))
 
 (defmacro define-elementwise-reduction 
     (name function 
