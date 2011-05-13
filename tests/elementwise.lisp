@@ -35,8 +35,10 @@
     (ensure-same (e+ a 2 b) (e+ (e+ a b) 2))
     (ensure-error (e/ a 0))             ; division by 0
     (ensure-error (e+ a (array* '(1 1) 2))) ; dimension incompatibility
-    ))
-
+    (ensure-same (e+ a) (e+ a 0))
+    (ensure-same (e* a) (e* a 1))
+    (ensure-same (e- a) (e- 0 a))
+    (ensure-same (e/ a) (e/ 1 a))))
 
 (addtest (elementwise-tests)
   stack-tests

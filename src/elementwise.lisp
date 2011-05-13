@@ -159,9 +159,9 @@ of arguments, no optional, key, rest etc)."
          (emap (emap-common-type ,@arglist) #',elementwise-function
                ,@arglist)))))
 
-(defmacro define-elementwise-reducing-operation (function bivariate-function
-                                                  elementwise-function
-                                                  documentation-verb)
+(defmacro define-elementwise-reducing-operation
+    (function bivariate-function elementwise-function documentation-verb 
+     &key univariate-function)
   (check-type documentation-verb string)
   (check-types (function bivariate-function elementwise-function) symbol)
   `(progn
@@ -171,12 +171,22 @@ of arguments, no optional, key, rest etc)."
      (defun ,function (&rest objects)
        ,(format nil "~:(~A~) objects elementwise." documentation-verb)
        (assert objects () "Need at least one object.")
-       (reduce #',bivariate-function objects))))
+       (if (cdr objects)
+           (reduce #',bivariate-function objects)
+           ,(if univariate-function
+                `(,univariate-function (car objects))
+                '(car objects))))))
 
 (define-elementwise-reducing-operation e+ e2+ + "add")
 (define-elementwise-reducing-operation e* e2* * "multiply")
-(define-elementwise-reducing-operation e- e2- - "subtract")
-(define-elementwise-reducing-operation e/ e2/ / "divide")
+
+(define-elementwise-operation e1- (object) "Negate object elementwise." -)
+(define-elementwise-reducing-operation e- e2- - "subtract"
+  :univariate-function e1-)
+
+(define-elementwise-operation e1/ (x) "Invert object elementwise." /)
+(define-elementwise-reducing-operation e/ e2/ / "divide"
+  :univariate-function e1/)
 
 (define-elementwise-operation eexpt (base power) "Elementwise EXPT." expt)
 
