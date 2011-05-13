@@ -17,15 +17,25 @@
  (ensure-same (variance (ia 20)) 35))
 
 (defun naive-weighted-variance (sample weights)
-  "Calculate weighted variance (and mean, returned as the second value) using the
-naive method."
+  "Calculate weighted variance (and mean, returned as the second value) using
+the naive method."
   (let* ((sw (sum weights))
          (mean (/ (reduce #'+ (map 'vector #'* sample weights)) sw))
-         (variance (/ (reduce #'+ (map 'vector 
-                                       (lambda (s w) (* (expt (- s mean) 2) w))
-                                       sample weights))
+         (variance (/ (reduce #'+
+                              (map 'vector 
+                                   (lambda (s w) (* (expt (- s mean) 2) w))
+                                   sample weights))
                       (1- sw))))
     (values (float variance 1d0) (float mean 1d0))))
+
+(addtest (statistics-tests)
+  test-matrix-mean
+  (let ((m (array* '(3 4) 'double-float
+                   1 2 3 4
+                   2 4 6 8
+                   3 6 9 12)))
+    (ensure-same (matrix-mean m)
+                 (vector* 'double-float 2 4 6 8))))
 
 (addtest (statistics-tests)
   test-weighted

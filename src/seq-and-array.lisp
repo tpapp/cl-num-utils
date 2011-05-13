@@ -27,6 +27,13 @@ coerced to ELEMENT-TYPE."
 coerced to ELEMENT-TYPE."
   (apply #'array* (length elements) element-type elements))
 
+(defun filled-array (dimensions function &optional (element-type t))
+  "Create array with given DIMENSIONS and ELEMENT-TYPE, then fill by calling
+FUNCTION, traversing in row-major order."
+  (aprog1 (make-array dimensions :element-type element-type)
+    (dotimes (index (array-total-size it))
+      (setf (row-major-aref it index) (funcall function)))))
+
 ;;; !! define compiler macros for VECTOR* and ARRAY*
 
 (defun iseq (n &optional (type 'fixnum))

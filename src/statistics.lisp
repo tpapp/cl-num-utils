@@ -150,6 +150,18 @@ return (values SSE SW MEAN N), where SW is the sum of weights."
   (multiple-value-bind (variance mean) (weighted-variance object weights)
     (values (if mean mean (weighted-mean object weights)) variance)))
 
+;;; statistics
+
+(defgeneric matrix-mean (matrix)
+  (:documentation "Mean of a matrix, columnwise.")
+  (:method ((matrix array))
+    (bind ((dimensions (array-dimensions matrix))
+           (means (filled-array (second dimensions) #'mean-accumulator)))
+      (row-major-loop (dimensions row-major-index row-index col-index)
+        (funcall (aref means col-index)
+                 (row-major-aref matrix row-major-index)))
+      (map 'vector #'funcall means))))
+
 ;;; !!! todo: mean and variance for matrices
 ;;;           covariance (by stacking vectors?)
 ;;;           correlation (matrix)

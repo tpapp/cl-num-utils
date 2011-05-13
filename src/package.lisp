@@ -17,11 +17,11 @@
 
    ;; seq-and-array
 
-   array* vector* iseq numseq vector-satisfies? map-array sum cumulative-sum
-   sort-order make-similar-vector make-similar-array rep concat displace-array
-   flatten-array displace-subarray group positions which which-positions which-rows 
-   first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
-   as-array
+   array* vector* filled-array iseq numseq vector-satisfies? map-array sum
+   cumulative-sum sort-order make-similar-vector make-similar-array rep concat
+   displace-array flatten-array displace-subarray group positions which
+   which-positions which-rows first* second* third* fourth* fifth* sixth*
+   seventh* eighth* ninth* tenth* as-array
 
    ;; pretty
 
@@ -29,14 +29,19 @@
 
    ;; bins
 
-   bin-index bin-locations bin-location even-bins even-bins-p pretty-bins sturges-bins integer-bins integer-bins-p add-observation total-frequency frequency relative-frequency
-   subscript-limits subscript-limit subscript-rank hashed-frequencies *frequency-print-width* histogram-locations hashed-histogram make-hashed-histogram histogram-from-sequence histogram-from-matrix
+   bin-index bin-locations bin-location even-bins even-bins-p pretty-bins
+   sturges-bins integer-bins integer-bins-p add-observation total-frequency
+   frequency relative-frequency subscript-limits subscript-limit
+   subscript-rank hashed-frequencies *frequency-print-width*
+   histogram-locations hashed-histogram make-hashed-histogram
+   histogram-from-sequence histogram-from-matrix
 
    ;; statistics
 
    mean-accumulator weighted-mean-accumulator sse-accumulator
    weighted-sse-accumulator mean sse variance mean-and-variance
-   weighted-mean weighted-variance weighted-mean-and-variance sample-quantiles
+   weighted-mean weighted-variance weighted-mean-and-variance matrix-mean
+   sample-quantiles
 
    ;; interval
    
@@ -67,16 +72,17 @@
 
    ;; array
 
-   array-element-type-available map-columns map-rows transpose transpose* create
-   collect-rows collect-vector as-row as-column reshape reshape-calculate-dimensions
-   rows columns pref filter-rows with-filter-rows shrink-rows dot outer norm1 norm2
+   row-major-loop array-element-type-available map-columns map-rows transpose
+   transpose* create collect-rows collect-vector as-row as-column reshape
+   reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
+   shrink-rows dot outer norm1 norm2
    normsup
 
    ;; elementwise
 
-   emap-dimensions emap-next emap emap-common-numeric-type emap-type-of e+ e- e* e/
-   e2+ e2- e2* e2/ eexpt elog esqrt ereduce emin emax stack-dimensions stack-into
-   stack
+   emap-dimensions emap-next emap emap-common-numeric-type emap-type-of e+ e-
+   e* e/ e2+ e2- e2* e2/ eexpt elog esqrt ereduce emin emax stack-dimensions
+   stack-into stack
 
    ;; ix
    
