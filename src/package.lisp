@@ -38,10 +38,10 @@
 
    ;; statistics
 
-   mean-accumulator weighted-mean-accumulator sse-accumulator
-   weighted-sse-accumulator mean sse variance mean-and-variance
-   weighted-mean weighted-variance weighted-mean-and-variance matrix-mean
-   sample-quantiles
+   scalar-mean-accumulator mean-accumulator weighted-mean-accumulator
+   sse-accumulator weighted-sse-accumulator mean sse variance
+   mean-and-variance weighted-mean weighted-variance
+   weighted-mean-and-variance matrix-mean sample-quantiles
 
    ;; interval
    

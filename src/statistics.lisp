@@ -24,22 +24,40 @@ values.  This is a convenience function for that purpose."
   (apply #'map nil accumulator sequences)
   (funcall accumulator))
 
-(defun mean-accumulator ()
+(defun scalar-mean-accumulator ()
   "Accumulator for online calculation of the mean of observations.  Called with
 X (a real number) for accumulating the mean.  When called with no
 arguments, return (values MEAN N), MEAN is double-float, N is fixnum."
   ;; uses Welford's online algorithm
-  (declare (optimize speed (safety 0)))
+  (declare (optimize speed))
   (let ((n 0)
         (mean 0d0))
-    (declare (fixnum n)
-             (double-float mean))
+    (declare (fixnum n))
     (lambda (&optional x)
       (if x
           (progn
             (incf n)
-            (incf mean (/ (- (coerce x 'double-float) mean) n)))
+            (incf mean (/ (- x mean) n)))
           (values mean n)))))
+
+(defgeneric mean-accumulator (first-element sequence)
+  (:documentation "Return an accumulator for the mean, dispatching on the
+  first element in the sequence (and optionally the sequence).")
+  (:method ((first-element number) container)
+    (scalar-mean-accumulator))
+  (:method ((array array) container)
+    (let* ((dimensions (array-dimensions array))
+           (accumulators (filled-array dimensions #'scalar-mean-accumulator))
+           (size (array-total-size array)))
+      (lambda (&optional x)
+        (if x
+            (let ((x (as-array x)))
+              (assert (and (arrayp x)
+                           (equal (array-dimensions x) dimensions)))
+              (dotimes (index size)
+                (funcall (row-major-aref accumulators index)
+                         (row-major-aref x index))))
+            (emap t #'funcall accumulators))))))
 
 (defun weighted-mean-accumulator ()
   "Accumulator for online calculation of the weighted mean of observations.  Called
@@ -52,8 +70,7 @@ double-float, N is fixnum."
         (sw 0))
     (lambda (&optional x w)
       (if x
-          (let ((x (coerce x 'double-float))
-                (w (coerce w 'double-float)))
+          (progn
             (incf n)
             (incf sw w)
             (incf mean (/ (* (- x mean) w) sw)))
@@ -67,12 +84,10 @@ return (values SSE MEAN N)."
   (let ((n 0)
         (mean 0d0)
         (sse 0d0))
-    (declare (fixnum n)
-             (double-float mean sse))
+    (declare (fixnum n))
     (lambda (&optional x)
       (if x
-          (let ((previous-mean mean)
-                (x (coerce x 'double-float)))
+          (let ((previous-mean mean))
             (incf n)
             (incf mean (/ (- x mean) n))
             (incf sse (* (- x mean) (- x previous-mean))))
@@ -87,13 +102,10 @@ return (values SSE SW MEAN N), where SW is the sum of weights."
         (mean 0d0)
         (sse 0d0)
         (sw 0d0))
-    (declare (fixnum n)
-             (double-float mean sse sw))
+    (declare (fixnum n))
     (lambda (&optional x w)
       (if x
-          (let ((previous-sw sw)
-                (x (coerce x 'double-float))
-                (w (coerce w 'double-float)))
+          (let ((previous-sw sw))
             (incf n)
             (incf sw w)
             (let* ((q (- x mean))
@@ -105,7 +117,8 @@ return (values SSE SW MEAN N), where SW is the sum of weights."
 (defgeneric mean (object)
   (:documentation "Return the mean.")
   (:method ((sequence sequence))
-    (apply-accumulator (mean-accumulator) sequence)))
+    (apply-accumulator (mean-accumulator (elt sequence 0) sequence)
+                       sequence)))
 
 (defgeneric sse (object &optional mean)
   (:documentation "Return the sum of (element-mean)^2 for each element in OBJECT.  If
@@ -113,9 +126,8 @@ return (values SSE SW MEAN N), where SW is the sum of weights."
   of elements as the third value.")
   (:method ((sequence sequence) &optional mean)
     (if mean
-        (let ((mean (coerce mean 'double-float)))
-          (reduce #'+ sequence 
-                  :key (lambda (x) (expt (- (coerce x 'double-float) mean) 2))))
+        (reduce #'+ sequence 
+                :key (lambda (x) (expt (- x mean) 2)))
         (apply-accumulator (sse-accumulator) sequence)))
   (:method ((array array) &optional mean)
     (call-next-method (flatten-array array) mean)))
@@ -156,7 +168,7 @@ return (values SSE SW MEAN N), where SW is the sum of weights."
   (:documentation "Mean of a matrix, columnwise.")
   (:method ((matrix array))
     (bind ((dimensions (array-dimensions matrix))
-           (means (filled-array (second dimensions) #'mean-accumulator)))
+           (means (filled-array (second dimensions) #'scalar-mean-accumulator)))
       (row-major-loop (dimensions row-major-index row-index col-index)
         (funcall (aref means col-index)
                  (row-major-aref matrix row-major-index)))

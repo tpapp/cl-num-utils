@@ -16,6 +16,21 @@
  (ensure-same (variance (ia 9)) 15/2)
  (ensure-same (variance (ia 20)) 35))
 
+(addtest (statistics-tests)
+  test-array-mean
+  (bind ((v1 (ia 6))
+         (v2 (e+ v1 3))
+         (v3 (e+ v1 5))
+         (vectors (vector v1 v2 v3))
+         (vm (e+ v1 8/3))
+         ((:flet v->a (v))
+          (displace-array v '(2 3)))
+         (am (v->a vm))
+         (*lift-equality-test* #'==))
+    (ensure-same (mean vectors) vm)
+    (ensure-same (mean (map 'vector #'v->a vectors)) am)
+    (ensure-error (mean (list v1 am)))))
+
 (defun naive-weighted-variance (sample weights)
   "Calculate weighted variance (and mean, returned as the second value) using
 the naive method."
@@ -26,7 +41,7 @@ the naive method."
                                    (lambda (s w) (* (expt (- s mean) 2) w))
                                    sample weights))
                       (1- sw))))
-    (values (float variance 1d0) (float mean 1d0))))
+    (values variance mean)))
 
 (addtest (statistics-tests)
   test-matrix-mean
@@ -41,7 +56,7 @@ the naive method."
   test-weighted
   (let ((s1 #(1 2 3))
         (w1 #(4 5 6))
-        ;; (*lift-equality-test* #'approx=)
+        (*lift-equality-test* #'==)
         (s2 (random-vector 50 'double-float))
         (w2 (random-vector 50 'double-float)))
     (ensure-same (naive-weighted-variance s1 w1) (weighted-variance s1 w1))
