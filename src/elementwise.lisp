@@ -2,6 +2,10 @@
 
 (in-package #:cl-num-utils)
 
+;;; Interface to EMAP (EMAP-DIMENSIONS also used by STACK, see default method
+;;; for STACK-DIMENSIONS).  These functions need to be defined for objects
+;;; that emap should understand.
+
 (defgeneric emap-dimensions (object)
   (:documentation "Return dimensions of OBJECT, in a format that is understood
   by EMAP-UNIFY-DIMENSIONS (see its documentation).")
@@ -12,12 +16,71 @@
   (:method (object)
     nil))
 
-(defun unify-dimensions% (dimensions1 dimensions2 unify)
-  (cond
-    ((and dimensions1 dimensions2)
-     (funcall unify dimensions1 dimensions2))
-    (dimensions1 dimensions1)
-    (t dimensions2)))
+(defgeneric emap-next (object dimensions)
+  (:documentation "Return a closure that returns successive elements of
+OBJECT, in row-major order.  DIMENSIONS is used for objects with adaptive
+dimensions, it is by construction compatible with the dimensions returned by
+EMAP-DIMENSIONS and does not need to be checked, only provided for filling in
+adaptive dimensions.")
+  (:method ((array array) dimensions)
+    (let ((index 0))
+      (lambda ()
+        (prog1 (row-major-aref array index)
+          (incf index)))))
+  (:method ((list list) dimensions)
+    (lambda ()
+      (prog1 (car list)
+        (setf list (cdr list)))))
+  (:method ((sequence sequence) dimensions)
+    (let ((index 0))
+      (lambda ()
+        (prog1 (nth index sequence)
+          (incf index)))))
+  (:method (object dimensions)
+    (constantly object)))
+
+;;; objects with adaptive dimensions
+
+(defgeneric recycle (object specifications)
+  (:documentation "Recycle OBJECT according to SPECIFICATIONS.  For use in
+  calling EMAP and STACK."))
+
+(defun vector-direction-horizontal? (direction)
+  "Interpret vector direction, allowing for synonyms."
+  (ecase direction
+    ((:h :horizontal) t)
+    ((:v :vertical) nil)))
+
+(defstruct recycled-vector
+  "A vector is repeated vertically or horizontally."
+  (horizontal? nil :type symbol :read-only t)
+  (vector nil :type vector :read-only t))
+
+(defmethod recycle ((vector vector) specifications)
+  (make-recycled-vector
+   :horizontal? (vector-direction-horizontal? specifications)
+   :vector vector))
+
+(defmethod emap-dimensions ((rv recycled-vector))
+  (bind (((:structure recycled-vector- vector horizontal?) rv)
+         (length (length vector)))
+    (if horizontal?
+        (list nil length)
+        (list length nil))))
+
+(defmethod emap-next ((rv recycled-vector) dimensions)
+  (bind (((:structure recycled-vector- vector horizontal?) rv)
+         ((nil ncol) dimensions)
+         (index 0))
+    (if horizontal?
+        (lambda ()
+          (prog1 (aref vector (mod index ncol))
+            (incf index)))
+         (lambda ()
+          (prog1 (aref vector (floor index ncol))
+            (incf index))))))
+
+;;; emap
 
 (defun emap-unify-dimension (d1 d2)
   "Unify two dimensions, which can be positive integers or NIL."
@@ -45,32 +108,14 @@ specifications:
     (dimensions1 dimensions1)
     (t dimensions2)))
 
-(defgeneric emap-next (object)
-  (:documentation "Return a closure that returns successive elements of
-  OBJECT, in row-major order.")
-  (:method ((array array))
-    (let ((index 0))
-      (lambda ()
-        (prog1 (row-major-aref array index)
-          (incf index)))))
-  (:method ((list list))
-    (lambda ()
-      (prog1 (car list)
-        (setf list (cdr list)))))
-  (:method ((sequence sequence))
-    (let ((index 0))
-      (lambda ()
-        (prog1 (nth index sequence)
-          (incf index)))))
-  (:method (object)
-    (constantly object)))
+
 
 (defun emap (element-type function &rest objects)
   "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has
 the given ELEMENT-TYPE."
   (bind ((dimensions (reduce #'emap-unify-dimensions objects
                              :key #'emap-dimensions))
-         (next-functions (mapcar #'emap-next objects))
+         (next-functions (mapcar (rcurry #'emap-next dimensions) objects))
          ((:flet next-result ())
           (apply function (mapcar #'funcall next-functions))))
     (if dimensions
@@ -137,14 +182,6 @@ such float type can be found in the list, return T."
     (array (array-element-type object))
     (otherwise (type-of object))))
 
-(defun as-array-or-scalar (object)
-  "Prepare argument for emap.  Needed for the extremely crude implementation
-that is used at the moment."
-  (typecase object
-    (standard-object (as-array object))
-    (array object)
-    (otherwise object)))
-
 (defmacro define-elementwise-operation
     (function arglist docstring elementwise-function)
   "Define elementwise operation FUNCTION with ARGLIST (should be a flat list
@@ -154,10 +191,8 @@ of arguments, no optional, key, rest etc)."
   `(defgeneric ,function ,arglist
      (:documentation ,docstring)
      (:method ,arglist
-       (let ,(loop :for argument :in arglist :collect
-                   `(,argument (as-array-or-scalar ,argument)))
-         (emap (emap-common-type ,@arglist) #',elementwise-function
-               ,@arglist)))))
+       (emap (emap-common-type ,@arglist) #',elementwise-function
+             ,@arglist))))
 
 (defmacro define-elementwise-reducing-operation
     (function bivariate-function elementwise-function documentation-verb 
@@ -312,9 +347,7 @@ of arguments, no optional, key, rest etc)."
 the type automatically).  Directions can be :VERTICAL (:V)
 or :HORIZONTAL (:H)."
   (declare (optimize debug))
-  (let* ((h? (ecase direction
-               ((:h :horizontal) t)
-               ((:v :vertical) nil)))
+  (let* ((h? (vector-direction-horizontal? direction))
          (dimensions (mapcar (curry #'stack-dimensions h?) objects))
          (unified-dimension (reduce #'emap-unify-dimension dimensions
                                     :key #'car))
