@@ -44,15 +44,6 @@ the naive method."
     (values variance mean)))
 
 (addtest (statistics-tests)
-  test-matrix-mean
-  (let ((m (array* '(3 4) 'double-float
-                   1 2 3 4
-                   2 4 6 8
-                   3 6 9 12)))
-    (ensure-same (matrix-mean m)
-                 (vector* 'double-float 2 4 6 8))))
-
-(addtest (statistics-tests)
   test-weighted
   (let ((s1 #(1 2 3))
         (w1 #(4 5 6))
