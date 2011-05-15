@@ -41,6 +41,25 @@
     (ensure-same (e/ a) (e/ 1 a))))
 
 (addtest (elementwise-tests)
+  recycled-vector-tests
+ (let ((a (array* '(2 3) 'double-float
+                  1 2 3
+                  4 5 6))
+       (v (vector 2 1))
+       (h (vector 7 5 2))
+       (*lift-equality-test* #'==))
+   (ensure-same (e+ a (recycle v :v))
+                (array* '(2 3) 'double-float
+                        3 4 5
+                        5 6 7))
+   (ensure-same (e+ a (recycle h :h))
+                (array* '(2 3) 'double-float
+                        8 7 5 
+                        11 10 8))
+   (ensure-error (e+ a (recycle v :h)))
+   (ensure-error (e+ a (recycle h :v)))))
+
+(addtest (elementwise-tests)
   stack-tests
   (let ((a (array* '(2 3) t
                    1 2 3
