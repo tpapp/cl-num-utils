@@ -141,3 +141,10 @@ etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
   (lambda (&rest arguments)
     (handler-case (apply function arguments)
       (error () replacement-value))))
+
+(defun ignore-nil (function)
+  "Wrap FUNCTION in a closure that returns NIL in case any of the arguments
+are NIL."
+  (lambda (&rest arguments)
+    (when (every #'identity arguments)
+      (apply function arguments))))

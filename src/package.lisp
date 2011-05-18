@@ -13,7 +13,7 @@
    
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* convex-combination vector-last common common-length
-   common-dimension == *==-tolerance* format-number ignore-error
+   common-dimension == *==-tolerance* format-number ignore-error ignore-nil
 
    ;; seq-and-array
 
