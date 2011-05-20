@@ -92,4 +92,6 @@
                         (vector* 'double-float 3 4))
                  (array* '(2 2) 'double-float
                          1 3
-                         2 4))))
+                         2 4))
+    (ensure-same (stack 'double-float :h 1.0d0 #()) ; empty array
+                 (array* '(0 2) 'double-float))))
