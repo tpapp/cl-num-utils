@@ -112,15 +112,6 @@ increasing."
     (for element-p :previous element :initially (aref vector 0))
     (always (funcall predicate element-p element))))
 
-(defgeneric sum (object)
-  (:documentation "Sum of elements in object."))
-
-(defmethod sum ((sequence sequence))
-  (reduce #'+ sequence))
-
-(defmethod sum ((array array))
-  (reduce #'+ (flatten-array array)))
-
 (defun cumulative-sum (sequence &key 
                        (result-type 
                         (etypecase sequence
