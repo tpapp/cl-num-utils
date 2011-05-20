@@ -17,11 +17,12 @@
 
    ;; seq-and-array
 
-   array* vector* filled-array iseq numseq vector-satisfies? map-array sum
-   cumulative-sum sort-order make-similar-vector make-similar-array rep concat
-   displace-array flatten-array displace-subarray group positions which
-   which-positions which-rows first* second* third* fourth* fifth* sixth*
-   seventh* eighth* ninth* tenth* as-array row-major-loop
+   simple-fixnum-vector as-simple-fixnum-vector array* vector* filled-array
+   iseq numseq vector-satisfies? map-array sumcumulative-sum sort-order
+   make-similar-vector make-similar-array rep concat displace-array
+   flatten-array displace-subarray group positions which which-positions
+   which-rows first* second* third* fourth* fifth* sixth* seventh* eighth*
+   ninth* tenth* as-array row-major-loop
 
    ;; pretty
 
@@ -38,10 +39,11 @@
 
    ;; statistics
 
-   scalar-mean-accumulator mean-accumulator weighted-mean-accumulator
-   sse-accumulator weighted-sse-accumulator mean sse variance
-   mean-and-variance weighted-mean weighted-variance
-   weighted-mean-and-variance sample-quantiles
+   add apply-accumulator representative-element tally 
+   conforming-mean-accumulator mean sse variance sum product quantile
+   tallier mean-accumulator array-mean-accumulator mean-sse-accumulator
+   sorted-vector sort-as-vector @ sparse-accumulator-array ref
+   limits residual-pair acf-accumulator
 
    ;; interval
    

@@ -31,33 +31,33 @@
     (ensure-same (mean (map 'vector #'v->a vectors)) am)
     (ensure-error (mean (list v1 am)))))
 
-(defun naive-weighted-variance (sample weights)
-  "Calculate weighted variance (and mean, returned as the second value) using
-the naive method."
-  (let* ((sw (sum weights))
-         (mean (/ (reduce #'+ (map 'vector #'* sample weights)) sw))
-         (variance (/ (reduce #'+
-                              (map 'vector 
-                                   (lambda (s w) (* (expt (- s mean) 2) w))
-                                   sample weights))
-                      (1- sw))))
-    (values variance mean)))
+;; (defun naive-weighted-variance (sample weights)
+;;   "Calculate weighted variance (and mean, returned as the second value) using
+;; the naive method."
+;;   (let* ((sw (sum weights))
+;;          (mean (/ (reduce #'+ (map 'vector #'* sample weights)) sw))
+;;          (variance (/ (reduce #'+
+;;                               (map 'vector 
+;;                                    (lambda (s w) (* (expt (- s mean) 2) w))
+;;                                    sample weights))
+;;                       (1- sw))))
+;;     (values variance mean)))
 
-(addtest (statistics-tests)
-  test-weighted
-  (let ((s1 #(1 2 3))
-        (w1 #(4 5 6))
-        (*lift-equality-test* #'==)
-        (s2 (random-vector 50 'double-float))
-        (w2 (random-vector 50 'double-float)))
-    (ensure-same (naive-weighted-variance s1 w1) (weighted-variance s1 w1))
-    (ensure-same (naive-weighted-variance s2 w2) (weighted-variance s2 w2)
-                 :test (lambda (x y)
-                         (< (/ (abs (- x y))
-                               (max 1 (abs x) (abs y)))
-                            1d-5)))
-    (ensure-same (second (multiple-value-list (weighted-variance s1 w1)))
-                 (weighted-mean s1 w1))))
+;; (addtest (statistics-tests)
+;;   test-weighted
+;;   (let ((s1 #(1 2 3))
+;;         (w1 #(4 5 6))
+;;         (*lift-equality-test* #'==)
+;;         (s2 (random-vector 50 'double-float))
+;;         (w2 (random-vector 50 'double-float)))
+;;     (ensure-same (naive-weighted-variance s1 w1) (weighted-variance s1 w1))
+;;     (ensure-same (naive-weighted-variance s2 w2) (weighted-variance s2 w2)
+;;                  :test (lambda (x y)
+;;                          (< (/ (abs (- x y))
+;;                                (max 1 (abs x) (abs y)))
+;;                             1d-5)))
+;;     (ensure-same (second (multiple-value-list (weighted-variance s1 w1)))
+;;                  (weighted-mean s1 w1))))
 
 ;; (addtest (statistics-tests)
 ;;   test-covariance
@@ -68,5 +68,5 @@ the naive method."
   quantiles
   (let ((sample #(0.0 1.0))
         (quantiles (numseq 0 1 :length 11 :type 'double-float)))
-    (ensure-same (sample-quantiles sample quantiles)
+    (ensure-same (map 'vector (curry #'quantile sample) quantiles)
                  quantiles)))
