@@ -290,12 +290,13 @@ of arguments, no optional, key, rest etc)."
     ;; stack horizontally
     (bind ((atom (coerce atom (array-element-type result)))
            ((nrow ncol) (array-dimensions result)))
-      (loop
-        for result-index :from
-                         (array-row-major-index result 0 cumulative-index) 
-          by ncol
-        repeat nrow
-        do (setf (row-major-aref result result-index) atom))))
+      (when (plusp nrow)
+        (loop
+          repeat nrow
+          for result-index :from
+                           (array-row-major-index result 0 cumulative-index) 
+            by ncol
+          do (setf (row-major-aref result result-index) atom)))))
   ;; vector
   (:method ((vector vector) (h? (eql nil)) result cumulative-index)
     ;; stack vertically
@@ -309,14 +310,15 @@ of arguments, no optional, key, rest etc)."
     ;; stack horizontally
     (bind ((element-type (array-element-type result))
            ((nrow ncol) (array-dimensions result)))
-      (loop
-        for result-index :from
-                         (array-row-major-index result 0 cumulative-index) 
-          by ncol
-        for v across vector
-        repeat nrow
-        do (setf (row-major-aref result result-index)
-                 (coerce v element-type)))))
+      (when (plusp nrow)
+        (loop
+          for result-index :from
+                           (array-row-major-index result 0 cumulative-index) 
+            by ncol
+          for v across vector
+          repeat nrow
+          do (setf (row-major-aref result result-index)
+                   (coerce v element-type))))))
   ;; array
   (:method ((array array) (h? (eql nil)) result cumulative-index)
     ;; stack vertically
@@ -346,7 +348,6 @@ of arguments, no optional, key, rest etc)."
   "Stack OBJECTS into an array with given ELEMENT-TYPE (NIL means figuring out
 the type automatically).  Directions can be :VERTICAL (:V)
 or :HORIZONTAL (:H)."
-  (declare (optimize debug))
   (let* ((h? (vector-direction-horizontal? direction))
          (dimensions (mapcar (curry #'stack-dimensions h?) objects))
          (unified-dimension (reduce #'emap-unify-dimension dimensions
