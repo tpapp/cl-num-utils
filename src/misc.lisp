@@ -148,3 +148,42 @@ are NIL."
   (lambda (&rest arguments)
     (when (every #'identity arguments)
       (apply function arguments))))
+
+(defun text-progress-bar (stream n &key
+                           (character #\*) (length 80)
+                           (deciles? t) (before "~&[") (after "]~%"))
+  "Return a closure that displays a progress bar when called with
+increments (defaults to 1).  When the second argument is T, index will be set
+to the given value (instead of a relative change).
+
+LENGTH determines the number of CHARACTERs to display (not including AFTER and
+BEFORE, which are displayed when the closure is first called and after the
+index reaches N, respectively).  When DECILES?, characters at every decile
+will be replaced by 0,...,9.
+
+When STREAM is NIL, nothing is displayed."
+  (unless stream
+    (return-from text-progress-bar (lambda ())))
+  (let* ((characters (aprog1 (make-string length :initial-element character)
+                       (when deciles?
+                         (loop for index :below 10 do
+                           (replace it (format nil "~d" index)
+                                    :start1 (floor (* index length) 10))))))
+         (index 0)
+         (position 0))
+    (lambda (&optional (increment 1) absolute?)
+      (when before
+        (format stream before)
+        (setf before nil))
+      (if absolute?
+          (progn
+            (assert (<= index increment) () "Progress bar can't rewind.")
+            (setf index increment))
+          (incf index increment))
+      (assert (<= index n) () "Index ran above total (~A > ~A)." index n)
+      (let ((target-position (floor (* index length) n)))
+        (loop while (< position target-position) do
+              (princ (aref characters position) stream)
+              (incf position)))
+      (when (and (= index n) after)
+        (format stream after)))))
