@@ -14,7 +14,7 @@
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* convex-combination vector-last common common-length
    common-dimension == *==-tolerance* format-number ignore-error ignore-nil
-   text-progress-bar
+   text-progress-bar within?
 
    ;; seq-and-array
 

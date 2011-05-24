@@ -187,3 +187,9 @@ When STREAM is NIL, nothing is displayed."
               (incf position)))
       (when (and (= index n) after)
         (format stream after)))))
+
+(declaim (inline within?))
+(defun within? (left value right)
+  "Return non-nil iff value is in [left,right)."
+  (and (<= left value) (< value right)))
+

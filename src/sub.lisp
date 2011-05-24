@@ -241,7 +241,8 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
 
 (defun row-major-coefficients (dimensions)
   "Calculate coefficients for row-major mapping."
-  (let* ((cumprod 1)
+  (let* ((dimensions (coerce dimensions 'simple-fixnum-vector))
+         (cumprod 1)
          (rank (length dimensions))
          (coefficients (make-array rank :element-type 'fixnum)))
     (iter

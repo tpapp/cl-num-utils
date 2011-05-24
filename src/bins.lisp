@@ -76,10 +76,6 @@ using Sturges's rule. "
 
 ;; (declaim (inline within-breaks? in-bin?% find-bin%))
 
-;; (defun within? (left value right)
-;;   "Return non-nil iff value is in [left,right)."
-;;   (and (<= left value) (< value right)))
-
 ;; (defun in-bin?% (value index breaks)
 ;;   "Return non-nil iff VALUE is in the bin corresponding to INDEX.  No
 ;; error checking, for internal use."
