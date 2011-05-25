@@ -38,5 +38,4 @@
      (:file "data-frame")
      ;; (:file "interaction")
      (:file "optimization"))))
-  :depends-on
-  (:alexandria :iterate :metabang-bind :anaphora))
+  :depends-on (alexandria iterate metabang-bind let-plus anaphora))
