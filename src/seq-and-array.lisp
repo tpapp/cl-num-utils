@@ -226,6 +226,11 @@ COMMON-SUPERTYPE."
       (t (error "Too many subscripts (~A) for array of rank ~A."
                 drop rank)))))
 
+(defun (setf subarray) (value array subscripts &key &allow-other-keys)
+  (let ((subarray (subarray array subscripts)))
+    (assert (common-dimensions value subarray))
+    (replace (flatten-array subarray) (flatten-array value))))
+
 (defun group (sequence &rest indexes)
   "Return an array, which contains sequences of the same type as SEQUENCE, with
 elements grouped according to the indexes (which are expected to be nonnegative

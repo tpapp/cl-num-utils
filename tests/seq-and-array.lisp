@@ -95,6 +95,15 @@ of the same type)."
     (ensure-same (subarray a 1) (ia* 12 3 4))))
 
 (addtest (seq-and-array-tests)
+  setf-subarray-tests
+  (let ((a (ia 3 4)))
+    (setf (subarray a 1) #(4 3 2 1))
+    (ensure-same a #2A((0 1 2 3)
+                       (4 3 2 1)
+                       (8 9 10 11))
+                 :test #'equalp)))
+
+(addtest (seq-and-array-tests)
   group-test
   (let ((*lift-equality-test* #'equalp)
         (v6 #(0 1 2 3 4 5)))
