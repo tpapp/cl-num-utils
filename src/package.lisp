@@ -8,6 +8,7 @@
    
    silent check-types define-with-multiple-bindings concatenate-as-strings
    make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol% lazy-let*
+   unlessf
 
    ;; misc
    
