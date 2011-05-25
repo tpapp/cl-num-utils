@@ -205,11 +205,13 @@ COMMON-SUPERTYPE."
   (let ((vector (displace-array array (array-total-size array))))
     (if copy? (copy-seq vector) vector)))
 
-(defun displace-subarray (array &rest subscripts)
-  "Given a partial list of subscripts, return a displaced array that starts
-  there, with all the other subscripts set to 0, dimensions inferred from the
-  original.  If no subscripts are given, the original array is returned."
+(defun subarray (array subscripts &key copy?)
+  "Given a partial list of subscripts, return the subarray that starts there,
+  with all the other subscripts set to 0, dimensions inferred from the
+  original.  If no subscripts are given, the original array is returned.
+  May share structure unless COPY?"
   (let* ((rank (array-rank array))
+         (subscripts (ensure-list subscripts))
          (drop (length subscripts)))
     (cond
       ((zerop drop) array)
@@ -219,8 +221,10 @@ COMMON-SUPERTYPE."
                             (append subscripts
                                     (make-sequence 'list (- rank drop)
                                                    :initial-element 0)))))
-         (displace-array array sub-dimensions offset)))
-      (t (error "Too many subscripts (~A) for array of rank ~A." drop rank)))))
+         (maybe-copy-array (displace-array array sub-dimensions offset)
+                           copy?)))
+      (t (error "Too many subscripts (~A) for array of rank ~A."
+                drop rank)))))
 
 (defun group (sequence &rest indexes)
   "Return an array, which contains sequences of the same type as SEQUENCE, with
@@ -296,7 +300,7 @@ using predicate."))
          (result (make-array n-row :element-type 'bit)))
     (dotimes (row-index n-row)
       (setf (aref result row-index)
-            (funcall flag (displace-subarray matrix row-index))))
+            (funcall flag (subarray matrix row-index))))
     result))
 
 ;;; !!! compiler macros for (support (which...)), or maybe even name them

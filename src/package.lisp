@@ -22,7 +22,7 @@
    simple-fixnum-vector as-simple-fixnum-vector array* vector* filled-array
    iseq numseq vector-satisfies? map-array sumcumulative-sum sort-order
    make-similar-vector make-similar-array rep concat displace-array
-   flatten-array displace-subarray group positions which which-positions
+   flatten-array subarray group positions which which-positions
    which-rows first* second* third* fourth* fifth* sixth* seventh* eighth*
    ninth* tenth* as-array row-major-loop
 

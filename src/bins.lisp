@@ -322,8 +322,8 @@ exported."
          ((nrow ncol) (array-dimensions matrix)))
     (assert (= (subscript-rank histogram) ncol))
     (loop for row :below nrow do
-      (apply #'add-observation histogram 1 
-            (coerce (displace-subarray matrix row) 'list)))
+      (apply #'add-observation histogram
+             1 (coerce (subarray matrix row) 'list)))
     histogram))
 
 ;; (defclass binned-data ()

@@ -21,9 +21,7 @@
   (:method ((matrix array) &key copy?)
     (iter
       (for row-index :below (nrow matrix))
-      (collecting (if copy?
-                      (sub matrix row-index t)
-                      (displace-subarray matrix row-index))
+      (collecting (subarray matrix row-index :copy? copy?)
                   :result-type vector)))
   (:method (object &key copy?)
     (rows (as-array object) :copy? copy?)))
@@ -297,7 +295,7 @@ Example:
     (bind (((nrow nil) (array-dimensions matrix)))
       (iterate
         (for row-index :below nrow)
-        (let* ((row (displace-subarray matrix row-index))
+        (let* ((row (subarray matrix row-index))
                (row-left (position-if predicate row)))
           (when row-left
             (let ((row-right (position-if predicate row :from-end t)))

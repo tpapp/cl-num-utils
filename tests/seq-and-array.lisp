@@ -91,8 +91,8 @@ of the same type)."
     (ensure-same (displace-array a '(6 4)) (ia 6 4))
     (ensure-same (displace-array a '(10) 14) (ia* 14 10))
     (ensure-same (displace-array a 10 0) (ia 10))
-    (ensure-same (displace-subarray a 0 0) (ia 4))
-    (ensure-same (displace-subarray a 1) (ia* 12 3 4))))
+    (ensure-same (subarray a '(0 0)) (ia 4))
+    (ensure-same (subarray a 1) (ia* 12 3 4))))
 
 (addtest (seq-and-array-tests)
   group-test
