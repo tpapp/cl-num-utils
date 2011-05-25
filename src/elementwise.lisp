@@ -173,9 +173,13 @@ such float type can be found in the list, return T."
                t)))))
   (define-emap-common-numeric-type))
 
-(defun emap-common-type (&rest objects)
+(defun emap-common-type* (objects)
   "Return the type that all OBJECTS can be coerced to."
   (reduce #'emap-common-numeric-type objects :key #'emap-type-of))
+
+(defun emap-common-type (&rest objects)
+  "Return the type that all OBJECTS can be coerced to."
+  (emap-common-type* objects))
 
 (defun emap-type-of (object)
   (typecase object
@@ -344,26 +348,64 @@ of arguments, no optional, key, rest etc)."
           (incf array-index))
         (incf result-index offset)))))
 
-(defun stack (element-type direction &rest objects)
-  "Stack OBJECTS into an array with given ELEMENT-TYPE (NIL means figuring out
-the type automatically).  Directions can be :VERTICAL (:V)
+(defun stack* (element-type direction objects)
+  "Stack OBJECTS (a sequence) into an array with given ELEMENT-TYPE (NIL means
+figuring out the type automatically).  Directions can be :VERTICAL (:V)
 or :HORIZONTAL (:H)."
-  (let* ((h? (vector-direction-horizontal? direction))
-         (dimensions (mapcar (curry #'stack-dimensions h?) objects))
-         (unified-dimension (reduce #'emap-unify-dimension dimensions
-                                    :key #'car))
-         (other-dimension (reduce #'+ dimensions :key #'cdr))
+  (let+ ((h? (vector-direction-horizontal? direction))
+         (dimensions (map 'list (curry #'stack-dimensions h?) objects))
+         ((unified-dimension . other-dimension)
+          (reduce (lambda (d1 d2)
+                    (cons (emap-unify-dimension (car d1) (car d2))
+                          (+ (cdr d1) (cdr d2))))
+                  dimensions))
          (element-type (aif element-type 
                             it 
-                            (apply #'emap-common-type objects)))
+                            (emap-common-type* objects)))
          (result (make-array (if h?
                                  (list unified-dimension other-dimension)
                                  (list other-dimension unified-dimension))
                              :element-type element-type))
          (cumulative-index 0))
-    (loop
-      for object :in objects
-      for dimension :in dimensions
-      do (stack-into object h? result cumulative-index)
-         (incf cumulative-index (cdr dimension)))
+    (map nil
+         (lambda (object dimension)
+           (stack-into object h? result cumulative-index)
+           (incf cumulative-index (cdr dimension)))
+         objects dimensions)
     result))
+
+(defun stack (element-type direction &rest objects)
+  "Stack OBJECTS into an array with given ELEMENT-TYPE (NIL means figuring out
+the type automatically).  Directions can be :VERTICAL (:V)
+or :HORIZONTAL (:H)."
+  (stack* element-type direction objects))
+
+
+(defun concat* (element-type sequences)
+  "Concatenate VECTORS in to a single vector with given ELEMENT-TYPE (nil
+means automatic determination of type using emap-common-type*).  Lists are
+treated as SIMPLE-VECTORS."
+  (let* ((vectors (mapcar (lambda (v)
+                            (etypecase v
+                              (vector v)
+                              (list (coerce v 'simple-vector))))
+                          sequences))
+         (element-type (aif element-type 
+                            it 
+                            (emap-common-type* vectors)))
+         (lengths (mapcar #'length vectors))
+         (result (make-array (reduce #'+ lengths) :element-type element-type)))
+    (iter
+      (with offset := 0)
+      (for v :in vectors)
+      (for l :in lengths)
+      (setf (subseq result offset (+ offset l)) v)
+      (incf offset l))
+    result))
+
+(defun concat (element-type &rest sequences)
+  "Concatenate VECTORS in to a single vector with given ELEMENT-TYPE (nil
+means automatic determination of type using emap-common-type*).  Lists are
+treated as SIMPLE-VECTORS."
+  (concat* element-type sequences))
+

@@ -80,7 +80,7 @@ of the same type)."
 
 (addtest (seq-and-array-tests)
   concat-test
-  (ensure-same (concat #(1 2 3) #(4 5 6) (list  7) '(8 9 10))
+  (ensure-same (concat t #(1 2 3) #(4 5 6) (list  7) '(8 9 10))
                (numseq 1 10 :type t) :test #'equalp))
 
 (addtest (seq-and-array-tests)

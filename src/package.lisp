@@ -1,6 +1,6 @@
 (defpackage cl-num-utils
     (:nicknames clnu)
-  (:use cl iterate metabang-bind anaphora alexandria)
+  (:use cl iterate metabang-bind let-plus anaphora alexandria)
   (:shadow mean variance)
   (:export
 
@@ -21,7 +21,7 @@
 
    simple-fixnum-vector as-simple-fixnum-vector array* vector* filled-array
    iseq numseq vector-satisfies? map-array sumcumulative-sum sort-order
-   make-similar-vector make-similar-array rep concat displace-array
+   make-similar-vector make-similar-array rep displace-array
    flatten-array subarray group positions which which-positions
    which-rows first* second* third* fourth* fifth* sixth* seventh* eighth*
    ninth* tenth* as-array row-major-loop
@@ -86,7 +86,7 @@
 
    emap-dimensions emap-next emap emap-common-numeric-type emap-type-of e+ e-
    e* e/ e2+ e2- e2* e2/ eexpt elog esqrt ereduce emin emax stack-dimensions
-   stack-into stack
+   stack-into stack* stack concat* concat
 
    ;; ix
    
