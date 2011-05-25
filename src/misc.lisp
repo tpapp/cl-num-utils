@@ -192,4 +192,3 @@ When STREAM is NIL, nothing is displayed."
 (defun within? (left value right)
   "Return non-nil iff value is in [left,right)."
   (and (<= left value) (< value right)))
-
