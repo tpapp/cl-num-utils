@@ -385,22 +385,23 @@ or :HORIZONTAL (:H)."
   "Concatenate VECTORS in to a single vector with given ELEMENT-TYPE (nil
 means automatic determination of type using emap-common-type*).  Lists are
 treated as SIMPLE-VECTORS."
-  (let* ((vectors (mapcar (lambda (v)
-                            (etypecase v
-                              (vector v)
-                              (list (coerce v 'simple-vector))))
-                          sequences))
+  (let* ((vectors (map 'list (lambda (v)
+                               (etypecase v
+                                 (vector v)
+                                 (list (coerce v 'simple-vector))))
+                       sequences))
          (element-type (aif element-type 
                             it 
                             (emap-common-type* vectors)))
-         (lengths (mapcar #'length vectors))
-         (result (make-array (reduce #'+ lengths) :element-type element-type)))
-    (iter
-      (with offset := 0)
-      (for v :in vectors)
-      (for l :in lengths)
-      (setf (subseq result offset (+ offset l)) v)
-      (incf offset l))
+         (result (make-array (reduce #'+ vectors :key #'length)
+                             :element-type element-type))
+         (offset 0))
+    (map nil
+         (lambda (v)
+           (let ((l (length v)))
+             (setf (subseq result offset (+ offset l)) v)
+             (incf offset l)))
+         vectors)
     result))
 
 (defun concat (element-type &rest sequences)
