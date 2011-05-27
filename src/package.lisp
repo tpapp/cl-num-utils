@@ -1,5 +1,5 @@
 (defpackage cl-num-utils
-    (:nicknames clnu)
+  (:nicknames clnu)
   (:use cl iterate metabang-bind let-plus anaphora alexandria)
   (:shadow mean variance)
   (:export
@@ -7,8 +7,8 @@
    ;; macros
    
    silent check-types define-with-multiple-bindings concatenate-as-strings
-   make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol% lazy-let*
-   unlessf
+   make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol%
+   lazy-let* unlessf
 
    ;; misc
    
@@ -40,15 +40,15 @@
    histogram-from-sequence histogram-from-matrix
 
    ;; statistics
-
-   add apply-accumulator representative-element tally 
-   conforming-mean-accumulator mean sse variance sum product quantile
-   tallier mean-accumulator array-mean-accumulator mean-sse-accumulator
-   sorted-vector sort-as-vector @ sparse-accumulator-array ref
-   limits residual-pair acf-accumulator
-
-   ;; interval
    
+   add statistic conforming-accumulator sweep tally mean sse variance
+   mean-and-variance quantile sum product tallier accumulator-array
+   add-array-elementwise mean-accumulator mean-sse-accumulator
+   sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
+   acf-accumulator
+     
+   ;; interval
+     
    interval interval-left interval-right make-interval forced-interval
    make-forced-interval interval-diff interval-width interval-midpoint
    positive-interval? negative-interval? weakly-positive-interval?
