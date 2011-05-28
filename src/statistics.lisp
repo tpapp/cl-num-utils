@@ -44,9 +44,12 @@
   (:method ((generator function) (array array))
     (sweep (conforming-accumulator generator (first* array)) array)))
 
+;;; sweep also resolves some symbols and functions into default accumulators,
+;;; the helper macros below take care of defining these
+
 (defmacro define-sweep-default-generator (synonym generator)
   "Define a synonym for sweep."
-  `(defmethod sweep ((generator (eql ',synonym)) object)
+  `(defmethod sweep ((generator (eql ,synonym)) object)
      (sweep ,generator object)))
 
 (defmacro define-sweep-default-generators (synonyms generator)
@@ -54,13 +57,6 @@
   `(progn
      ,@(loop for synonym in synonyms
              collect `(define-sweep-default-generator ,synonym ,generator))))
-
-(define-sweep-default-generators ('tally #'tally) #'tallier)
-(define-sweep-default-generators ('mean #'mean) #'mean-accumulator)
-(define-sweep-default-generators
-    ('sse 'variance 'mean-and-variance #'sse #'variance #'mean-and-variance)
-    #'mean-sse-accumulator)
-(define-sweep-default-generators ('quantile #'quantile) #'sorting-accumulator)
 
 ;;; accumulator arrays
 
@@ -97,10 +93,14 @@
   (:method ((array array))
     (array-total-size array)))
 
+(define-sweep-default-generators ('tally #'tally) #'tallier)
+
 (defgeneric mean (object)
   (:documentation "Return the mean.")
   (:method (object)
     (sweep-on-demand #'mean object #'mean-accumulator)))
+
+(define-sweep-default-generators ('mean #'mean) #'mean-accumulator)
 
 (defgeneric sse (object &optional center)
   (:documentation "Return the sum of squared errors (from the given CENTER,
@@ -120,6 +120,10 @@
                            (/ (sse accumulator) n-1))))
                      object
                      #'mean-sse-accumulator)))
+
+(define-sweep-default-generators
+    ('sse 'variance 'mean-and-variance #'sse #'variance)
+    #'mean-sse-accumulator)
 
 (defgeneric sum (object)
   (:documentation "Sum of elements in object.")
@@ -264,6 +268,9 @@ them and return as a vector."
 
 (defmethod quantile (object q)
   (quantile (sweep #'sorting-accumulator object) q))
+
+(define-sweep-default-generators ('quantile #'quantile)
+    #'sorting-accumulator)
 
 ;;; sparce accumulator arrays
 
