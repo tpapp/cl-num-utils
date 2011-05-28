@@ -13,6 +13,18 @@
   (:method ((array array) &key copy?)
     (maybe-copy-array array copy?)))
 
+(defgeneric diagonal (object &key copy?)
+  (:documentation "Return diagonal of object.")
+  (:method ((matrix array) &key copy?)
+    (declare (ignore copy?))
+    (let+ (((nrow ncol) (array-dimensions matrix))
+           (n (min nrow ncol))
+           (diagonal (make-similar-array matrix :dimensions n)))
+      (dotimes (i n)
+        (setf (row-major-aref diagonal i)
+              (aref matrix i i)))
+      diagonal)))
+
 ;;; !! ROWS and COLUMNS could be speeded up considerably for Lisp arrays
 
 (defgeneric rows (object &key copy?)

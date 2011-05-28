@@ -7,6 +7,16 @@
   (:equality-test #'equalp))
 
 (addtest (array-tests)
+  diagonal
+  (let ((a1 (ia 2 2))
+        (a2 (ia 3 2))
+        (a3 (ia 2 3))
+        (*lift-equality-test* #'==))
+    (ensure-same (diagonal a1) (vector 0 3))
+    (ensure-same (diagonal a2) (vector 0 3))
+    (ensure-same (diagonal a3) (vector 0 4))))
+  
+(addtest (array-tests)
   map-columns
   (ensure-same (map-columns #'sum (ia 3 4))
                #(12 15 18 21))
