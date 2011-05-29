@@ -86,3 +86,18 @@ plural of the old one (generated using format by default)."
        (unless ,reader-form
          (let ((,(car store-vars) ,value-form))
            ,writer-form)))))
+
+(defmacro define-structure-slot-accessor (accessor structure 
+                                          &key (conc-name (format nil "~A-" structure))
+                                               (slot-name accessor) lambda-list-rest
+                                               (read-only? nil))
+  "Define a method for the generic function ACCESSOR that acts as an accessor
+for a slot in an instance of STRUCTURE.  "
+  (let ((lambda-list `((instance ,structure) ,@lambda-list-rest))
+        (slot-accessor (intern (format nil "~A~A" conc-name slot-name))))
+    `(progn
+       (defmethod ,accessor ,lambda-list
+         (,slot-accessor instance))
+       ,@(unless read-only?
+           `((defmethod (setf ,accessor) ,(cons 'value lambda-list)
+               (setf (,slot-accessor instance) value)))))))
