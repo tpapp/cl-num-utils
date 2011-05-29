@@ -41,9 +41,11 @@
 
    ;; statistics
    
-   add statistic conforming-accumulator sweep tally mean sse variance
-   mean-and-variance quantile sum product tallier accumulator-array
-   add-array-elementwise mean-accumulator mean-sse-accumulator
+   add conforming-accumulator with-accumulator sweep
+   define-conforming-accumulator tally mean sse variance quantile sum product 
+   tallier mean-accumulator incf-mean array-mean-accumulator
+   mean-sse-accumulator
+
    sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
    acf-accumulator
      

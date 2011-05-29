@@ -7,123 +7,83 @@
 (defgeneric add (accumulator object)
   (:documentation "Add accumulator to object."))
 
-(defgeneric statistic (function object)
-  (:argument-precedence-order object function)
-  (:documentation "Return the desired statistic from object.  Note: this
-  function is called for extracting statistics from accumulators which may not
-  have a method defined for function, but can return the statistic some other
-  way (eg mapping function elementwise).  The default method returns NIL, for
-  objects which are not accumulators.  Custom accumulators should define
-  methods for this (eg see array-accumulator).")
-  (:method (function object)
-    nil))
+(defgeneric conforming-accumulator (statistic element)
+  (:documentation "Return an accumulator that provides the desired
+  STATISTIC and handles objects similar to ELEMENT."))
 
-(defun sweep-on-demand (function object generator)
-  "When STATISTIC returns NIL, sweep the object, initializing with GENERATOR."
-  (aif (statistic function object)
-       it
-       (funcall function (sweep generator object))))
-
-(defgeneric conforming-accumulator (generator element)
-  (:documentation "Return a conforming accumulator using GENERATOR, based on
-  the structure of ELEMENT.")
-  (:method ((generator function) (element number))
-    (funcall generator)))
+(defmacro with-accumulator ((accumulator add) &body body)
+  "Provide a local wrapper for ADD which creates the conforming accumulator if
+ACCUMULATOR is a symbol the first time it is used.  Once done, the form
+evaluates to this accumulator.  For use in SWEEP."
+  (once-only (accumulator)
+    (with-unique-names (first?)
+      `(let+ ((,first? t)
+              ((&flet ,add (object)
+                 (when (and ,first? (symbolp ,accumulator))
+                   (setf ,accumulator
+                         (conforming-accumulator ,accumulator object)))
+                 (add ,accumulator object))))
+         ,@body
+         ,accumulator))))
 
 (defgeneric sweep (accumulator object)
   (:documentation "Apply ACCUMULATOR to elements of OBJECT.  When ACCUMULATOR
   is a function, it is used to generate a conforming accumulator.")
   (:method (accumulator (sequence sequence))
-    (map nil (curry #'add accumulator) sequence)
-    accumulator)
-  (:method ((generator function) (sequence sequence))
-    (sweep (conforming-accumulator generator (elt sequence 0)) sequence))
+    (with-accumulator (accumulator add)
+      (map nil #'add sequence)))
   (:method (accumulator (array array))
-    (map nil (curry #'add accumulator) (flatten-array array))
-    accumulator)
-  (:method ((generator function) (array array))
-    (sweep (conforming-accumulator generator (first* array)) array)))
+    (with-accumulator (accumulator add)
+      (map nil #'add (flatten-array array)))))
 
 ;;; sweep also resolves some symbols and functions into default accumulators,
 ;;; the helper macros below take care of defining these
 
-(defmacro define-sweep-default-generator (synonym generator)
-  "Define a synonym for sweep."
-  `(defmethod sweep ((generator (eql ,synonym)) object)
-     (sweep ,generator object)))
-
-(defmacro define-sweep-default-generators (synonyms generator)
-  "Define multiple synonyms for sweep."
+(defmacro define-conforming-accumulator ((statistics object-specialized)
+                                         &body body)
+  "Specialize CONFORMING-ACCUMULATOR to given symbols and objects."
   `(progn
-     ,@(loop for synonym in synonyms
-             collect `(define-sweep-default-generator ,synonym ,generator))))
+     ,@(loop for statistic in (ensure-list statistics) collect
+             `(defmethod conforming-accumulator ((statistic (eql ',statistic))
+                                                 ,object-specialized)
+                ,@body))))
 
-;;; accumulator arrays
-
-(defstruct+ (accumulator-array
-             (:constructor accumulator-array (accumulators)))
-    "Array of accumulators."
-  (accumulators nil :type array :read-only t))
-
-(defmethod statistic (function (accumulator accumulator-array))
-  (emap t function (accumulator-array-accumulators accumulator)))
-
-(defmethod conforming-accumulator ((generator function) (array array))
-  (accumulator-array (filled-array (array-dimensions array) generator)))
-
-(defun add-array-elementwise (accumulator array)
-  "Add array to array accumulator elementwise."
-  (let+ (((&accumulator-array accumulators) accumulator))
-    (assert (common-dimensions array accumulators))
-    (dotimes (index (array-total-size array))
-      (add (row-major-aref accumulators index)
-           (row-major-aref array index)))))
-
-(defmethod add ((accumulator accumulator-array) object)
-  (add-array-elementwise accumulator (as-array object)))
-
-;;; Predefined accumulators
+;;; When the object is not an accumulator, accessors fall back to sweeping it
+;;; and then return the desired value.  In this case they may return the
+;;; accumulator as the second value, which can be used for other queries.
 
 (defgeneric tally (object)
   (:documentation "Return the count of elements.")
   (:method (object)
-    (sweep-on-demand #'tally object #'tallier))
+    (let ((accumulator (sweep 'tally object)))
+      (values (tally accumulator) accumulator)))
   (:method ((sequence sequence))
     (length sequence))
   (:method ((array array))
     (array-total-size array)))
 
-(define-sweep-default-generators ('tally #'tally) #'tallier)
-
 (defgeneric mean (object)
   (:documentation "Return the mean.")
   (:method (object)
-    (sweep-on-demand #'mean object #'mean-accumulator)))
-
-(define-sweep-default-generators ('mean #'mean) #'mean-accumulator)
+    (let ((accumulator (sweep 'mean object)))
+      (values (mean accumulator) accumulator))))
 
 (defgeneric sse (object &optional center)
   (:documentation "Return the sum of squared errors (from the given CENTER,
   which defaults to the MEAN.  Return NIL when there are no elements.")
   (:method (object &optional center)
-    (sweep-on-demand (lambda (accumulator)
-                       (sse accumulator center))
-                     object
-                     #'mean-sse-accumulator)))
+    (let ((accumulator (sweep 'sse object)))
+      (values (sse accumulator center) accumulator))))
 
 (defgeneric variance (object)
   (:documentation "Return the variance.")
   (:method (object)
-    (sweep-on-demand (lambda (accumulator)
-                       (let ((n-1 (1- (tally accumulator))))
-                         (when (plusp n-1)
-                           (/ (sse accumulator) n-1))))
-                     object
-                     #'mean-sse-accumulator)))
-
-(define-sweep-default-generators
-    ('sse 'variance 'mean-and-variance #'sse #'variance)
-    #'mean-sse-accumulator)
+    (let+ (((&values sse accumulator) (sse object))
+           (n-1 (1- (aif accumulator
+                         (tally it)
+                         (tally object)))))
+      (when (plusp n-1)
+        (/ sse n-1)))))
 
 (defgeneric sum (object)
   (:documentation "Sum of elements in object.")
@@ -145,10 +105,8 @@
   (:documentation "Return an element at quantile Q.  May be an interpolation
   or an approximation, depending on OBJECT and Q.")
   (:method (object q)
-    (sweep-on-demand (lambda (accumulator)
-                       (quantile accumulator q))
-                     object
-                     #'sorting-accumulator)))
+    (let ((accumulator (sweep 'quantiles object)))
+      (values (quantile accumulator q) accumulator))))
 
 ;; (defun median (object)
 ;;   "Median of OBJECT."
@@ -161,8 +119,13 @@
 (defstruct (tallier (:constructor tallier ()))
   (tally 0 :type fixnum))
 
-(defmethod tally ((instance tallier))
-  (tallier-tally instance))
+(defmethod add ((tallier tallier) object)
+  (incf (tallier-tally tallier)))
+
+(define-structure-slot-accessor tally tallier :read-only? t)
+
+(define-conforming-accumulator (tally object)
+  (tallier))
 
 ;;; mean accumulator for scalars
 
@@ -172,37 +135,48 @@
   "Accumulator for a (scalar) mean."
   (mean 0d0))
 
+(define-modify-macro incf-mean (value tally)
+  (lambda (mean value tally) (+ mean (/ (- value mean) tally)))
+  "When MEAN is the MEAN of (1- TALLY) numbers, update it with VALUE.  In
+  practice, TALLY should be INCF'd before using incf-mean.")
+
 (defmethod add ((instance mean-accumulator) (object number))
   (bind (((:structure/rw mean-accumulator- tally mean) instance))
     (incf tally)
-    (incf mean (/ (- object mean) tally))))
+    (incf-mean mean object tally)))
 
-(defmethod mean ((instance mean-accumulator))
-  (mean-accumulator-mean instance))
+(define-structure-slot-accessor mean mean-accumulator :read-only? t)
+
+(define-conforming-accumulator (mean (number number))
+  (mean-accumulator))
 
 ;;; mean accumulator for arrays
 
-;; (defstruct (array-mean-accumulator
-;;              (:include mean-accumulator)
-;;              (:constructor array-mean-accumulator
-;;               (dimensions &optional 
-;;                (size (product dimensions))
-;;                (mean (make-array dimensions :initial-element 0d0)))))
-;;   "Array mean accumulator."
-;;   (dimensions nil :type list)
-;;   (size nil :type fixnum))
+(defstruct+ (array-mean-accumulator
+             (:constructor array-mean-accumulator% (mean)))
+    "Array of accumulators."
+  (tally 0 :type fixnum)
+  (mean nil :type array :read-only t))
 
-;; (defmethod add ((instance array-mean-accumulator) array)
-;;   (bind (((:structure/rw array-mean-accumulator- tally mean dimensions size)
-;;           instance)
-;;          (array (as-array array)))
-;;     (assert (equal (array-dimensions array) dimensions))
-;;     (incf tally)
-;;     (dotimes (index size)
-;;       (incf (row-major-aref mean index)
-;;             (/ (- (row-major-aref array index)
-;;                   (row-major-aref mean index))
-;;                tally)))))
+(defun array-mean-accumulator (array)
+  "Create an array mean accumulator for array."
+  (array-mean-accumulator% (make-array (array-dimensions array)
+                                       :initial-element 0d0)))
+
+(defmethod add ((accumulator array-mean-accumulator) object)
+  (let+ (((&array-mean-accumulator tally nil) accumulator)
+         ((&array-mean-accumulator-r/o nil mean) accumulator)
+         (array (aprog1 (as-array object)
+                  (assert (common-dimensions it mean))))
+         (tally (incf tally)))
+    (dotimes (index (array-total-size array))
+      (incf-mean (row-major-aref mean index)
+                 (row-major-aref array index) tally))))
+
+(define-structure-slot-accessor mean array-mean-accumulator :read-only? t)
+
+(define-conforming-accumulator (mean (array array))
+  (array-mean-accumulator array))
 
 ;;; mean-sse accumulator
 
@@ -213,15 +187,20 @@
   (sse 0d0))
 
 (defmethod add ((instance mean-sse-accumulator) (object number))
-  (bind (((:structure/rw mean-sse-accumulator- tally mean sse) instance)
-         (previous-mean mean))
+  (let+ (((&structure mean-sse-accumulator- tally mean sse) instance)
+         (difference (- object mean)))
     (incf tally)
-    (incf mean (/ (- object mean) tally))
-    (incf sse (* (- object mean) (- object previous-mean)))))
+    (incf mean (/ difference tally))
+    (incf sse (* (- object mean) difference))))
 
 (defmethod sse ((instance mean-sse-accumulator) &optional center)
   (assert (not center) () "need to implement...")
   (mean-sse-accumulator-sse instance))
+
+(define-structure-slot-accessor mean mean-sse-accumulator :read-only? t)
+
+(define-conforming-accumulator ((sse variance) (number number))
+  (mean-sse-accumulator))
 
 ;;; sorting accumulator
 ;;; 
@@ -229,7 +208,7 @@
 ;;; until I implement something nicer.
 
 (defstruct+ (sorting-accumulator
-             (:constructor sorting-accumulator (&optional (predicate #'<)))
+             (:constructor sorting-accumulator (&optional (predicate #'<=)))
              (:include mean-sse-accumulator))
   "Storage accumulator, simply saves elements.  When asked for ordered, order
 them and return as a vector."
@@ -255,8 +234,10 @@ them and return as a vector."
 
 (defmethod quantile ((sorting-accumulator sorting-accumulator) q)
   (let+ (((&accessors-r/o elements) sorting-accumulator))
-    (assert (eq (sorting-accumulator-predicate sorting-accumulator) #'<=) ()
-            "Accumulator has to be sorted by <=.")
+    (assert (let+ (((&sorting-accumulator nil nil predicate) sorting-accumulator))
+              (or (eq predicate #'<=)
+                  (eq predicate #'<)))
+            () "Accumulator has to be sorted by < or <=.")
     (let+ ((n (length elements))
            (r (* q (1- n)))
            ((&values int frac) (floor r))
@@ -266,11 +247,8 @@ them and return as a vector."
           left
           (convex-combination left (aref elements (1+ int)) frac)))))
 
-(defmethod quantile (object q)
-  (quantile (sweep #'sorting-accumulator object) q))
-
-(define-sweep-default-generators ('quantile #'quantile)
-    #'sorting-accumulator)
+(define-conforming-accumulator ((quantile quantiles) (number number))
+  (sorting-accumulator))
 
 ;;; sparce accumulator arrays
 
