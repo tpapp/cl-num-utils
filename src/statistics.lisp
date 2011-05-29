@@ -194,8 +194,10 @@ evaluates to this accumulator.  For use in SWEEP."
     (incf sse (* (- object mean) difference))))
 
 (defmethod sse ((instance mean-sse-accumulator) &optional center)
-  (assert (not center) () "need to implement...")
-  (mean-sse-accumulator-sse instance))
+  (let+ (((&structure mean-sse-accumulator- tally mean sse) instance))
+    (if center
+        (+ sse (* (- center mean) (+ center mean) tally))
+        sse)))
 
 (define-structure-slot-accessor mean mean-sse-accumulator :read-only? t)
 
