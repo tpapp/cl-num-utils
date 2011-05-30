@@ -112,13 +112,36 @@ increasing."
     (for element-p :previous element :initially (aref vector 0))
     (always (funcall predicate element-p element))))
 
-(defun cumulative-sum (sequence &key 
-                       (result-type 
-                        (etypecase sequence
-                          (list 'list)
-                          (vector `(simple-array ,(array-element-type sequence) (*))))))
-  "Cumulative sum of sequence.  Return a sequence of the same kind and length; last
-element is the total.  The total is returned as the second value."
+(defun similar-element-type (element-type)
+  "Return a type that is a supertype of ELEMENT-TYPE and is closed under
+arithmetic operations.  May not be the narrowest."
+  (if (subtypep element-type 'float)
+      element-type
+      t))
+
+(defun similar-sequence-type (sequence)
+  "Return type that sequence can be mapped to using arithmetic operations."
+  (etypecase sequence
+    (list 'list)
+    (vector `(simple-array 
+              ,(similar-element-type (array-element-type sequence)) (*)))))
+
+(defun cumulative-sum (sequence
+                       &key (result-type (similar-sequence-type sequence)))
+  "Cumulative sum of sequence.  Return a sequence of the same kind and length;
+last element is the total.  The latter is returned as the second value."
+  (let ((sum 0))
+    (values (map result-type (lambda (element)
+                               (incf sum element))
+                 sequence)
+            sum)))
+
+(defun cumulative-product (sequence 
+                           &key (result-type
+                                 (similar-sequence-type sequence)))
+  "Cumulative product of sequence.  Return a sequence of the same kind and
+length; last element is the total product.  The latter is also returned as the
+second value."
   (let ((sum 0))
     (values (map result-type (lambda (element)
                                (incf sum element))

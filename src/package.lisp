@@ -20,8 +20,8 @@
    ;; seq-and-array
 
    simple-fixnum-vector as-simple-fixnum-vector array* vector* filled-array
-   iseq numseq vector-satisfies? map-array sumcumulative-sum sort-order
-   make-similar-vector make-similar-array rep displace-array
+   iseq numseq vector-satisfies? map-array cumulative-sum cumulative-product
+   sort-order make-similar-vector make-similar-array rep displace-array
    flatten-array subarray group positions which which-positions
    which-rows first* second* third* fourth* fifth* sixth* seventh* eighth*
    ninth* tenth* as-array row-major-loop
