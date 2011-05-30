@@ -17,7 +17,7 @@ of the same type)."
 
 (addtest (seq-and-array-tests)
   vector*-and-array*
-  (bind ((*lift-equality-test* 
+  (let+ ((*lift-equality-test* 
           (lambda (array spec)
             "Test that array conforms to spec, which is (element-type array)."
             (and (type= (array-element-type array)
