@@ -85,13 +85,13 @@ evaluates to this accumulator.  For use in SWEEP."
       (when (plusp n-1)
         (/ sse n-1)))))
 
-(defgeneric sum (object)
-  (:documentation "Sum of elements in object.")
+(defgeneric sum (object &key key)
+  (:documentation "Sum of elements in object.  KEY is applied to each element.")
   ;; !!! TODO: also with accumulators
-  (:method ((sequence sequence))
-    (reduce #'+ sequence))
-  (:method ((array array))
-    (reduce #'+ (flatten-array array))))
+  (:method ((sequence sequence) &key (key #'identity))
+    (reduce #'+ sequence :key key))
+  (:method ((array array) &key (key #'identity))
+    (reduce #'+ (flatten-array array) :key key)))
 
 (defgeneric product (object)
   (:documentation "Product of elements in object.")
@@ -196,7 +196,7 @@ evaluates to this accumulator.  For use in SWEEP."
 (defmethod sse ((instance mean-sse-accumulator) &optional center)
   (let+ (((&structure mean-sse-accumulator- tally mean sse) instance))
     (if center
-        (+ sse (* (- center mean) (+ center mean) tally))
+        (+ sse (* (expt (- mean center) 2) tally))
         sse)))
 
 (define-structure-slot-accessor mean mean-sse-accumulator :read-only? t)
