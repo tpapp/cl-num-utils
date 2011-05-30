@@ -17,14 +17,25 @@
  (ensure-same (variance (ia 20)) 35))
 
 (addtest (statistics-tests)
+  sse-off-center-test
+  (let+ ((a (ia 9))
+         (b (ia* 7 19))
+         ((&flet sse2 (seq center)
+            (sum seq :key (lambda (x) (expt (- x center) 2)))))
+         (*lift-equality-test* #'==))
+    (ensure-same (sse a 1.1) (sse2 a 1.1))
+    (ensure-same (sse b 1.1) (sse2 b 1.1))
+    (ensure-same (sse a pi) (sse2 a pi))))
+
+(addtest (statistics-tests)
   test-array-mean
-  (bind ((v1 (ia 6))
+  (let+ ((v1 (ia 6))
          (v2 (e+ v1 3))
          (v3 (e+ v1 5))
          (vectors (vector v1 v2 v3))
          (vm (e+ v1 8/3))
-         ((:flet v->a (v))
-          (displace-array v '(2 3)))
+         ((&flet v->a (v)
+            (displace-array v '(2 3))))
          (am (v->a vm))
          (*lift-equality-test* #'==))
     (ensure-same (mean vectors) vm)
