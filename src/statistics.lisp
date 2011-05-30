@@ -204,6 +204,118 @@ evaluates to this accumulator.  For use in SWEEP."
 (define-conforming-accumulator ((sse variance) (number number))
   (mean-sse-accumulator))
 
+;;; covariance accumulator
+
+(defstruct (covariance-accumulator
+             (:constructor covariance-accumulator ())
+             (:include tallier))
+  "Accumulator for covariances."
+  (x-mean 0d0)
+  (y-mean 0d0)
+  (cross-sum 0d0))
+
+(defmethod add ((accumulator covariance-accumulator) (xy cons))
+  (let+ (((x . y) xy)
+         ((&structure covariance-accumulator- tally
+                      x-mean y-mean cross-sum) accumulator)
+         (y-difference (- y y-mean)))
+    (incf tally)
+    (incf-mean x-mean x tally)
+    (incf y-mean (/ y-difference tally))
+    (incf cross-sum (* (- x x-mean) y-difference))))
+
+(defmethod covariance ((accumulator covariance-accumulator))
+  (let+ (((&structure covariance-accumulator- tally cross-sum) accumulator)
+         (n-1 (1- tally)))
+    (when (plusp n-1)
+      (/ cross-sum n-1))))
+
+(defun covariance-xy (x y)
+  "Calculate the covariance of two sequences."
+  (covariance
+   (with-accumulator ((covariance-accumulator) add)
+     (map nil (lambda (x y) (add (cons x y))) x y))))
+
+;;; autocovariance accumulator
+
+(defstruct+ (autocovariance-accumulator 
+             (:constructor autocovariance-accumulator%))
+  "Autocovariance accumulator.  Handles missing values (NIL)."
+  (n 0 :type fixnum)
+  (circular-buffer nil :type vector)
+  (variance-accumulator (mean-sse-accumulator))
+  (covariance-accumulators nil :type vector))
+
+(defun autocovariance-accumulator (lags)
+  (autocovariance-accumulator% 
+   :circular-buffer (make-array lags :initial-element nil)
+   :covariance-accumulators (filled-array lags #'covariance-accumulator)))
+
+(defgeneric lags (accumulator)
+  (:documentation "Return the maximum number of available lags in
+  ACCUMULATOR.")
+  (:method ((accumulator autocovariance-accumulator))
+    (length (autocovariance-accumulator-circular-buffer accumulator))))
+
+(defmethod add ((accumulator autocovariance-accumulator) (x number))
+  (let+ (((&autocovariance-accumulator n circular-buffer variance-accumulator
+                                       covariance-accumulators) accumulator)
+         (lags (length covariance-accumulators)))
+    ;; add to variance
+    (add variance-accumulator x)
+    ;; add to covariances
+    (loop for lag below lags
+          for index downfrom (1- n)
+          do (awhen (aref circular-buffer (mod index lags))
+               (add (aref covariance-accumulators lag) (cons x it))))
+    ;; move circular buffer
+    (setf (aref circular-buffer (mod n lags)) x)
+    (incf n)))
+
+(defmethod add ((accumulator autocovariance-accumulator) (x null))
+  ;; just move circular buffer
+  (let+ (((&autocovariance-accumulator n circular-buffer nil nil) accumulator)
+         (lags (length circular-buffer)))
+    (setf (aref circular-buffer (mod n lags)) x)
+    (incf n)))
+
+(defmethod tally ((accumulator autocovariance-accumulator))
+  (tally (autocovariance-accumulator-variance-accumulator accumulator)))
+
+(defmethod mean ((accumulator autocovariance-accumulator))
+  (mean (autocovariance-accumulator-variance-accumulator accumulator)))
+
+(defmethod sse ((accumulator autocovariance-accumulator) &optional center)
+  (let ((accumulator
+         (autocovariance-accumulator-variance-accumulator accumulator)))
+    (values (sse accumulator center) accumulator)))
+
+(defgeneric autocovariances (object &optional lags)
+  (:documentation "Autocovariances.")
+  (:method ((accumulator autocovariance-accumulator) &optional lags)
+    (subseq 
+     (map 'vector #'covariance 
+          (autocovariance-accumulator-covariance-accumulators accumulator))
+     0 lags))
+  (:method (object &optional lags)
+    (let ((accumulator (autocovariance-accumulator lags)))
+      (values (autocovariances (sweep accumulator object) lags) accumulator))))
+
+(defgeneric autocorrelations (accumulator &optional lags)
+  (:documentation "Autocorrelations.")
+  (:method ((accumulator autocovariance-accumulator) &optional lags)
+    (let+ (((&structure autocovariance-accumulator- variance-accumulator
+                        covariance-accumulators) accumulator)
+           (variance (variance variance-accumulator)))
+      (subseq
+       (map 'vector (lambda (covariance-accumulator)
+                      (/ (covariance covariance-accumulator) variance))
+            covariance-accumulators)
+       0 lags)))
+  (:method (object &optional lags)
+    (let ((accumulator (autocovariance-accumulator lags)))
+      (values (autocorrelations (sweep accumulator object) lags) accumulator))))
+
 ;;; sorting accumulator
 ;;; 
 ;;; This is not the most elegant way of calculating quantiles, but it will do

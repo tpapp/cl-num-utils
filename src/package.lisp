@@ -46,6 +46,9 @@
    tallier mean-accumulator incf-mean array-mean-accumulator
    mean-sse-accumulator
 
+   covariance-accumulator covariance covariance-xy autocovariance-accumulator
+   autocovariances autocorrelations lags
+   
    sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
    acf-accumulator
      
@@ -108,4 +111,5 @@
    
    reached-max-iter golden-section-minimize
 
-   ))
+   )
+)

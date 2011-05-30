@@ -70,10 +70,39 @@
 ;;     (ensure-same (second (multiple-value-list (weighted-variance s1 w1)))
 ;;                  (weighted-mean s1 w1))))
 
-;; (addtest (statistics-tests)
-;;   test-covariance
-;;  (ensure-same (covariance (ia 9) (ia 9)) (variance (ia 9)))
-;;  (ensure-same (covariance #(2 3 5) #(7 11 13)) 13/3))
+(defparameter *a* (let ((a (covariance-accumulator)))
+                    (add a (cons 0 0))
+                    (add a (cons 1 1))
+                    (add a (cons 2 2))
+                    a))
+
+(addtest (statistics-tests)
+  test-covariance
+  (ensure-same (covariance-xy (ia 3) (ia 3)) (variance (ia 3)))
+  (ensure-same (covariance-xy #(2 3 5) #(7 11 13)) (float 13/3 1d0)))
+
+(addtest (statistics-tests)
+  test-autocovariance
+  (let+ ((n 200)
+         (a (filled-array 200 (curry #'random 1d0)))
+         ((&flet naive-cov (lag)
+            (covariance-xy (subseq a 0 (- n lag)) (subseq a lag))))
+         ((&values acv acc) (autocovariances a 3))
+         (#(c1 c2 c3) acv)
+         (v (variance acc))
+         (#(r1 r2 r3) (autocorrelations acc))
+         (*lift-equality-test* #'==))
+    (ensure-same c1 (naive-cov 1))
+    (ensure-same c2 (naive-cov 2))
+    (ensure-same c3 (naive-cov 3))
+    (ensure-same (variance a) v)
+    (ensure-same r1 (/ c1 v))
+    (ensure-same r2 (/ c2 v))
+    (ensure-same r3 (/ c3 v))
+    (ensure-same (autocorrelations a 3) (autocorrelations acc 3))
+    (ensure-same (tally a) (tally acc))
+    (ensure-same (mean a) (mean acc))
+    (ensure-same (lags acc) 3)))
 
 (addtest (statistics-tests)
   quantiles
