@@ -105,6 +105,19 @@
     (ensure-same (lags acc) 3)))
 
 (addtest (statistics-tests)
+  test-pool
+  (let* ((n 100)
+         (vector (filled-array (* 2 n) (curry #'random 1d0) 'double-float))
+         (acc1 (sweep 'sse (subseq vector 0 n)))
+         (acc2 (sweep 'sse (subseq vector n)))
+         (acc (sweep 'sse vector))
+         (acc-pooled (pool acc1 acc2))
+         (*lift-equality-test* #'==))
+    (ensure-same (tally acc) (tally acc-pooled))
+    (ensure-same (mean acc) (mean acc-pooled))
+    (ensure-same (variance acc) (variance acc-pooled))))
+
+(addtest (statistics-tests)
   quantiles
   (let ((sample #(0.0 1.0))
         (quantiles (numseq 0 1 :length 11 :type 'double-float)))

@@ -7,6 +7,22 @@
 (defgeneric add (accumulator object)
   (:documentation "Add accumulator to object."))
 
+(defgeneric pool2 (accumulator1 accumulator2)
+  (:documentation "Pool two accumulators.  When they are of a different type,
+  the resulting accumulator will be downgraded to the level afforded by the
+  information available in the accumulators."))
+
+(defun pool* (accumulators)
+  "Pool ACCUMULATORS."
+  (reduce #'pool2 accumulators))
+
+(defun pool (&rest accumulators)
+  "Pool ACCUMULATORS."
+  (declare (inline pool*))
+  (pool* accumulators))
+
+;;; !! write compiler macro for (pool acc1 acc2) => (pool2 acc1 acc2)
+
 (defgeneric conforming-accumulator (statistic element)
   (:documentation "Return an accumulator that provides the desired
   STATISTIC and handles objects similar to ELEMENT."))
@@ -131,7 +147,7 @@ evaluates to this accumulator.  For use in SWEEP."
 
 (defstruct (mean-accumulator
              (:include tallier)
-             (:constructor mean-accumulator ()))
+             (:constructor mean-accumulator (&optional (tally 0) (mean 0d0))))
   "Accumulator for a (scalar) mean."
   (mean 0d0))
 
@@ -149,6 +165,19 @@ evaluates to this accumulator.  For use in SWEEP."
 
 (define-conforming-accumulator (mean (number number))
   (mean-accumulator))
+
+(declaim (inline pooled-mean))
+(defun pooled-mean (tally1 mean1 tally2 mean2
+                    &optional (tally (+ tally1 tally2)))
+  "Pooled mean.  For internal use."
+  (/ (+ (* tally1 mean1) (* tally2 mean2)) tally))
+    
+
+(defmethod pool2 ((acc1 mean-accumulator) (acc2 mean-accumulator))
+  (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
+         ((&structure mean-accumulator- (tally2 tally) (mean2 mean)) acc2)
+         (tally (+ tally1 tally2)))
+    (mean-accumulator tally (pooled-mean tally1 mean1 tally2 mean2 tally))))
 
 ;;; mean accumulator for arrays
 
@@ -181,7 +210,8 @@ evaluates to this accumulator.  For use in SWEEP."
 ;;; mean-sse accumulator
 
 (defstruct (mean-sse-accumulator
-             (:constructor mean-sse-accumulator ())
+             (:constructor mean-sse-accumulator
+              (&optional (tally 0) (mean 0d0) (sse 0d0)))
              (:include mean-accumulator))
   "Mean and sum of squared error accumulator."
   (sse 0d0))
@@ -203,6 +233,24 @@ evaluates to this accumulator.  For use in SWEEP."
 
 (define-conforming-accumulator ((sse variance) (number number))
   (mean-sse-accumulator))
+
+(declaim (inline pooled-sse))
+(defun pooled-sse (tally1 mean1 sse1 tally2 mean2 sse2
+                   &optional (tally (+ tally1 tally2)))
+  (+ sse1 sse2
+     (/ (* tally1 tally2 (expt (- mean2 mean1) 2))
+        tally)))
+
+(defmethod pool2 ((acc1 mean-sse-accumulator) (acc2 mean-sse-accumulator))
+  (let+ (((&structure-r/o mean-sse-accumulator- (tally1 tally) (mean1 mean)
+                          (sse1 sse)) acc1)
+         ((&structure-r/o mean-sse-accumulator- (tally2 tally) (mean2 mean)
+                          (sse2 sse)) acc2)
+         (tally (+ tally1 tally2)))
+    (mean-sse-accumulator tally
+                          (pooled-mean tally1 mean1 tally2 mean2 tally)
+                          (pooled-sse tally1 mean1 sse1 tally2 mean2 sse2
+                                      tally))))
 
 ;;; covariance accumulator
 
@@ -639,3 +687,25 @@ SUBRANGES is #() and INDEX-LISTS contains NILs.  For example,
                (push subrange-index (aref subrange-lists within-index))))
            (return (values subranges
                            (map 'vector #'nreverse subrange-lists)))))))))
+
+;;; references
+;;; 
+;; @inproceedings{bennett2009numerically,
+;;   title={Numerically stable, single-pass, parallel statistics algorithms},
+;;   author={Bennett, J. and Grout, R. and P{\'e}bay, P. and Roe, D. and Thompson, D.},
+;;   booktitle={Cluster Computing and Workshops, 2009. CLUSTER'09. IEEE International Conference on},
+;;   pages={1--8},
+;;   year={2009},
+;;   organization={IEEE}
+;; }
+;;
+;; @article{west1979updating,
+;;   title={Updating mean and variance estimates: An improved method},
+;;   author={West, DHD},
+;;   journal={Communications of the ACM},
+;;   volume={22},
+;;   number={9},
+;;   pages={532--535},
+;;   year={1979},
+;;   publisher={ACM}
+;; }
