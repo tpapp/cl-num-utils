@@ -37,7 +37,7 @@
    frequency relative-frequency subscript-limits subscript-limit
    subscript-rank hashed-frequencies *frequency-print-width*
    histogram-locations hashed-histogram make-hashed-histogram
-   histogram-from-sequence histogram-from-matrix
+   histogram-from-sequence histogram-from-matrix binary-search
 
    ;; statistics
    
@@ -51,6 +51,8 @@
    
    sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
    acf-accumulator
+
+   subranges
      
    ;; interval
      
