@@ -67,3 +67,29 @@ BIN-INDEX and BIN-FUNCTION map VALUE to INDEX."
     (ensure-same (relative-frequency histogram 7) 0)
     (ensure-same (subscript-limit histogram 0) (cons 1 4))
     (ensure-error (subscript-limit histogram 1))))
+
+(addtest (bins-tests)
+  binary-search
+  (flet ((test-binary-search (n &key (max n))
+           "Test fixnum binary search by generating N random elements below
+MAX, then finding a random number."
+           (let* ((vector (sort
+                           (remove-duplicates (filled-array n (curry #'random max)))
+                           #'<=))
+                  (value (random max))
+                  (index (position value vector)) ; the hard way
+                  (result (binary-search vector value)))
+             (cond
+               ((not index)
+                (assert (not result) ()
+                        "~A mistakenly found in ~A at index ~A"
+                        value vector result)
+                t)
+               ((not result)
+                (error "~A not found in ~A" value vector))
+               ((/= index result)
+                (error "~A found in ~A at location ~A instead of ~A"
+                       value vector result index))
+               (t t)))))
+    (loop repeat 10000 do
+      (ensure (test-binary-search (1+ (random 40)))))))

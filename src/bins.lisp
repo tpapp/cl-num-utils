@@ -421,3 +421,24 @@ exported."
 ;;       (make-instance 'discrete-binned-datann==
 ;;                      :indexes (map 'vector (lambda (v) (gethash v table)) vector)
 ;;                      :keys keys))))
+
+(defun binary-search (sorted i)
+  "Binary search for a number I on a sequence (vector preferred) sorted in
+strictly increasing order (not checked) returning the index.  When I is not
+found, return NIL."
+  (let* ((sorted (coerce sorted 'vector))
+         (left 0)
+         (right (1- (length sorted))))
+    (assert (<= 0 right) () "Vector has no elements.")
+    (unless (<= (aref sorted left) i (aref sorted right))
+      (return-from binary-search nil))
+    (do () ((> left right) nil)
+      (let* ((middle (floor (+ left right) 2))
+             (middle-value (aref sorted middle)))
+        (cond
+          ((= middle-value i)
+           (return-from binary-search middle))
+          ((< middle-value i)
+           (setf left (1+ middle)))
+          (t
+           (setf right (1- middle))))))))
