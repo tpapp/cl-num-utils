@@ -110,3 +110,43 @@
         (quantiles (numseq 0 1 :length 11 :type 'double-float)))
     (ensure-same (map 'vector (curry #'quantile sample) quantiles)
                  quantiles)))
+
+(addtest (statistics-tests)
+  subranges
+  (let+ (((&flet random-ranges (n &key (max 200) (order? t))
+            (filled-array n (lambda ()
+                              (let ((start (random max))
+                                    (end (random max)))
+                                (when (and order? (> start end))
+                                  (rotatef start end))
+                                (cons start end))))))
+         ((&flet assemble-range (subranges index-list)
+            (unless index-list
+              (return-from assemble-range nil))
+            (iter
+              (with start)
+              (with end)
+              (for index :in index-list)
+              (for subrange := (aref subranges index))
+              (for previous-subrange :previous subrange :initially nil)
+              (if (first-iteration-p)
+                  (setf start (car subrange))
+                  (assert (= (car subrange) (cdr previous-subrange))))
+              (setf end (cdr subrange))
+              (finally
+               (return (cons start end)))))))
+    (loop
+      repeat 100000 do
+     (let+ ((ranges (random-ranges 10 :order? nil))
+            ((&values subranges index-lists) (subranges ranges)))
+       (iter
+         (for index-list :in-vector index-lists)
+         (for range :in-vector ranges)
+         (for assembled-range := (assemble-range subranges index-list))
+         (for match? := (if assembled-range
+                            (equal range assembled-range)
+                            (>= (car range) (cdr range))))
+         (unless match?
+           (format *error-output* "mismatch: range ~A assembled to ~A"
+                   range assembled-range))
+         (ensure match?))))))

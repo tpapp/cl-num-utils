@@ -557,3 +557,85 @@ them and return as a vector."
 ;;     (for index :from 0 :below (array-total-size array))
 ;;     (summing (expt (- (row-major-aref array index) mean) 2))))
 
+(defun subranges (ranges)
+  "Given a sequence of integer ranges with elements (start . end),
+return (values SUBRANGES INDEX-LISTS).  SUBRANGES is a vector of subranges
+with elements (start . end), and INDEX-LISTS is a vector of lists, enumerating
+the subintervals that make up the corresponding original interval.  All
+returned ranges and indexes are in increasing order, but RANGES doesn't have
+to be.
+
+Example:
+
+  (subranges #((0 . 100) (50 . 150)))
+
+  evaluates to values
+
+    #((0 . 50) (50 . 100) (100 . 150))
+    #((0 1) (1 2))
+
+The algorithm makes sure that only subranges which are in a nonempty range are
+kept.  For example,
+
+  (subranges #((0 . 50) (100 . 150)))
+
+  evaluates to values
+
+    #((0 . 50) (100 . 150))
+    #((0) (1))
+
+When (>= start end), a range is considered empty.  If all ranges are empty,
+SUBRANGES is #() and INDEX-LISTS contains NILs.  For example,
+
+  (subranges #((5 . 0) (6 . 6)))
+
+  evaluates to values
+
+    #()
+    #(NIL NIL)
+"
+  (declare (optimize debug))
+  (let* ((ranges (coerce ranges 'vector))
+         (endpoints (coerce (remove-duplicates 
+                             (iter
+                               (for (start . end) :in-vector ranges)
+                               (when (< start end)
+                                 (collect start)
+                                 (collect end))))
+                            'simple-fixnum-vector)))
+    ;; if all ranges are empty, there are no subranges
+    (unless (plusp (length endpoints))
+      (return-from subranges (values #()
+                                     (make-array (length ranges)
+                                                 :initial-element nil))))
+    ;; sort endpoints
+    (let* ((endpoints (sort endpoints #'<=))
+           (within-lists (make-array (1- (length endpoints))
+                                     :initial-element nil)))
+      ;; check which subintervals are within any range
+      (iter
+        (for (start . end) :in-vector ranges :with-index range-index)
+        (when (< start end)
+          (iter
+            (for endpoint :from (binary-search endpoints start)
+                          :below (binary-search endpoints end))
+            (push range-index (aref within-lists endpoint)))))
+      ;; remove those that are not in use
+      (iter
+        (for end :in-vector endpoints :from 1)
+        (for start :previous end :initially (first* endpoints))
+        (for within-list :in-vector within-lists)
+        (when within-list
+          (collect (cons start end) :into subranges :result-type vector)
+          (collect (nreverse within-list) :into within-lists2))
+        (finally
+         ;; for each range, list constituent subranges
+         (let ((subrange-lists (make-array (length ranges)
+                                           :initial-element nil)))
+           (iter
+             (for within-list :in within-lists2)
+             (for subrange-index :from 0)
+             (dolist (within-index within-list)
+               (push subrange-index (aref subrange-lists within-index))))
+           (return (values subranges
+                           (map 'vector #'nreverse subrange-lists)))))))))
