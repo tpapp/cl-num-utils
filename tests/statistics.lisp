@@ -113,9 +113,7 @@
          (acc (sweep 'sse vector))
          (acc-pooled (pool acc1 acc2))
          (*lift-equality-test* #'==))
-    (ensure-same (tally acc) (tally acc-pooled))
-    (ensure-same (mean acc) (mean acc-pooled))
-    (ensure-same (variance acc) (variance acc-pooled))))
+    (ensure-same acc acc-pooled)))
 
 (addtest (statistics-tests)
   quantiles
