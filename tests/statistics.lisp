@@ -70,11 +70,11 @@
 ;;     (ensure-same (second (multiple-value-list (weighted-variance s1 w1)))
 ;;                  (weighted-mean s1 w1))))
 
-(defparameter *a* (let ((a (covariance-accumulator)))
-                    (add a (cons 0 0))
-                    (add a (cons 1 1))
-                    (add a (cons 2 2))
-                    a))
+;; (defparameter *a* (let ((a (covariance-accumulator)))
+;;                     (add a (cons 0 0))
+;;                     (add a (cons 1 1))
+;;                     (add a (cons 2 2))
+;;                     a))
 
 (addtest (statistics-tests)
   test-covariance
