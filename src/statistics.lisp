@@ -179,6 +179,13 @@ evaluates to this accumulator.  For use in SWEEP."
          (tally (+ tally1 tally2)))
     (mean-accumulator tally (pooled-mean tally1 mean1 tally2 mean2 tally))))
 
+(defmethod == ((acc1 mean-accumulator) (acc2 mean-accumulator)
+               &optional (tolerance *==-tolerance*))
+  (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
+         ((&structure mean-accumulator- (tally2 tally) (mean2 mean)) acc2))
+    (and (= tally1 tally2)
+         (== mean1 mean2 tolerance))))
+
 ;;; mean accumulator for arrays
 
 (defstruct+ (array-mean-accumulator
@@ -252,6 +259,16 @@ evaluates to this accumulator.  For use in SWEEP."
                           (pooled-sse tally1 mean1 sse1 tally2 mean2 sse2
                                       tally))))
 
+(defmethod == ((acc1 mean-sse-accumulator) (acc2 mean-sse-accumulator)
+               &optional (tolerance *==-tolerance*))
+  (let+ (((&structure-r/o mean-sse-accumulator- (tally1 tally) (mean1 mean)
+                          (sse1 sse)) acc1)
+         ((&structure-r/o mean-sse-accumulator- (tally2 tally) (mean2 mean)
+                          (sse2 sse)) acc2))
+    (and (= tally1 tally2)
+         (== mean1 mean2 tolerance)
+         (== sse1 sse2 tolerance))))
+
 ;;; covariance accumulator
 
 (defstruct (covariance-accumulator
@@ -283,6 +300,19 @@ evaluates to this accumulator.  For use in SWEEP."
   (covariance
    (with-accumulator ((covariance-accumulator) add)
      (map nil (lambda (x y) (add (cons x y))) x y))))
+
+(defmethod == ((acc1 covariance-accumulator) (acc2 covariance-accumulator)
+               &optional (tolerance *==-tolerance*))
+  (let+ (((&structure-r/o covariance-accumulator- (tally1 tally) 
+                          (x-mean1 x-mean) (y-mean1 y-mean)
+                          (cross-sum1 cross-sum)) acc1)
+         ((&structure-r/o covariance-accumulator- (tally2 tally) 
+                          (x-mean2 x-mean) (y-mean2 y-mean)
+                          (cross-sum2 cross-sum)) acc2))
+    (and (= tally1 tally2)
+         (== x-mean1 x-mean2 tolerance)
+         (== y-mean1 y-mean2 tolerance)
+         (== cross-sum1 cross-sum2 tolerance))))
 
 ;;; autocovariance accumulator
 
@@ -363,6 +393,18 @@ evaluates to this accumulator.  For use in SWEEP."
   (:method (object &optional lags)
     (let ((accumulator (autocovariance-accumulator lags)))
       (values (autocorrelations (sweep accumulator object) lags) accumulator))))
+
+(defmethod == ((acc1 autocovariance-accumulator)
+               (acc2 autocovariance-accumulator)
+               &optional (tolerance *==-tolerance*))
+  (let+ (((&structure-r/o autocovariance-accumulator-
+                          (v1 variance-accumulator)
+                          (c1 covariance-accumulators)) acc1)
+         ((&structure-r/o autocovariance-accumulator-
+                          (v2 variance-accumulator)
+                          (c2 covariance-accumulators)) acc2))
+    (and (== v1 v2 tolerance)
+         (== c1 c2 tolerance))))
 
 ;;; sorting accumulator
 ;;; 
@@ -605,9 +647,9 @@ them and return as a vector."
 ;;     (for index :from 0 :below (array-total-size array))
 ;;     (summing (expt (- (row-major-aref array index) mean) 2))))
 
-(defun subranges (ranges)
+(defun subranges (ranges &key shadow-ranges)
   "Given a sequence of integer ranges with elements (start . end),
-return (values SUBRANGES INDEX-LISTS).  SUBRANGES is a vector of subranges
+return (values SUBRANGES INDEXES-LISTS).  SUBRANGES is a vector of subranges
 with elements (start . end), and INDEX-LISTS is a vector of lists, enumerating
 the subintervals that make up the corresponding original interval.  All
 returned ranges and indexes are in increasing order, but RANGES doesn't have
@@ -641,10 +683,21 @@ SUBRANGES is #() and INDEX-LISTS contains NILs.  For example,
 
     #()
     #(NIL NIL)
-"
-  (declare (optimize debug))
-  (let* ((ranges (coerce ranges 'vector))
-         (endpoints (coerce (remove-duplicates 
+
+Shadow-ranges are ranges which are taken into account when calculating the
+subranges, but have no corresponding elements in the returned vectors.  For
+example, :shadow-ranges '(0 . 1000) will make subranges superset of a
+partition of [0 ... 999]."
+  (if shadow-ranges
+      (let+ ((n (length shadow-ranges))
+             (ranges (concatenate 'vector shadow-ranges ranges))
+             ((&values subranges index-lists) (subranges% ranges)))
+        (values (subseq subranges n) (subseq index-lists n)))
+      (subranges% ranges)))
+
+(defun subranges% (ranges)
+  "Internal function used by subranges."
+  (let* ((endpoints (coerce (remove-duplicates 
                              (iter
                                (for (start . end) :in-vector ranges)
                                (when (< start end)
@@ -653,9 +706,9 @@ SUBRANGES is #() and INDEX-LISTS contains NILs.  For example,
                             'simple-fixnum-vector)))
     ;; if all ranges are empty, there are no subranges
     (unless (plusp (length endpoints))
-      (return-from subranges (values #()
-                                     (make-array (length ranges)
-                                                 :initial-element nil))))
+      (return-from subranges% (values #()
+                                      (make-array (length ranges)
+                                                  :initial-element nil))))
     ;; sort endpoints
     (let* ((endpoints (sort endpoints #'<=))
            (within-lists (make-array (1- (length endpoints))
