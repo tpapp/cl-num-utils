@@ -38,8 +38,8 @@ if necessary.  The logarithm is taken, to which BIAS is added.  The
 step size will be based on the fractional part.  FIVE-BIAS, also
 interpreted on a log scale, favors 5 over 2 as the first digit.  When
 BIAS is zero, STEP always divides WIDTH to at most N intervals."
-  (bind ((raw-step (max (/ width (1+ n)) min-step))
-         ((:values exponent residual) (floor (+ (coerce (log raw-step 10)
+  (let+ ((raw-step (max (/ width (1+ n)) min-step))
+         ((&values exponent residual) (floor (+ (coerce (log raw-step 10)
                                                         'double-float)
                                                 bias)))
          (correction (cond

@@ -47,11 +47,11 @@ index-specification in SUB) or needs to be resolved."
 (defun resolve-ix-index-specification (ix index-specification)
   "Resolve an index specification which may use keys in IX, returning an object
 that is understood by SUB."
-  (bind (((:flet resolve (key))
-          (cond
-            ((eq key t) t)
-            ((ix-key? key) (ix ix key))
-            (t key))))
+  (let+ (((&flet resolve (key)
+            (cond
+              ((eq key t) t)
+              ((ix-key? key) (ix ix key))
+              (t key)))))
     (cond
       ((ix-key? index-specification) (resolve index-specification))
       ((vectorp index-specification) (map 'vector #'resolve index-specification))
@@ -107,7 +107,7 @@ to share structure, call this function with a copy."
   (subseq (hashed-index-keys hashed-index) start end))
 
 (defmethod sub ((hashed-index hashed-index) &rest index-specifications)
-  (bind (((index-specification) index-specifications))
+  (let+ (((index-specification) index-specifications))
     (make-hashed-index (sub (ix-keys hashed-index) index-specification))))
 
 ;; (defparameter *hi* (make-hashed-index #(x y)))

@@ -34,7 +34,7 @@
   (:documentation "Return number of rows in object.  Signal an error if OBJECT
   doesn't have exactly two dimensions.")
   (:method (object)
-    (bind (((nrow nil) (dims object)))
+    (let+ (((nrow nil) (dims object)))
       nrow))
   (:method ((array array))
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
@@ -44,7 +44,7 @@
   (:documentation "Return number of columns in object.  Signal an error if
   OBJECT doesn't have exactly two dimensions.")
   (:method (object)
-    (bind (((nil ncol) (dims object)))
+    (let+ (((nil ncol) (dims object)))
       ncol))
   (:method ((array array))
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
@@ -145,11 +145,11 @@ STRICT-DIRECTION?, the sign of BY is auto-adjusted at the time of resolution."
     (otherwise (delayed-index-specification 'reverse index-specification))))
 
 (defmethod sub ((si si) &rest index-specifications)
-  (bind (((index-specification) index-specifications))
+  (let+ (((index-specification) index-specifications))
     (delayed-index-specification 'sub (cons si index-specification))))
 
 (defmethod sub ((di delayed-index-specification) &rest index-specifications)
-  (bind (((index-specification) index-specifications))
+  (let+ (((index-specification) index-specifications))
     (delayed-index-specification 'sub (cons di index-specification))))
 
 (defun resolve-t (dimension)
@@ -174,27 +174,27 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
   (declare (optimize debug))
   (when dimension
     (check-type dimension (integer 0 #.most-positive-fixnum)))
-  (bind (((:flet resolve-index (index &optional end?))
-          ;; Resolve an atomic index.  If END?, 0 and NIL stand for the dimension.
-          (check-type index (or fixnum null))
-           (cond
-             ((or (null index) (zerop index))
-              (if end?
-                  (progn
-                    (assert dimension () 
-                            "Can't resolve 0 at the end without a dimension.")
-                    dimension)
-                  (progn
-                    (assert index ()
-                            "NIL only has a meaning as an end delimiter.")
-                    0)))
-             ((minusp index)
-              (assert dimension () 
-                      "Can't resolve a negative index without a dimension.")
-              (aprog1 (+ dimension index)
-                (assert (<= 0 it) () 'sub-invalid-array-index
-                        :index index :dimension dimension)))
-             (t index))))
+  (let+ (((&flet resolve-index (index &optional end?)
+            ;; Resolve an atomic index.  If END?, 0 and NIL stand for the dimension.
+            (check-type index (or fixnum null))
+            (cond
+              ((or (null index) (zerop index))
+               (if end?
+                   (progn
+                     (assert dimension () 
+                             "Can't resolve 0 at the end without a dimension.")
+                     dimension)
+                   (progn
+                     (assert index ()
+                             "NIL only has a meaning as an end delimiter.")
+                     0)))
+              ((minusp index)
+               (assert dimension () 
+                       "Can't resolve a negative index without a dimension.")
+               (aprog1 (+ dimension index)
+                 (assert (<= 0 it) () 'sub-invalid-array-index
+                         :index index :dimension dimension)))
+              (t index)))))
     (etypecase index-specification
       ((eql t) (resolve-t dimension))
       (fixnum (resolve-index index-specification))
@@ -202,7 +202,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                     (assert (= dimension (length index-specification)))
                     (positions index-specification)))
       (vector (map 'simple-fixnum-vector #'resolve-index index-specification))
-      (si (bind (((:slots-r/o start end by strict-direction?) index-specification)
+      (si (let+ (((&slots-r/o start end by strict-direction?) index-specification)
                  (start (resolve-index start))
                  (end (resolve-index end t))
                  (span (- end start)))
@@ -212,7 +212,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                 (setf by (* (signum span) (abs by))))
             (maybe-resolved-si start (ceiling span by) by force-vector?)))
       (delayed-index-specification
-         (bind (((:slots-r/o type data) index-specification))
+         (let+ (((&slots-r/o type data) index-specification))
            (ecase type
              (concatenation
                 (apply #'concatenate 'simple-fixnum-vector
@@ -229,7 +229,7 @@ FORCE-VECTOR?, a result that would be RESOLVED-SI is converted into a vector."
                     (fixnum index-specification)
                     (simple-fixnum-vector (reverse index-specification))
                     (resolved-si
-                       (bind (((:slots-r/o start length by) index-specification))
+                       (let+(((&slots-r/o start length by) index-specification))
                          (maybe-resolved-si (+ start (* (1- length) by))
                                             length (- by) force-vector?))))))
              (sub (sub (resolve-index-specification (car data) dimension t)
@@ -361,13 +361,13 @@ on implementation details."
   (check-type next symbol)
   (once-only (dimensions index-specifications)
     (with-unique-names (coefficients offset rank cumsums valid-end map-counters%)
-      `(bind ((,dimensions (as-simple-fixnum-vector ,dimensions))
+      `(let+ ((,dimensions (as-simple-fixnum-vector ,dimensions))
               (,rank (length ,index-specifications)))
          (assert (= ,rank (length ,dimensions)) () 'sub-incompatible-dimensions)
-         (bind ((,index-specifications (resolve-index-specifications
+         (let+ ((,index-specifications (resolve-index-specifications
                                         ,index-specifications ,dimensions))
                 (,coefficients (row-major-coefficients ,dimensions))
-                ((:values ,offset ,index-specifications ,coefficients)
+                ((&values ,offset ,index-specifications ,coefficients)
                  (drop-dimensions ,index-specifications ,coefficients))
                 (,effective-dimensions (index-specification-dimensions
                                         ,index-specifications))
@@ -375,16 +375,16 @@ on implementation details."
                                        :initial-element 0))
                 (,cumsums (make-array ,rank :element-type 'fixnum))
                 (,valid-end 0)
-                ((:flet ,map-counters% ())
-                 (map-counters ,offset ,index-specifications ,coefficients
-                               ,counters ,cumsums ,valid-end))
+                ((&flet ,map-counters% ()
+                   (map-counters ,offset ,index-specifications ,coefficients
+                                 ,counters ,cumsums ,valid-end)))
                 (,index (,map-counters%))
-                ((:flet ,next ())
-                 (bind (((:values valid-end end?)
-                         (increment-index-counters ,counters ,effective-dimensions)))
-                   (setf ,valid-end valid-end
-                         ,index (,map-counters%))
-                   end?)))
+                ((&flet ,next ()
+                   (let+ (((&values valid-end end?)
+                           (increment-index-counters ,counters ,effective-dimensions)))
+                     (setf ,valid-end valid-end
+                           ,index (,map-counters%))
+                     end?))))
            ;; !!! dynamic extent & type declarations
            ;; !!! check optimizations
            ,@body)))))
@@ -413,7 +413,7 @@ COLUMN-MAJOR? uses column-major indexing."
   (check-type next symbol)
   (once-only (dimensions column-major?)
     (with-unique-names (coefficients rank cumsums valid-end)
-      `(bind (((:flet nreverse-if-cm (vector))
+      `(let+ (((&flet nreverse-if-cm (vector))
                (if ,column-major?
                    (nreverse vector)
                    vector))
@@ -426,14 +426,14 @@ COLUMN-MAJOR? uses column-major indexing."
               (,cumsums (make-array ,rank :element-type 'fixnum))
               (,valid-end 0)
               (,index 0)
-              ((:flet ,next ())
-               (bind (((:values valid-end end?)
-                       (increment-index-counters ,counters ,dimensions)))
-                 (setf ,valid-end valid-end
-                       ,index
-                       (map-counters* ,coefficients ,counters ,cumsums 
-                                      ,valid-end))
-                 end?)))
+              ((&flet ,next ()
+                 (let+ (((&values valid-end end?)
+                         (increment-index-counters ,counters ,dimensions)))
+                   (setf ,valid-end valid-end
+                         ,index
+                         (map-counters* ,coefficients ,counters ,cumsums 
+                                        ,valid-end))
+                   end?))))
          (declare (ignorable (function ,next)))
          ,@body))))
 
@@ -523,3 +523,39 @@ COLUMN-MAJOR? uses column-major indexing."
       (for element :in-vector source)
       (setf (nth index list) element)
       (until (next-index)))))
+
+;;; utility functions
+
+(declaim (inline boolean-to-bit predicate-as-flag))
+
+(defun boolean-to-bit (boolean)
+  "Convert a boolean to a bit."
+  (if boolean 1 0))
+
+(defun predicate-as-flag (predicate)
+  "For convert a predicate to a function that returns a bit."
+  (lambda (object) (boolean-to-bit (funcall predicate object))))
+
+(defun positions (bit-vector)
+  "Return the indexes for nonzero elements in increasing order."
+  (check-type bit-vector bit-vector)
+  (iter
+    (for element :in-vector bit-vector :with-index position)
+    (unless (zerop element)
+      (collect position :result-type simple-fixnum-vector))))
+
+(defun mask (predicate sequence)
+  "Map sequence into a simple-bit-vector, using 1 when PREDICATE yields true,
+0 otherwise."
+  (map 'simple-bit-vector (predicate-as-flag predicate) sequence))
+
+(defun which (predicate sequence)
+  "Return an index of the positions in SEQUENCE which satisfy PREDICATE."
+  (let ((index 0)
+        positions)
+    (map nil (lambda (element)
+               (when (funcall predicate element)
+                 (push index positions))
+               (incf index))
+         sequence)
+    (coerce (nreverse positions) 'simple-fixnum-vector)))

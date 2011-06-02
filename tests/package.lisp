@@ -5,4 +5,6 @@
 
    run-cl-num-utils-tests
 
+   array* vector*
+
    ))

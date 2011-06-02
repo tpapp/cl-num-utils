@@ -13,7 +13,7 @@
 (defun divides? (number divisor)
   "Test if DIVISOR divides NUMBER without remainder, and if so, return the
   quotient.  Works generally, but makes most sense for rationals."
-  (bind (((:values quot rem) (floor number divisor)))
+  (let+ (((&values quot rem) (floor number divisor)))
     (when (zerop rem)
       quot)))
 
@@ -56,7 +56,7 @@ etc), return it as an integer, otherwise signal an error."
        (assert (zerop (imagpart number)) ()
                "~A has non-zero imaginary part." number)
        (as-integer (realpart number)))
-    (t (bind (((:values int frac) (floor number)))
+    (t (let+ (((&values int frac) (floor number)))
          (assert (zerop frac) ()
                  "~A has non-zero fractional part." number)
          int))))
@@ -79,7 +79,7 @@ finding a common array element type."
         rounded-number)))
 
 (defun maybe-copy-array (array copy?)
-  "If COPY?, return a copy of array, otherwise the original."
+  "If COPY?, return a shallow copy of array, otherwise the original."
   (if copy?
       (copy-array array)
       array))
@@ -192,3 +192,14 @@ When STREAM is NIL, nothing is displayed."
 (defun within? (left value right)
   "Return non-nil iff value is in [left,right)."
   (and (<= left value) (< value right)))
+
+(deftype simple-fixnum-vector ()
+  '(simple-array fixnum (*)))
+
+(defun as-simple-fixnum-vector (sequence &optional copy?)
+  "Convert SEQUENCE to a SIMPLE-FIXNUM-VECTOR.  When COPY?, make sure that the
+they don't share structure."
+  (if (and (typep sequence 'simple-fixnum-vector) copy?)
+      (copy-seq sequence)
+      (coerce sequence 'simple-fixnum-vector)))
+

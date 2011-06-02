@@ -33,23 +33,23 @@
           (sub matrix t 2) sub-vector)
     (ensure-same (data-frame-matrix df) matrix)))
 
-(addtest (data-frame-tests)
-  data-frame-filter-tests
-  (let* ((matrix (ia 4 3))
-         (keys '(a b (c foo)))
-         (*lift-equality-test* #'equalp)
-         (expected-result (make-data-frame #2A((6 7 8)) keys))
-         (df (make-data-frame matrix keys)))
-    (ensure-same (with-filter-data-frame df (a (c '(c foo)))
-                   (and (evenp a) (= c 8)))
-                 expected-result)))
+;; (addtest (data-frame-tests)
+;;   data-frame-filter-tests
+;;   (let* ((matrix (ia 4 3))
+;;          (keys '(a b (c foo)))
+;;          (*lift-equality-test* #'equalp)
+;;          (expected-result (make-data-frame #2A((6 7 8)) keys))
+;;          (df (make-data-frame matrix keys)))
+;;     (ensure-same (with-filter-data-frame df (a (c '(c foo)))
+;;                    (and (evenp a) (= c 8)))
+;;                  expected-result)))
 
-(addtest (data-frame-tests)
-  (let* ((matrix (array* '(2 3) t
-                         1 2 3
-                         5 6 7))
-         (shrunk-matrix (array* '(2 1) t 2 6))
-         (data-frame (make-data-frame matrix '(a b c)))
-         (shrunk-data-frame (shrink-rows data-frame :predicate #'evenp)))
-    (ensure-same (as-array shrunk-data-frame) shrunk-matrix)
-    (ensure-same (ix-keys shrunk-data-frame) (sub (ix-keys data-frame) (si 1 2)))))
+;; (addtest (data-frame-tests)
+;;   (let* ((matrix (array* '(2 3) t
+;;                          1 2 3
+;;                          5 6 7))
+;;          (shrunk-matrix (array* '(2 1) t 2 6))
+;;          (data-frame (make-data-frame matrix '(a b c)))
+;;          (shrunk-data-frame (shrink-rows data-frame :predicate #'evenp)))
+;;     (ensure-same (as-array shrunk-data-frame) shrunk-matrix)
+;;     (ensure-same (ix-keys shrunk-data-frame) (sub (ix-keys data-frame) (si 1 2)))))

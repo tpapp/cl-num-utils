@@ -8,19 +8,11 @@
 ;;;; and interval-intersection) return positive intervals by
 ;;;; construction.
 
-(defstruct (interval
+(defstruct+ (interval
              (:constructor make-interval (left right)))
   "An ordered pair of numbers."
   (left 0 :type real)
   (right 0 :type real))
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (metabang.bind::defbinding-form (:interval
-                                   :docstring
-                                   "Intervals can be accessed as (:interval left right)."
-                                   :use-values-p nil)
-    (bind (((left right) metabang.bind::variables))
-      `(bind (((:structure/rw interval- (,left left) (,right right)) ,values))))))
 
 (defstruct (forced-interval
              (:include interval)
@@ -73,7 +65,7 @@ weight on right."
 (defun interval-abs (interval &optional min?)
   "Return the maximum of the absolute values of the endpoints, or the minimum if
 MIN?."
-  (bind (((:interval left right) interval))
+  (let+ (((&interval left right) interval))
     (funcall (if min? #'min #'max) (abs left) (abs right))))
 
 (defun make-interval-or-nil (minimum maximum)
@@ -114,7 +106,7 @@ so far."
     (with max := nil)
     (for object :in objects)
     (flet ((update-with (interval)
-             (bind (((:interval left right) interval))
+             (let+ (((&interval left right) interval))
                (if min 
                    (setf min (min min left)
                          max (max max right))
@@ -123,7 +115,7 @@ so far."
       (typecase object
         (nil)
         (forced-interval
-           (bind (((:interval left right) object))
+           (let+ (((&interval left right) object))
              (setf min left)
              (setf max right)))
         (interval (update-with object))
@@ -138,7 +130,7 @@ nil, nil is returned."
   ;; flip nonpositive intervals
   (iter
     (for interval :in intervals)
-    (bind (((:interval left right) (if (positive-interval? interval)
+    (let+ (((&interval left right) (if (positive-interval? interval)
                                        interval
                                        (flip-interval interval))))
       (minimizing right :into min-right)
@@ -236,11 +228,11 @@ nil, (vector interval) is returned."
                         (right-ext left-ext))
   "Extend interval with given magnitudes and fractions, the latter
 intepreted proportionally to width (see FRACTION and PERCENT)."
-  (bind (((:interval left right) interval)
+  (let+ (((&interval left right) interval)
          (width (- right left))
-         ((:flet absolute (ext))
-          (etypecase ext
-            (fraction (* width (fraction-value ext)))
-            (real ext))))
+         ((&flet absolute (ext)
+            (etypecase ext
+              (fraction (* width (fraction-value ext)))
+              (real ext)))))
     (make-interval (- left (absolute left-ext))
                    (+ right (absolute right-ext)))))

@@ -2,11 +2,181 @@
 
 (in-package #:cl-num-utils)
 
+;;; utility functions
+
+(defmacro define-vector-accessors (&optional (n 10))
+  (flet ((accessor-name (i)
+           (intern (format nil "~:@(~:r~)*" i))))
+    `(progn
+       ,@(loop for i from 1 to n
+               collect 
+               `(defun ,(accessor-name i) (array)
+                  (row-major-aref array ,(1- i))))
+       (declaim (inline ,@(loop for i from 1 to n
+                                collect (accessor-name i)))))))
+
+(define-vector-accessors)
+
+(defmacro row-major-loop ((dimensions row-major-index row-index col-index
+                                      &key (nrow (gensym* '#:nrow))
+                                           (ncol (gensym* '#:ncol)))
+                          &body body)
+  "Loop through row-major matrix with given DIMENSIONS, incrementing
+ROW-MAJOR-INDEX, ROW-INDEX and COL-INDEX."
+  (check-types (row-index col-index row-major-index nrow ncol) symbol)
+  `(let+ (((,nrow ,ncol) ,dimensions)
+          (,row-major-index 0))
+     (dotimes (,row-index ,nrow)
+       (dotimes (,col-index ,ncol)
+         ,@body
+         (incf ,row-major-index)))))
+
 (defun array-element-type-available (type)
   "Return a boolean indicating whether TYPE upgraded to itself for arrays.
-  Naturally, the result is implementation-dependent and constant within the same
-  implementation."
+  Naturally, the result is implementation-dependent and constant within the
+  same implementation."
   (type= (upgraded-array-element-type type) type))
+
+(defun displace-array (array dimensions &optional (offset 0))
+  "Shorthand function for displacing an array."
+  (make-array dimensions
+              :displaced-to array
+              :displaced-index-offset offset
+              :element-type (array-element-type array)))
+
+(defun make-similar-array (array 
+                           &key (dimensions (array-dimensions array))
+                                (initial-element nil initial-element?))
+  "Make a simple-array with the given dimensions and element-type
+similar to array."
+  (let ((element-type (array-element-type array)))
+    (if initial-element?
+        (make-array dimensions :element-type element-type
+                    :initial-element (coerce initial-element element-type))
+        (make-array dimensions :element-type element-type))))
+
+(defun filled-array (dimensions function &optional (element-type t))
+  "Create array with given DIMENSIONS and ELEMENT-TYPE, then fill by calling
+FUNCTION, traversing in row-major order."
+  (aprog1 (make-array dimensions :element-type element-type)
+    (dotimes (index (array-total-size it))
+      (setf (row-major-aref it index) (funcall function)))))
+
+(defmethod rep (vector times &optional (each 1))
+  "Return a new sequence, which contains SEQUENCE repeated TIMES times,
+repeating each element EACH times (default is 1)."
+  (let* ((n (length vector))
+         (result (make-similar-array vector :dimensions (* n times each)))
+         (result-index 0))
+    (dotimes (outer times)
+      (dotimes (vector-index n)
+        (let ((elt (aref vector vector-index)))
+          (dotimes (inner each)
+            (setf (aref result result-index) elt)
+            (incf result-index)))))
+    result))
+
+;;; reshape
+
+(defun fill-in-dimensions (dimensions size)
+  "If one of the dimensions is missing (indicated with T), replace it with a
+dimension so that the total product equals SIZE.  If that's not possible,
+signal an error.  If there are no missing dimensions, just check that the
+product equals size."
+  (let+ ((dimensions (ensure-list dimensions))
+         ((&flet missing? (dimension) (eq dimension t)))
+         missing
+         (product 1))
+    (mapc (lambda (dimension)
+            (if (missing? dimension) 
+                (progn
+                  (assert (not missing) () "More than one missing dimension.")
+                  (setf missing t))
+                (progn
+                  (check-type dimension (integer 1))
+                  (multf product dimension))))
+          dimensions)
+    (if missing
+        (let+ (((&values fraction remainder) (floor size product)))
+          (assert (zerop remainder) ()
+                  "Substitution does not result in an integer.")
+          (mapcar (lambda (dimension)
+                    (if (missing? dimension) fraction dimension))
+                  dimensions))
+        dimensions)))
+
+(defun reshape (array dimensions &key (offset 0) copy?)
+  (let* ((size (array-total-size array))
+         (dimensions (fill-in-dimensions dimensions (- size offset))))
+    (maybe-copy-array (displace-array array dimensions offset) copy?)))
+
+(defun flatten-array (array &key copy?)
+  "Return ARRAY flattened to a vector.  WillMay share structure unless COPY?."
+  (let ((vector (displace-array array (array-total-size array))))
+    (if copy? (copy-seq vector) vector)))
+
+;;; subarrays 
+
+(defun subarrays (array rank)
+  "Return an array of subarrays, split of at RANK.  All subarrays are
+displaced and share structure."
+  (if (= rank (array-rank array))
+      array
+      (let* ((dimensions (array-dimensions array))
+             (result 
+              (make-similar-array array
+                                  :dimensions (subseq dimensions 0 rank)))
+             (sub-dimensions (subseq dimensions rank))
+             (sub-size (product dimensions)))
+        (dotimes (index (array-total-size result))
+          (setf (row-major-aref result index)
+                (displace-array array sub-dimensions
+                                (* index sub-size))))
+        result)))
+
+(defun subarray (array &rest subscripts)
+  "Given a partial list of subscripts, return the subarray that starts there,
+with all the other subscripts set to 0, dimensions inferred from the original.
+If no subscripts are given, the original array is returned.  Implemented by
+discplacing, shares structure."
+  (let* ((rank (array-rank array))
+         (drop (length subscripts)))
+    (assert (<= 0 drop rank))
+    (cond
+      ((zerop drop) array)
+      ((< drop rank)
+       (displace-array array
+                       (subseq (array-dimensions array) drop)
+                       (apply #'array-row-major-index array
+                              (aprog1 (make-list rank :initial-element 0)
+                                (replace it subscripts)))))
+      (t (apply #'aref array subscripts)))))
+
+(defun (setf subarray) (value array &rest subscripts)
+  (let ((subarray (apply #'subarray array subscripts)))
+    (assert (common-dimensions value subarray))
+    (replace (flatten-array subarray) (flatten-array value))))
+
+(defun combine (array &optional element-type)
+  "The opposite of SUBARRAYS.  If ELEMENT-TYPE is not given, it is inferred
+from the first element of array, which also determines the dimensions.  If
+that element is not an array, the original ARRAY is returned as it is."
+  (let ((first (first* array)))
+    (if (arrayp first)
+        (let* ((dimensions (array-dimensions array))
+               (sub-dimensions (array-dimensions first))
+               (element-type (aif element-type it (array-element-type first)))
+               (result (make-array (append dimensions sub-dimensions)
+                                   :element-type element-type))
+               (length (product dimensions))
+               (displaced (displace-array result
+                                          (cons length sub-dimensions))))
+          (dotimes (index length)
+            (setf (subarray displaced index) (row-major-aref array index)))
+          result)
+        array)))
+
+;;; generic interface for array-like objects
 
 (defgeneric as-array (object &key copy?)
   (:documentation "Return OBJECT as an array.  May share structure.")
@@ -25,92 +195,11 @@
               (aref matrix i i)))
       diagonal)))
 
-;;; !! ROWS and COLUMNS could be speeded up considerably for Lisp arrays
-
-(defgeneric rows (object &key copy?)
-  (:documentation "Return the rows of a matrix-like OBJECT as a vector.  May
-  share structure unless COPY?.")
-  (:method ((matrix array) &key copy?)
-    (iter
-      (for row-index :below (nrow matrix))
-      (collecting (subarray matrix row-index :copy? copy?)
-                  :result-type vector)))
-  (:method (object &key copy?)
-    (rows (as-array object) :copy? copy?)))
-
-(defgeneric columns (matrix &key copy?)
-  (:documentation "Return the columns of a matrix-like object as a vector of
-  vectors.  May share structure unless COPY?.")
-  (:method ((matrix array) &key copy?)
-    (declare (ignore copy?))
-    (iter
-      (for column-index :below (ncol matrix))
-      (collecting (sub matrix t column-index)
-                  :result-type vector)))
-  (:method (object &key copy?)
-    (columns (as-array object) :copy? copy?)))
-
-(defgeneric map-columns (function matrix)
-  (:documentation "Map columns of MATRIX using function.  FUNCTION is
-  called with columns that are extracted as a vector, and the returned
-  values are assembled into another matrix.  Element types and number
-  of rows are established after the first function call, and are
-  checked for conformity after that.  If function doesn't return a
-  vector, the values are collected in a vector instead of a matrix."))
-
-(defmethod map-columns (function (matrix array))
-  (bind ((matrix (if (vectorp matrix)
-                     (reshape matrix '(1 t) :row-major :copy? nil)
-                     matrix))
-         ((nil ncol) (array-dimensions matrix))
-         result
-         result-nrow)
-    (iter
-      (for col :from 0 :below ncol)
-      (let ((mapped-col (funcall function (sub matrix t col))))
-        (when (first-iteration-p)
-          (if (vectorp mapped-col)
-              (setf result-nrow (length mapped-col)
-                    result (make-array (list result-nrow ncol)
-                                       :element-type
-                                       (array-element-type mapped-col)))
-              (setf result (make-array ncol))))
-        (if result-nrow
-            (setf (sub result t col) mapped-col)
-            (setf (aref result col) mapped-col))))
-    result))
-
-(defgeneric map-rows (function matrix)
-  (:documentation "Map matrix row-wise into another matrix or vector, depending
- on the element type returned by FUNCTION."))
-
-(defmethod map-rows (function (matrix array))
-  (bind ((matrix (if (vectorp matrix)
-                     (reshape matrix '(t 1) :row-major :copy? nil)
-                     matrix))
-         ((nrow nil) (array-dimensions matrix))
-         result
-         result-ncol)
-    (iter
-      (for row :from 0 :below nrow)
-      (let ((mapped-row (funcall function (sub matrix row t))))
-        (when (first-iteration-p)
-          (if (vectorp mapped-row)
-              (setf result-ncol (length mapped-row)
-                    result (make-array (list nrow result-ncol)
-                                       :element-type
-                                       (array-element-type mapped-row)))
-              (setf result (make-array nrow))))
-        (if result-ncol
-            (setf (sub result row t) mapped-row)
-            (setf (aref result row) mapped-row))))
-    result))
-
 (defgeneric transpose (object &key copy?)
   (:documentation "Transpose a matrix.")
   (:method ((matrix array) &key copy?)
     (declare (ignore copy?))
-    (bind (((nrow ncol) (array-dimensions matrix))
+    (let+ (((nrow ncol) (array-dimensions matrix))
            (result (make-array (list ncol nrow)
                                :element-type (array-element-type matrix)))
            (result-index 0))
@@ -124,7 +213,7 @@
   (:documentation "Conjugate transpose a matrix.")
   (:method ((matrix array) &key copy?)
     (declare (ignore copy?))
-    (bind (((nrow ncol) (array-dimensions matrix))
+    (let+ (((nrow ncol) (array-dimensions matrix))
            (result (make-array (list ncol nrow)
                                :element-type (array-element-type matrix)))
            (result-index 0))
@@ -135,74 +224,6 @@
           (incf result-index)))
       result)))
 
-(defgeneric create (type element-type &rest dimensions)
-  (:documentation "Create an object of TYPE with given DIMENSIONS and
-  ELEMENT-TYPE (or a supertype thereof)."))
-
-(defmethod create ((type (eql 'array)) element-type &rest dimensions)
-  (make-array dimensions :element-type element-type))
-
-(defmethod collect-rows (nrow function &optional (type 'array))
-  (bind (result
-         ncol)
-    (iter
-      (for row :from 0 :below nrow)
-      (let ((result-row (funcall function)))
-        (when (first-iteration-p)
-          (setf ncol (length result-row)
-                result (create type (array-element-type result-row) nrow ncol)))
-        (setf (sub result row t) result-row)))
-    result))
-
-(defun collect-vector (n function &optional (element-type t))
-  (bind (result)
-    (iter
-      (for index :from 0 :below n)
-      (let ((element (funcall function)))
-        (when (first-iteration-p)
-          (setf result (make-array n :element-type element-type)))
-        (setf (aref result index) element)))
-    result))
-
-(defun reshape-calculate-dimensions (dimensions size &optional list?)
-  "If a single T is found among dimensions (a sequence), replace it with a
-positive integer so that the product equals SIZE.  Otherwise check that the
-product equals size.  Return a SIMPLE-FIXNUM-VECTOR, unless LIST?, in which case
-it will return a list.  If dimensions is a single element, it is interpreted as
-a sequence of length 1."
-  (let* (missing-position
-         (product 1)
-         (position 0)
-         (dimensions
-          (map 'simple-fixnum-vector
-               (lambda (dimension)
-                 (aprog1
-                     (cond
-                       ((and (typep dimension 'fixnum) (<= 0 dimension))
-                        (multf product dimension)
-                        dimension)
-                       ((eq dimension t)
-                        (if missing-position
-                            (error "Can't have more than one missing dimension.")
-                            (progn (setf missing-position position) 0)))
-                       (t (error "Can't interpret ~A as a dimension." dimension)))
-                   (incf position)))
-               (if (typep dimensions 'sequence) dimensions (vector dimensions)))))
-    (if missing-position
-        (setf (aref dimensions missing-position)
-              (cond ((zerop size) 0)
-                    ((zerop product) (error "Can't create a positive size ~
-                                              with a zero dimension."))
-                    (t (bind (((:values fraction remainder)
-                               (floor size product)))
-                         (assert (zerop remainder) ()
-                                 "Substitution does not result in an integer.")
-                         fraction))))
-        (assert (= size product) () "Product of dimensions doesn't match size."))
-    (if list?
-        (coerce dimensions 'list)
-        dimensions)))
-
 (defun as-row (vector &key copy?)
   "Return vector as a matrix with one row."
   (check-type vector vector)
@@ -212,112 +233,6 @@ a sequence of length 1."
   "Return vector as a matrix with one column."
   (check-type vector vector)
   (maybe-copy-array (displace-array vector (list (length vector) 1)) copy?))
-
-(defgeneric reshape (object dimensions order &key copy? &allow-other-keys)
-  (:documentation "Rearrange elements of an array-like object to new dimensions.
-Order is :ROW-MAJOR or :COLUMN-MAJOR, the object will be treated as if it was
-row- or column-major (but of course it does not have to be).  Unless COPY?, it
-may share structure with the original.  Dimensions may can be a sequence, and
-contain a single T, which is replaced to match sizes."))
-
-(defmethod reshape ((array array) dimensions (order (eql :row-major)) &key copy?)
-  (let* ((size (array-total-size array))
-         (dimensions (reshape-calculate-dimensions dimensions size t)))
-    (if copy?
-        (aprog1 (make-similar-array array :dimensions dimensions)
-          (replace (displace-array it size) (displace-array array size)))
-        (displace-array array dimensions))))
-
-(defmethod reshape ((array array) dimensions (order (eql :column-major))
-                    &key copy?)
-  (declare (ignore copy?))
-  (let* ((size (array-total-size array))
-         (dimensions (reshape-calculate-dimensions dimensions size))
-         (result (make-similar-array array :dimensions (coerce dimensions 'list))))
-    (with-indexing* ((array-dimensions array) array-index array-next :column-major? t)
-      (with-indexing* (dimensions result-index result-next :column-major? t)
-        (loop 
-          repeat size
-          do (progn (setf (row-major-aref result result-index)
-                          (row-major-aref array array-index))
-                    (array-next)
-                    (result-next)))))
-    result))
-
-(defgeneric pref (object &rest indexes)
-  (:documentation "Return a vector, with elements from OBJECT, extracted using
-  INDEXES in parallel."))
-
-(defmethod pref ((array array) &rest indexes)
-  (let ((rank (array-rank array))
-        (element-type (array-element-type array)))
-    (assert (= rank (length indexes)))
-    (when (zerop rank)
-      (return-from pref (make-array 0 :element-type element-type)))
-    (let* ((length (length (first indexes)))
-           (result (make-array length :element-type element-type)))
-      (assert (every (lambda (index) (= (length index) length)) (cdr indexes)))
-      (loop
-        :for element-index :below length
-        :do (setf (aref result element-index)
-                  (apply #'aref array
-                                (mapcar (lambda (index) (aref index element-index))
-                                        indexes))))
-      result)))
-
-(defgeneric filter-rows (predicate object)
-  (:documentation "Filter rows of a matrix, with predicate applied to each row 
-as vectors (which should not be modified).")
-  (:method (predicate (object array))
-    (sub object (which-rows predicate object) t)))
-
-(defmacro with-filter-rows (matrix (&rest name-column-pairs) &body body)
-  "Use BODY to filter rows of MATRIX, binding NAMEs to the given COLUMNs.
-
-Example:
- (with-filter-rows #2A((0 1)
-                       (101 80)
-                       (203 200))
-     ((a 0)
-      (b 1))
-     (and (oddp a) (< 100 b)))    ; => #2A((203 200))"
-  (with-unique-names (vector)
-    (let ((name-var-values (mapcar (lambda (name-column-pair)
-                                     (bind (((name column) name-column-pair))
-                                       (check-type name symbol)
-                                       (list name
-                                             (gensym (symbol-name name))
-                                             column)))
-                                   name-column-pairs)))
-      `(let ,(mapcar #'cdr name-var-values)
-         (filter-rows (lambda (,vector)
-                        (let ,(mapcar (lambda (name-var-value)
-                                        (bind (((name var nil) name-var-value))
-                                          `(,name (aref ,vector ,var))))
-                               name-var-values)
-                          ,@body))
-                      ,matrix)))))
-
-(defgeneric shrink-rows (matrix &key predicate)
-  (:documentation "Drop columns where no element satisfies predicate from both sides
-  of MATRIX.  The default predicate is the identity function, ie columns of all NILs
-  are dropped.  If no element satisfies PREDICATE, NIL is returned, otherwise the
-  shrunk array, the start index and the end index are returned as values.")
-  (:method ((matrix array) &key (predicate #'identity))
-    (bind (((nrow nil) (array-dimensions matrix)))
-      (iterate
-        (for row-index :below nrow)
-        (let* ((row (subarray matrix row-index))
-               (row-left (position-if predicate row)))
-          (when row-left
-            (let ((row-right (position-if predicate row :from-end t)))
-              (minimize row-left :into left)
-              (maximize row-right :into right))))
-        (finally
-         (return 
-           (when (and left right)
-             (let ((end (1+ right)))
-               (values (sub matrix t (si left end)) left end)))))))))
 
 ;;;; dot product
 
@@ -345,8 +260,9 @@ Example:
 ;;; outer product
 
 (defun outer (a b &key (function #'*) (element-type t))
-  "Generalized outer product of A and B, using FUNCTION.  If either one is T, it is
-replaced by the other one.  ELEMENT-TYPE can be used to give the element type."
+  "Generalized outer product of A and B, using FUNCTION.  If either one is T,
+it is replaced by the other one.  ELEMENT-TYPE can be used to give the element
+type."
   (cond
     ((and (eq t a) (eq t b)) (error "A and B can't both be T!"))
     ((eq t a) (setf a b))

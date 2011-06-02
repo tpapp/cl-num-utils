@@ -45,7 +45,7 @@
   (check-type is0 symbol)
   (check-type is1 symbol)
   (once-only (data-frame)
-    `(bind (((:structure data-frame- (,matrix matrix)
+    `(let+ (((&structure data-frame- (,matrix matrix)
                          (,column-index column-index)) data-frame)
             ((,is0 ,is1) ,index-specifications)
             (,is1 (resolve-ix-index-specification
@@ -70,7 +70,7 @@
     (setf (sub matrix is0 is1) array)))
 
 (defmethod filter-rows (predicate (data-frame data-frame))
-  (bind (((:structure data-frame- matrix column-index) data-frame))
+  (let+ (((&structure data-frame- matrix column-index) data-frame))
     (make-data-frame% (filter-rows predicate matrix) column-index)))
 
 (defmacro with-filter-data-frame (data-frame (&rest name-key-pairs) &body body)
@@ -79,7 +79,7 @@ given, the quoted name will be used instead."
   (with-unique-names (resolve index)
     (let ((name-column-pairs
            (mapcar (lambda (name-key-pair)
-                     (bind (((name &optional (key `',name))
+                     (let+ (((name &optional (key `',name))
                              (alexandria:ensure-list name-key-pair)))
                        `(,name (,resolve ,key))))
                    name-key-pairs)))
@@ -92,20 +92,20 @@ given, the quoted name will be used instead."
              (with-filter-rows ,data-frame ,name-column-pairs
                ,@body)))))))
 
-(defmethod map-columns (function (data-frame data-frame))
-  (bind (((:structure data-frame- matrix column-index) data-frame)
-         (result (map-columns function matrix)))
-    (if (vectorp result)
-        result
-        (make-data-frame% result column-index))))
+;; (defmethod map-columns (function (data-frame data-frame))
+;;   (bind (((:structure data-frame- matrix column-index) data-frame)
+;;          (result (map-columns function matrix)))
+;;     (if (vectorp result)
+;;         result
+;;         (make-data-frame% result column-index))))
 
 (defmethod as-array ((data-frame data-frame) &key copy?)
   (maybe-copy-array (data-frame-matrix data-frame) copy?))
 
-(defmethod shrink-rows ((data-frame data-frame) &key (predicate #'identity))
-  (bind (((:structure data-frame- matrix column-index) data-frame)
-         ((:values matrix start end) (shrink-rows matrix :predicate predicate)))
-    (make-data-frame% matrix (sub column-index (si start end)))))
+;; (defmethod shrink-rows ((data-frame data-frame) &key (predicate #'identity))
+;;   (bind (((:structure data-frame- matrix column-index) data-frame)
+;;          ((:values matrix start end) (shrink-rows matrix :predicate predicate)))
+;;     (make-data-frame% matrix (sub column-index (si start end)))))
 
 ;;; !! maybe write compiler macro for
 ;;; !! (setf (sub data-frame ..) (matrix data-frame ...))

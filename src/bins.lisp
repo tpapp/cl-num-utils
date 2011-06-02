@@ -34,13 +34,13 @@
                  (even-bins-width even-bins))))
 
 (defmethod bin-locations ((even-bins even-bins) start end)
-  (bind (((:structure even-bins- offset width) even-bins))
+  (let+ (((&structure even-bins- offset width) even-bins))
     (values
       (numseq (+ (* start width) offset) nil :length (- (1+ end) start) :by offset)
       t)))
 
 (defmethod bin-location ((even-bins even-bins) index)
-  (bind (((:structure even-bins- offset width) even-bins)
+  (let+ (((&structure even-bins- offset width) even-bins)
          (left (+ (* index width) offset)))
     (make-interval left (+ left width))))
 
@@ -211,7 +211,7 @@ exported."
   (when sorted-frequencies
     (iter
       (for s-f :in sorted-frequencies)
-      (bind ((((subscript) . frequency) s-f)
+      (let+ ((((subscript) . frequency) s-f)
              (label (funcall subscript-to-label subscript)))
         (collect (cons label frequency) :into labels-and-frequencies)
         (maximize (length label) :into label-width)
@@ -225,7 +225,7 @@ exported."
 
 (defmethod print-object ((hashed-frequencies hashed-frequencies) stream)
   (print-unreadable-object (hashed-frequencies stream :type t)
-    (bind (((:slots-r/o table total-frequency limits) hashed-frequencies)
+    (let+ (((&slots-r/o table total-frequency limits) hashed-frequencies)
            (sorted-frequencies (sort-frequencies% table)))
       (format stream "total=~A rank=~A" total-frequency (length limits))
       (if (= (length limits) 1)
@@ -241,7 +241,7 @@ exported."
 (defmethod add-observation ((hashed-frequencies hashed-frequencies) frequency
                             &rest subscripts)
   (assert (plusp frequency))
-  (bind (((:slots table total-frequency limits) hashed-frequencies)
+  (let+ (((&slots table total-frequency limits) hashed-frequencies)
          (rank (length limits)))
     (assert (= rank (length subscripts)))
     (incf total-frequency frequency)
@@ -287,7 +287,7 @@ exported."
     (real (format-number location))))
 
 (defmethod print-object ((hashed-histogram hashed-histogram) stream)
-  (bind (((:slots-r/o table total-frequency bins limits) hashed-histogram)
+  (let+ (((&slots-r/o table total-frequency bins limits) hashed-histogram)
          ((bin &rest other-bins) bins))
     (print-unreadable-object (hashed-histogram stream :type t)
       (format stream "total=~A rank=~A" total-frequency (length limits))
@@ -307,7 +307,7 @@ exported."
             limits bins)))
 
 (defmethod add-observation ((histogram hashed-histogram) frequency &rest coordinates)
-  (bind (((:slots-r/o bins) histogram))
+  (let+ (((&slots-r/o bins) histogram))
     (assert (= (length coordinates) (length bins)))
     (apply #'call-next-method histogram frequency (mapcar (lambda (bin coordinate)
                                                             (bin-index bin coordinate))
@@ -318,7 +318,7 @@ exported."
     (map nil (curry #'add-observation it 1) sequence)))
 
 (defun histogram-from-matrix (matrix &rest bins)
-  (bind ((histogram (apply #'make-hashed-histogram bins))
+  (let+ ((histogram (apply #'make-hashed-histogram bins))
          ((nrow ncol) (array-dimensions matrix)))
     (assert (= (subscript-rank histogram) ncol))
     (loop for row :below nrow do

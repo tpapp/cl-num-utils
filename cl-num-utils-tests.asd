@@ -20,10 +20,10 @@
     "tests"
     :pathname #P"tests/"
     :components
-    ((:file "seq-and-array")
+    ((:file "arithmetic")
+     (:file "array")
      (:file "bins")
      (:file "sub")
-     (:file "array")
      (:file "elementwise")
      (:file "statistics")
      (:file "ix")

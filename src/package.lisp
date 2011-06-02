@@ -1,7 +1,7 @@
 (defpackage cl-num-utils
   (:nicknames clnu)
-  (:use cl iterate metabang-bind let-plus anaphora alexandria)
-  (:shadow mean variance)
+  (:use cl iterate let-plus anaphora alexandria)
+  (:shadow mean variance flatten)
   (:export
 
    ;; macros
@@ -17,14 +17,19 @@
    common-dimension == *==-tolerance* format-number ignore-error ignore-nil
    text-progress-bar within?
 
-   ;; seq-and-array
+   ;; arithmetic
 
-   simple-fixnum-vector as-simple-fixnum-vector array* vector* filled-array
-   iseq numseq vector-satisfies? map-array cumulative-sum cumulative-product
-   sort-order make-similar-vector make-similar-array rep displace-array
-   flatten-array subarray group positions which which-positions
-   which-rows first* second* third* fourth* fifth* sixth* seventh* eighth*
-   ninth* tenth* as-array row-major-loop
+   numseq sum product cumulative-sum cumulative-product
+
+   ;; array
+
+   first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
+   row-major-loop array-element-type-available displace-array
+   make-similar-array filled-array rep reshape flatten-array subarrays
+   subarray combine
+   
+   as-array diagonal transpose transpose* as-row as-column dot outer
+   norm1 norm2 normsup
 
    ;; pretty
 
@@ -80,14 +85,7 @@
    sub-invalid-array-index si cat rev resolve-index-specification 
    row-major-coefficients column-major-coefficients drop-dimensions
    index-specification-dimension with-indexing with-indexing* 
-
-   ;; array
-
-   array-element-type-available diagonal map-columns map-rows transpose
-   transpose* create collect-rows collect-vector as-row as-column reshape
-   reshape-calculate-dimensions rows columns pref filter-rows with-filter-rows
-   shrink-rows dot outer norm1 norm2
-   normsup
+   positions mask which
 
    ;; elementwise
 

@@ -16,7 +16,7 @@ place, or a list of a place and a type-string."
          (for argument :in arguments)
          (collecting (if (atom argument)
                          `(check-type ,argument ,type)
-                         (bind (((place type-string) argument))
+                         (let+ (((place type-string) argument))
                            `(check-type ,place ,type ,type-string)))))))
 
 (defmacro define-with-multiple-bindings (macro &key 

@@ -101,22 +101,6 @@ evaluates to this accumulator.  For use in SWEEP."
       (when (plusp n-1)
         (/ sse n-1)))))
 
-(defgeneric sum (object &key key)
-  (:documentation "Sum of elements in object.  KEY is applied to each element.")
-  ;; !!! TODO: also with accumulators
-  (:method ((sequence sequence) &key (key #'identity))
-    (reduce #'+ sequence :key key))
-  (:method ((array array) &key (key #'identity))
-    (reduce #'+ (flatten-array array) :key key)))
-
-(defgeneric product (object)
-  (:documentation "Product of elements in object.")
-  ;; !!! TODO: also with accumulators
-  (:method ((sequence sequence))
-    (reduce #'* sequence))
-  (:method ((array array))
-    (reduce #'* (flatten-array array))))
-
 (defgeneric quantile (object q)
   (:documentation "Return an element at quantile Q.  May be an interpolation
   or an approximation, depending on OBJECT and Q.")
@@ -157,7 +141,7 @@ evaluates to this accumulator.  For use in SWEEP."
   practice, TALLY should be INCF'd before using incf-mean.")
 
 (defmethod add ((instance mean-accumulator) (object number))
-  (bind (((:structure/rw mean-accumulator- tally mean) instance))
+  (let+ (((&structure mean-accumulator- tally mean) instance))
     (incf tally)
     (incf-mean mean object tally)))
 
@@ -480,29 +464,29 @@ them and return as a vector."
 
 (defun add-with-subscripts% (instance object subscripts)
   "Function that implements (add ... (@ ...)).  Not exported"
-  (bind (((:slots-r/o table init-function rank) instance)
+  (let+ (((&slots-r/o table init-function rank) instance)
          (subscripts (aprog1 (coerce subscripts 'list)
                        (assert (valid-subscripts? it rank))))
-         ((:values accumulator present?) (gethash subscripts table)))
+         ((&values accumulator present?) (gethash subscripts table)))
     (unless present?
       (setf accumulator (apply init-function subscripts)
             (gethash subscripts accumulator) accumulator))
     (add accumulator object)))
 
 (defmethod add ((instance sparse-accumulator-array) (object @))
-  (bind (((:structure @- object subscripts) object))
+  (let+ (((&structure @- object subscripts) object))
     (add-with-subscripts% instance object subscripts)))
 
 ;;; !!! define (add instance (@ object subscripts)) compiler macro
 
 (defmethod ref ((instance sparse-accumulator-array) &rest subscripts)
-  (bind (((:slots-r/o table rank) instance))
+  (let+ (((&slots-r/o table rank) instance))
     (assert (valid-subscripts? subscripts rank))
     ;; !!! what happes if not found? save "touched" instances?
     (gethash subscripts table)))
 
 (defmethod limits ((instance sparse-accumulator-array))
-  (bind (((:slots-r/o table rank) instance)
+  (let+ (((&slots-r/o table rank) instance)
          (min (make-array rank :element-type 'fixnum))
          (max (make-array rank :element-type 'fixnum)))
     (iter
@@ -545,7 +529,7 @@ them and return as a vector."
 
 (defmethod add ((instance acf-accumulator) (residual-pair residual-pair))
   ;; !!! factor out part, write compiler macro
-  (bind (((:structure residual-pair- x x-index y y-index) residual-pair))
+  (let+ (((&structure residual-pair- x x-index y y-index) residual-pair))
     (when (<= x-index y-index)
       (add-with-subscripts% instance (* x y) (list (- y-index x-index))))))
 

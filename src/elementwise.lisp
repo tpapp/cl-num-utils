@@ -62,14 +62,14 @@ adaptive dimensions.")
    :vector vector))
 
 (defmethod emap-dimensions ((rv recycled-vector))
-  (bind (((:structure recycled-vector- vector horizontal?) rv)
+  (let+ (((&structure recycled-vector- vector horizontal?) rv)
          (length (length vector)))
     (if horizontal?
         (list nil length)
         (list length nil))))
 
 (defmethod emap-next ((rv recycled-vector) dimensions)
-  (bind (((:structure recycled-vector- vector horizontal?) rv)
+  (let+ (((&structure recycled-vector- vector horizontal?) rv)
          ((nil ncol) dimensions)
          (index 0))
     (if horizontal?
@@ -113,11 +113,11 @@ specifications:
 (defun emap (element-type function &rest objects)
   "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has
 the given ELEMENT-TYPE."
-  (bind ((dimensions (reduce #'emap-unify-dimensions objects
+  (let+ ((dimensions (reduce #'emap-unify-dimensions objects
                              :key #'emap-dimensions))
          (next-functions (mapcar (rcurry #'emap-next dimensions) objects))
-         ((:flet next-result ())
-          (apply function (mapcar #'funcall next-functions))))
+         ((&flet next-result ()
+            (apply function (mapcar #'funcall next-functions)))))
     (if dimensions
         (aprog1 (make-array dimensions :element-type element-type)
           (dotimes (index (array-total-size it))
@@ -144,19 +144,19 @@ such float type can be found in the list, return T."
       ;; fill matrix
       (dotimes (a 2n)
         (dotimes (b 2n)
-          (bind (((:values a-complex a-i) (floor a n))
-                 ((:values b-complex b-i) (floor b n)))
+          (let+ (((&values a-complex a-i) (floor a n))
+                 ((&values b-complex b-i) (floor b n)))
             (setf (aref matrix a b) (+ (* (max a-complex b-complex) n)
                                        (max a-i b-i))))))
       ;; define function
       `(defun emap-common-numeric-type (type-a type-b)
-         (bind (((:flet type-id (type))
-                 (cond
-                   ,@(loop for id :from 0
-                           for float-type :across all-float-types
-                           collect `((subtypep type ',float-type) ,id))
-                   ((subtypep type 'integer) :integer)
-                   (t nil)))
+         (let+ (((&flet type-id (type)
+                   (cond
+                     ,@(loop for id :from 0
+                             for float-type :across all-float-types
+                             collect `((subtypep type ',float-type) ,id))
+                     ((subtypep type 'integer) :integer)
+                     (t nil))))
                 (a-id (type-id type-a))
                 (b-id (type-id type-b))
                 (float-types (load-time-value ,all-float-types))
@@ -273,7 +273,7 @@ of arguments, no optional, key, rest etc)."
   (:method (h? object)
     (aetypecase (emap-dimensions object)
       (null (cons nil 1))
-      (list (bind (((nrow ncol) it))
+      (list (let+ (((nrow ncol) it))
               (if h?
                   (cons nrow ncol)
                   (cons ncol nrow)))))))
@@ -292,7 +292,7 @@ of arguments, no optional, key, rest etc)."
       do (setf (row-major-aref result result-index) atom)))
   (:method (atom (h? (eql t)) result cumulative-index)
     ;; stack horizontally
-    (bind ((atom (coerce atom (array-element-type result)))
+    (let+ ((atom (coerce atom (array-element-type result)))
            ((nrow ncol) (array-dimensions result)))
       (when (plusp nrow)
         (loop
@@ -312,7 +312,7 @@ of arguments, no optional, key, rest etc)."
       do (setf (row-major-aref result result-index) (coerce v element-type))))
   (:method ((vector vector) (h? (eql t)) result cumulative-index)
     ;; stack horizontally
-    (bind ((element-type (array-element-type result))
+    (let+ ((element-type (array-element-type result))
            ((nrow ncol) (array-dimensions result)))
       (when (plusp nrow)
         (loop
@@ -335,7 +335,7 @@ of arguments, no optional, key, rest etc)."
                  (coerce (row-major-aref array array-index) element-type)))))
   (:method ((array array) (h? (eql t)) result cumulative-index)
     ;; stack horizontally
-    (bind ((element-type (array-element-type result))
+    (let+ ((element-type (array-element-type result))
            ((nrow ncol) (array-dimensions array))
            (offset (- (array-dimension result 1) ncol))
            (result-index (array-row-major-index result 0 cumulative-index))

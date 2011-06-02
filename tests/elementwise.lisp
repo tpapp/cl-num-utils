@@ -95,3 +95,8 @@
                          2 4))
     (ensure-same (stack 'double-float :h 1.0d0 #()) ; empty array
                  (array* '(0 2) 'double-float))))
+
+(addtest (elementwise-tests)
+  concat-test
+  (ensure-same (concat t #(1 2 3) #(4 5 6) (list  7) '(8 9 10))
+               (numseq 1 10 :type t) :test #'equalp))
