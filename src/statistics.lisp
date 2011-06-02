@@ -672,12 +672,10 @@ Shadow-ranges are ranges which are taken into account when calculating the
 subranges, but have no corresponding elements in the returned vectors.  For
 example, :shadow-ranges '(0 . 1000) will make subranges superset of a
 partition of [0 ... 999]."
-  (if shadow-ranges
-      (let+ ((n (length shadow-ranges))
-             (ranges (concatenate 'vector shadow-ranges ranges))
-             ((&values subranges index-lists) (subranges% ranges)))
-        (values (subseq subranges n) (subseq index-lists n)))
-      (subranges% ranges)))
+  (let+ ((n (length shadow-ranges))
+         (ranges (concatenate 'vector shadow-ranges ranges))
+         ((&values subranges index-lists) (subranges% ranges)))
+    (values subranges (subseq index-lists n))))
 
 (defun subranges% (ranges)
   "Internal function used by subranges."

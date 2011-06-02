@@ -161,3 +161,12 @@
            (format *error-output* "mismatch: range ~A assembled to ~A"
                    range assembled-range))
          (ensure match?))))))
+
+(addtest (statistics-tests)
+  (let ((ranges #((20 . 40) (60 . 120) (100 . 180)))
+        (shadow-ranges '((0 . 200)))
+        (*lift-equality-test* #'equalp))
+    (ensure-same (subranges ranges :shadow-ranges shadow-ranges)
+                 (values #((0 . 20) (20 . 40) (40 . 60) (60 . 100) (100 . 120)
+                           (120 . 180) (180 . 200))
+                         #((1) (3 4) (4 5))))))
