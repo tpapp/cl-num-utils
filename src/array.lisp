@@ -120,19 +120,23 @@ product equals size."
 (defun subarrays (array rank)
   "Return an array of subarrays, split of at RANK.  All subarrays are
 displaced and share structure."
-  (if (= rank (array-rank array))
-      array
-      (let* ((dimensions (array-dimensions array))
-             (result 
-              (make-similar-array array
-                                  :dimensions (subseq dimensions 0 rank)))
-             (sub-dimensions (subseq dimensions rank))
-             (sub-size (product dimensions)))
-        (dotimes (index (array-total-size result))
-          (setf (row-major-aref result index)
-                (displace-array array sub-dimensions
-                                (* index sub-size))))
-        result)))
+  (let ((array-rank (array-rank array)))
+    (cond
+      ((or (zerop rank) (= rank array-rank))
+       array)
+      ((< 0 rank array-rank)
+       (let* ((dimensions (array-dimensions array))
+              (result 
+               (make-similar-array array
+                                   :dimensions (subseq dimensions 0 rank)))
+              (sub-dimensions (subseq dimensions rank))
+              (sub-size (product sub-dimensions)))
+         (dotimes (index (array-total-size result))
+           (setf (row-major-aref result index)
+                 (displace-array array sub-dimensions
+                                 (* index sub-size))))
+         result))
+      (t (error "Rank ~A outside [0,~A]." rank array-rank)))))
 
 (defun subarray (array &rest subscripts)
   "Given a partial list of subscripts, return the subarray that starts there,
@@ -175,6 +179,20 @@ that element is not an array, the original ARRAY is returned as it is."
             (setf (subarray displaced index) (row-major-aref array index)))
           result)
         array)))
+
+(defgeneric map1 (function object &key element-type &allow-other-keys)
+  (:documentation "Map OBJECT elementwise using FUNCTION.  Results in a
+  similar object, with specificed ELEMENT-TYPE where applicable.")
+  (:method (function (array array) &key (element-type t))
+    (aprog1 (make-array (array-dimensions array) :element-type element-type)
+      (map-into (flatten-array it) function (flatten-array array))))
+  (:method (function (list list) &key)
+    (mapcar function list)))
+
+(defun map-subarrays (function array rank &optional element-type)
+  "Map subarrays.  When ELEMENT-TYPE is given, it is used for the element type
+of the result."
+  (combine (map1 function (subarrays array rank)) element-type))
 
 ;;; generic interface for array-like objects
 

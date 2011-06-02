@@ -118,6 +118,34 @@
                  :test #'equalp)))
 
 (addtest (array-tests)
+  subarrays-tests
+  (let ((a (ia 2 3))
+        (b (ia 2 2 3))
+        (*lift-equality-test* #'equalp))
+    (ensure-same (subarrays a 0) a)
+    (ensure-same (subarrays a 1) #(#(0 1 2) #(3 4 5)))
+    (ensure-same (subarrays a 2) a)
+    (ensure-same (subarrays b 0) b)
+    (ensure-same (subarrays b 1) #(#2A((0 1 2)
+                                       (3 4 5))
+                                   #2A((6 7 8)
+                                       (9 10 11))))
+    (ensure-same (subarrays b 2) #2A((#(0 1 2) #(3 4 5))
+                                     (#(6 7 8) #(9 10 11))))
+    (ensure-same (subarrays b 3) b)
+    (ensure-error (subarrays a 3))
+    (ensure-error (subarrays a -1))))
+
+(addtest (array-tests)
+  combine-tests
+  (let ((a (ia 4 3 5))
+        (*lift-equality-test* #'==))
+    (ensure-same (combine (subarrays a 0)) a)
+    (ensure-same (combine (subarrays a 1)) a)
+    (ensure-same (combine (subarrays a 2)) a)
+    (ensure-same (combine (subarrays a 3)) a)))
+
+(addtest (array-tests)
   which
   (let* ((vector #(7 6 5 4 3 2 1 0))
          (list (coerce vector 'list))
