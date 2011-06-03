@@ -146,6 +146,30 @@
     (ensure-same (combine (subarrays a 3)) a)))
 
 (addtest (array-tests)
+  valid-permutation-test
+  (ensure (valid-permutation? #(0 1 2)))
+  (ensure (valid-permutation? #(1 0 2)))
+  (ensure (not (valid-permutation? #(0 1 1))))
+  (ensure (not (valid-permutation? #(0 1 2) 4)))
+  (ensure (not (valid-permutation? #(0 1 2) 2))))
+
+(addtest (array-tests)
+  permutation-test
+  (let ((a (ia 3 4))
+        (b (ia 1 2 3))
+        (c (ia 2 2 3))
+        (*lift-equality-test* #'equalp))
+    (ensure-same (permute a '(0 1)) a)
+    (ensure-same (permute a '(1 0)) (transpose a))
+    (ensure-same (permute b '(1 2 0))
+                 #3A(((0) (1) (2))
+                     ((3) (4) (5))))
+    (ensure-same (permute c '(2 1 0))
+                 #3A(((0 6) (3 9))
+                     ((1 7) (4 10))
+                     ((2 8) (5 11))))))
+
+(addtest (array-tests)
   which
   (let* ((vector #(7 6 5 4 3 2 1 0))
          (list (coerce vector 'list))

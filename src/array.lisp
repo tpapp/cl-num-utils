@@ -242,6 +242,40 @@ of the result."
           (incf result-index)))
       result)))
 
+(defun valid-permutation? (permutation &optional (rank (length permutation) rank?))
+  "Test if PERMUTATION is a valid permutation (of rank RANK)."
+  (let+ ((flags (make-array rank :element-type 'bit :initial-element 0))
+         ((&flet invalid () (return-from valid-permutation? nil))))
+    (when (and rank? (/= rank (length permutation))) (invalid))
+    (map nil (lambda (p)
+               (unless (within? 0 p rank) (invalid))
+               (setf (aref flags p) 1)) permutation)
+    (= (count 1 flags) rank)))
+
+(defun permute (array permutation)
+  "Permute array axes.  Elements ofthe sequence PERMUTATION indicate where
+that particular axis is coming from in ARRAY."
+  (let+ ((dimensions (as-simple-fixnum-vector (array-dimensions array)))
+         (permutation (as-simple-fixnum-vector permutation))
+         (rank (length dimensions))
+         (counters (make-array rank :element-type 'fixnum :initial-element 0))
+         (subscripts (make-list rank))
+         (result (make-array (map 'list (lambda (p) (aref dimensions p))
+                                  permutation))))
+    (assert (valid-permutation? permutation rank))
+    (dotimes (row-major-index (array-total-size array))
+      ;; copy element
+      (map-into subscripts (lambda (p) (aref counters p)) permutation)
+      (setf (apply #'aref result subscripts)
+            (row-major-aref array row-major-index))
+      ;; increase counters
+      (iter
+        (for axis :from (1- rank) :downto 0)
+        (if (= (incf (aref counters axis)) (aref dimensions axis))
+            (setf (aref counters axis) 0)
+            (finish))))
+    result))
+
 (defun as-row (vector &key copy?)
   "Return vector as a matrix with one row."
   (check-type vector vector)

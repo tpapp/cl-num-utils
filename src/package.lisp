@@ -28,8 +28,8 @@
    make-similar-array filled-array rep reshape flatten-array subarrays
    subarray combine map1 map-subarrays
    
-   as-array diagonal transpose transpose* as-row as-column dot outer
-   norm1 norm2 normsup
+   as-array diagonal transpose transpose* valid-permutation? permute 
+   as-row as-column dot outer norm1 norm2 normsup
 
    ;; pretty
 
@@ -112,4 +112,4 @@
    reached-max-iter golden-section-minimize
 
    )
-)
+  )
