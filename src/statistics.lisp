@@ -305,12 +305,15 @@ evaluates to this accumulator.  For use in SWEEP."
   "Autocovariance accumulator.  Handles missing values (NIL)."
   (n 0 :type fixnum)
   (circular-buffer nil :type vector)
-  (variance-accumulator (mean-sse-accumulator))
+  (main-accumulator (mean-sse-accumulator))
   (covariance-accumulators nil :type vector))
 
-(defun autocovariance-accumulator (lags)
+(defun autocovariance-accumulator (lags 
+                                   &optional
+                                     (main-accumulator (mean-sse-accumulator)))
   (autocovariance-accumulator% 
    :circular-buffer (make-array lags :initial-element nil)
+   :main-accumulator main-accumulator
    :covariance-accumulators (filled-array lags #'covariance-accumulator)))
 
 (defgeneric lags (accumulator)
@@ -320,11 +323,11 @@ evaluates to this accumulator.  For use in SWEEP."
     (length (autocovariance-accumulator-circular-buffer accumulator))))
 
 (defmethod add ((accumulator autocovariance-accumulator) (x number))
-  (let+ (((&autocovariance-accumulator n circular-buffer variance-accumulator
+  (let+ (((&autocovariance-accumulator n circular-buffer main-accumulator
                                        covariance-accumulators) accumulator)
          (lags (length covariance-accumulators)))
     ;; add to variance
-    (add variance-accumulator x)
+    (add main-accumulator x)
     ;; add to covariances
     (loop for lag below lags
           for index downfrom (1- n)
@@ -341,23 +344,25 @@ evaluates to this accumulator.  For use in SWEEP."
     (setf (aref circular-buffer (mod n lags)) x)
     (incf n)))
 
+(defmethod main-accumulator ((accumulator autocovariance-accumulator))
+  (autocovariance-accumulator-main-accumulator accumulator))
+
 (defmethod tally ((accumulator autocovariance-accumulator))
-  (tally (autocovariance-accumulator-variance-accumulator accumulator)))
+  (tally (main-accumulator accumulator)))
 
 (defmethod mean ((accumulator autocovariance-accumulator))
-  (mean (autocovariance-accumulator-variance-accumulator accumulator)))
+  (mean (main-accumulator accumulator)))
 
 (defmethod sse ((accumulator autocovariance-accumulator) &optional center)
-  (let ((accumulator
-         (autocovariance-accumulator-variance-accumulator accumulator)))
+  (let ((accumulator (main-accumulator accumulator)))
     (values (sse accumulator center) accumulator)))
 
 (defgeneric autocovariances (object &optional lags)
   (:documentation "Autocovariances.")
   (:method ((accumulator autocovariance-accumulator) &optional lags)
     (subseq 
-     (map 'vector #'covariance 
-          (autocovariance-accumulator-covariance-accumulators accumulator))
+     (map1 #'covariance 
+           (autocovariance-accumulator-covariance-accumulators accumulator))
      0 lags))
   (:method (object &optional lags)
     (let ((accumulator (autocovariance-accumulator lags)))
@@ -366,9 +371,9 @@ evaluates to this accumulator.  For use in SWEEP."
 (defgeneric autocorrelations (accumulator &optional lags)
   (:documentation "Autocorrelations.")
   (:method ((accumulator autocovariance-accumulator) &optional lags)
-    (let+ (((&structure autocovariance-accumulator- variance-accumulator
+    (let+ (((&structure autocovariance-accumulator- main-accumulator
                         covariance-accumulators) accumulator)
-           (variance (variance variance-accumulator)))
+           (variance (variance main-accumulator)))
       (subseq
        (map 'vector (lambda (covariance-accumulator)
                       (/ (covariance covariance-accumulator) variance))
@@ -382,10 +387,10 @@ evaluates to this accumulator.  For use in SWEEP."
                (acc2 autocovariance-accumulator)
                &optional (tolerance *==-tolerance*))
   (let+ (((&structure-r/o autocovariance-accumulator-
-                          (v1 variance-accumulator)
+                          (v1 main-accumulator)
                           (c1 covariance-accumulators)) acc1)
          ((&structure-r/o autocovariance-accumulator-
-                          (v2 variance-accumulator)
+                          (v2 main-accumulator)
                           (c2 covariance-accumulators)) acc2))
     (and (== v1 v2 tolerance)
          (== c1 c2 tolerance))))

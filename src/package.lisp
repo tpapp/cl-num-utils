@@ -52,7 +52,7 @@
    mean-sse-accumulator
 
    covariance-accumulator covariance covariance-xy autocovariance-accumulator
-   autocovariances autocorrelations lags
+   autocovariances autocorrelations lags main-accumulator
    
    sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
    acf-accumulator
