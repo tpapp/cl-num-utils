@@ -117,7 +117,7 @@ product equals size."
 
 ;;; subarrays 
 
-(defun subarrays (array rank)
+(defun subarrays (rank array)
   "Return an array of subarrays, split of at RANK.  All subarrays are
 displaced and share structure."
   (let ((array-rank (array-rank array)))
@@ -189,10 +189,10 @@ that element is not an array, the original ARRAY is returned as it is."
   (:method (function (list list) &key)
     (mapcar function list)))
 
-(defun map-subarrays (function array rank &optional element-type)
-  "Map subarrays.  When ELEMENT-TYPE is given, it is used for the element type
-of the result."
-  (combine (map1 function (subarrays array rank)) element-type))
+;; (defun map-subarrays (function array rank &optional element-type)
+;;   "Map subarrays.  When ELEMENT-TYPE is given, it is used for the element type
+;; of the result."
+;;   (combine (map1 function (subarrays array rank)) element-type))
 
 ;;; generic interface for array-like objects
 
