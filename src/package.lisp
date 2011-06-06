@@ -51,8 +51,8 @@
    tallier mean-accumulator incf-mean array-mean-accumulator
    mean-sse-accumulator
 
-   covariance-accumulator covariance covariance-xy autocovariance-accumulator
-   autocovariances autocorrelations lags main-accumulator
+   covariance-accumulator covariance correlation covariance-xy correlation-xy
+   autocovariance-accumulator autocovariances autocorrelations lags
    
    sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
    acf-accumulator

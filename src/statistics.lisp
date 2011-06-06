@@ -255,107 +255,115 @@ evaluates to this accumulator.  For use in SWEEP."
 
 ;;; covariance accumulator
 
-(defstruct (covariance-accumulator
+(defstruct+ (covariance-accumulator
              (:constructor covariance-accumulator ())
              (:include tallier))
-  "Accumulator for covariances."
+    "Accumulator for covariances."
   (x-mean 0d0)
+  (x-sse 0d0)
   (y-mean 0d0)
-  (cross-sum 0d0))
+  (y-sse 0d0)
+  (cross-sse 0d0))
 
 (defmethod add ((accumulator covariance-accumulator) (xy cons))
   (let+ (((x . y) xy)
          ((&structure covariance-accumulator- tally
-                      x-mean y-mean cross-sum) accumulator)
-         (y-difference (- y y-mean)))
+                      x-mean y-mean x-sse y-sse cross-sse) accumulator)
+         (x-delta (- x x-mean))
+         (y-delta (- y y-mean)))
     (incf tally)
-    (incf-mean x-mean x tally)
-    (incf y-mean (/ y-difference tally))
-    (incf cross-sum (* (- x x-mean) y-difference))))
+    (incf x-mean (/ x-delta tally))
+    (incf y-mean (/ y-delta tally))
+    (let ((x-post-delta (- x x-mean))
+          (y-post-delta (- y y-mean)))
+      (incf x-sse (* x-delta x-post-delta))
+      (incf y-sse (* y-delta y-post-delta))
+      (incf cross-sse (* x-post-delta y-delta)))))
 
 (defmethod covariance ((accumulator covariance-accumulator))
-  (let+ (((&structure covariance-accumulator- tally cross-sum) accumulator)
+  (let+ (((&structure covariance-accumulator- tally cross-sse) accumulator)
          (n-1 (1- tally)))
     (when (plusp n-1)
-      (/ cross-sum n-1))))
+      (/ cross-sse n-1))))
+
+(defmethod correlation ((accumulator covariance-accumulator))
+  (let+ (((&structure covariance-accumulator- x-sse y-sse cross-sse
+                      tally) accumulator)
+         (denominator (sqrt (* x-sse y-sse))))
+    (cond
+      ((plusp denominator) (/ cross-sse denominator))
+      ((plusp tally) 0)
+      (t nil))))
+
+(defun sweep-xy (accumulator x y)
+  "Sweep sequences x and y with an accumulator that takes conses."
+  (with-accumulator (accumulator add)
+    (map nil (lambda (x y) (add (cons x y))) x y)))
 
 (defun covariance-xy (x y)
   "Calculate the covariance of two sequences."
-  (covariance
-   (with-accumulator ((covariance-accumulator) add)
-     (map nil (lambda (x y) (add (cons x y))) x y))))
+  (let ((acc (sweep-xy (covariance-accumulator) x y)))
+    (values (covariance acc) acc)))
+
+(defun correlation-xy (x y)
+  "Calculate the correlation of two sequences."
+  (let ((acc (sweep-xy (covariance-accumulator) x y)))
+    (values (correlation acc) acc)))
 
 (defmethod == ((acc1 covariance-accumulator) (acc2 covariance-accumulator)
                &optional (tolerance *==-tolerance*))
-  (let+ (((&structure-r/o covariance-accumulator- (tally1 tally) 
-                          (x-mean1 x-mean) (y-mean1 y-mean)
-                          (cross-sum1 cross-sum)) acc1)
-         ((&structure-r/o covariance-accumulator- (tally2 tally) 
-                          (x-mean2 x-mean) (y-mean2 y-mean)
-                          (cross-sum2 cross-sum)) acc2))
-    (and (= tally1 tally2)
+  (let+ (((&covariance-accumulator x-mean1 x-sse1 y-mean1 y-sse1
+                                   cross-sse1) acc1)
+         ((&covariance-accumulator x-mean2 x-sse2 y-mean2 y-sse2
+                                   cross-sse2) acc2))
+    (and (= (tally acc1) (tally acc2))
          (== x-mean1 x-mean2 tolerance)
+         (== x-sse1 x-sse2 tolerance)
          (== y-mean1 y-mean2 tolerance)
-         (== cross-sum1 cross-sum2 tolerance))))
+         (== y-sse1 y-sse2 tolerance)
+         (== cross-sse1 cross-sse2 tolerance))))
 
 ;;; autocovariance accumulator
 
 (defstruct+ (autocovariance-accumulator 
              (:constructor autocovariance-accumulator%))
   "Autocovariance accumulator.  Handles missing values (NIL)."
-  (n 0 :type fixnum)
-  (circular-buffer nil :type vector)
-  (main-accumulator (mean-sse-accumulator))
+  (circular-buffer nil :type list)
   (covariance-accumulators nil :type vector))
 
-(defun autocovariance-accumulator (lags 
-                                   &optional
-                                     (main-accumulator (mean-sse-accumulator)))
+(defun autocovariance-accumulator (lags)
+  "Create an autocovariance accumulator with a given number of lags."
   (autocovariance-accumulator% 
-   :circular-buffer (make-array lags :initial-element nil)
-   :main-accumulator main-accumulator
+   :circular-buffer (make-circular-list lags :initial-element nil)
    :covariance-accumulators (filled-array lags #'covariance-accumulator)))
 
 (defgeneric lags (accumulator)
   (:documentation "Return the maximum number of available lags in
   ACCUMULATOR.")
   (:method ((accumulator autocovariance-accumulator))
-    (length (autocovariance-accumulator-circular-buffer accumulator))))
+    (length (autocovariance-accumulator-covariance-accumulators
+             accumulator))))
 
 (defmethod add ((accumulator autocovariance-accumulator) (x number))
-  (let+ (((&autocovariance-accumulator n circular-buffer main-accumulator
-                                       covariance-accumulators) accumulator)
-         (lags (length covariance-accumulators)))
-    ;; add to variance
-    (add main-accumulator x)
-    ;; add to covariances
-    (loop for lag below lags
-          for index downfrom (1- n)
-          do (awhen (aref circular-buffer (mod index lags))
-               (add (aref covariance-accumulators lag) (cons x it))))
-    ;; move circular buffer
-    (setf (aref circular-buffer (mod n lags)) x)
-    (incf n)))
+  (let+ (((&structure autocovariance-accumulator- circular-buffer 
+                      covariance-accumulators) accumulator))
+    ;; update covariances
+    (iter
+      (for cov-acc :in-vector covariance-accumulators :downto 0)
+      (for elt :in circular-buffer)
+      (when elt
+         (add cov-acc (cons x elt))))
+    ;; save element and update circular buffer
+    (setf (car circular-buffer) x
+          circular-buffer (cdr circular-buffer))))
 
 (defmethod add ((accumulator autocovariance-accumulator) (x null))
   ;; just move circular buffer
-  (let+ (((&autocovariance-accumulator n circular-buffer nil nil) accumulator)
-         (lags (length circular-buffer)))
-    (setf (aref circular-buffer (mod n lags)) x)
-    (incf n)))
-
-(defmethod main-accumulator ((accumulator autocovariance-accumulator))
-  (autocovariance-accumulator-main-accumulator accumulator))
-
-(defmethod tally ((accumulator autocovariance-accumulator))
-  (tally (main-accumulator accumulator)))
-
-(defmethod mean ((accumulator autocovariance-accumulator))
-  (mean (main-accumulator accumulator)))
-
-(defmethod sse ((accumulator autocovariance-accumulator) &optional center)
-  (let ((accumulator (main-accumulator accumulator)))
-    (values (sse accumulator center) accumulator)))
+  (let+ (((&structure autocovariance-accumulator- circular-buffer)
+          accumulator))
+    ;; save element and update circular buffer
+    (setf (car circular-buffer) nil
+          circular-buffer (cdr circular-buffer))))
 
 (defgeneric autocovariances (object &optional lags)
   (:documentation "Autocovariances.")
@@ -366,34 +374,27 @@ evaluates to this accumulator.  For use in SWEEP."
      0 lags))
   (:method (object &optional lags)
     (let ((accumulator (autocovariance-accumulator lags)))
-      (values (autocovariances (sweep accumulator object) lags) accumulator))))
+      (values (autocovariances (sweep accumulator object) lags)
+              accumulator))))
 
-(defgeneric autocorrelations (accumulator &optional lags)
-  (:documentation "Autocorrelations.")
+(defgeneric autocorrelations (object &optional lags)
+  (:documentation "Vector of autocorrelations.")
   (:method ((accumulator autocovariance-accumulator) &optional lags)
-    (let+ (((&structure autocovariance-accumulator- main-accumulator
-                        covariance-accumulators) accumulator)
-           (variance (variance main-accumulator)))
-      (subseq
-       (map 'vector (lambda (covariance-accumulator)
-                      (/ (covariance covariance-accumulator) variance))
-            covariance-accumulators)
-       0 lags)))
+    (subseq 
+     (map1 #'correlation
+           (autocovariance-accumulator-covariance-accumulators accumulator))
+     0 lags))
   (:method (object &optional lags)
     (let ((accumulator (autocovariance-accumulator lags)))
-      (values (autocorrelations (sweep accumulator object) lags) accumulator))))
+      (values (autocorrelations (sweep accumulator object) lags)
+              accumulator))))
 
 (defmethod == ((acc1 autocovariance-accumulator)
                (acc2 autocovariance-accumulator)
                &optional (tolerance *==-tolerance*))
-  (let+ (((&structure-r/o autocovariance-accumulator-
-                          (v1 main-accumulator)
-                          (c1 covariance-accumulators)) acc1)
-         ((&structure-r/o autocovariance-accumulator-
-                          (v2 main-accumulator)
-                          (c2 covariance-accumulators)) acc2))
-    (and (== v1 v2 tolerance)
-         (== c1 c2 tolerance))))
+  (== (autocovariance-accumulator-covariance-accumulators acc1)
+      (autocovariance-accumulator-covariance-accumulators acc2)
+      tolerance))
 
 ;;; sorting accumulator
 ;;; 
