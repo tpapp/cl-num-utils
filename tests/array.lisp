@@ -134,7 +134,14 @@
                                      (#(6 7 8) #(9 10 11))))
     (ensure-same (subarrays 3 b) b)
     (ensure-error (subarrays 3 a))
-    (ensure-error (subarrays -1 a))))
+    (ensure-error (subarrays -1 a))
+    (let* ((c (make-array '(9 5 7) :element-type 'bit
+                                   :initial-element 1))
+           (c-sub (subarrays 1 c)))
+      (ensure (every (lambda (x) 
+                       (and (eq (array-element-type x) 'bit)
+                            (equal (array-dimensions x) '(5 7))))
+                     c-sub)))))
 
 (addtest (array-tests)
   combine-tests
