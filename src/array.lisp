@@ -127,8 +127,7 @@ displaced and share structure."
       ((< 0 rank array-rank)
        (let* ((dimensions (array-dimensions array))
               (result 
-               (make-similar-array array
-                                   :dimensions (subseq dimensions 0 rank)))
+               (make-array (subseq dimensions 0 rank)))
               (sub-dimensions (subseq dimensions rank))
               (sub-size (product sub-dimensions)))
          (dotimes (index (array-total-size result))
