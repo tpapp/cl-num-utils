@@ -396,6 +396,12 @@ evaluates to this accumulator.  For use in SWEEP."
       (autocovariance-accumulator-covariance-accumulators acc2)
       tolerance))
 
+(defmethod print-object ((object autocovariance-accumulator) stream)
+  (if *print-readably*
+      (call-next-method)
+      (print-unreadable-object (object stream :type t)
+        (format stream "autocorrelations: ~A" (autocorrelations object)))))
+
 ;;; sorting accumulator
 ;;; 
 ;;; This is not the most elegant way of calculating quantiles, but it will do
