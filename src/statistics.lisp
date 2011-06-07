@@ -325,7 +325,7 @@ evaluates to this accumulator.  For use in SWEEP."
 
 ;;; autocovariance accumulator
 
-(defstruct+ (autocovariance-accumulator 
+(defstruct (autocovariance-accumulator 
              (:constructor autocovariance-accumulator%))
   "Autocovariance accumulator.  Handles missing values (NIL)."
   (circular-buffer nil :type list)
