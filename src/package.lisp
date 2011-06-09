@@ -26,7 +26,7 @@
    first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
    row-major-loop array-element-type-available displace-array
    make-similar-array filled-array rep reshape flatten-array subarrays
-   subarray combine map1 map-subarrays
+   subarray subvector combine map1 map-subarrays
    
    as-array diagonal transpose transpose* valid-permutation? permute 
    as-row as-column dot outer norm1 norm2 normsup

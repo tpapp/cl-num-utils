@@ -188,6 +188,17 @@ that element is not an array, the original ARRAY is returned as it is."
   (:method (function (list list) &key)
     (mapcar function list)))
 
+;;; subvector
+
+(defun subvector (vector start &optional (end (length vector)))
+  "Displaced vector between START and END."
+  (displace-array vector (- end start) start))
+
+(declaim (inline (setf subvector)))
+(defun (setf subvector) (value vector start &optional (end (length vector)))
+  ;; just a synonym for (setf subseq), defined for symmetry
+  (setf (subseq vector start end) value))
+
 ;; (defun map-subarrays (function array rank &optional element-type)
 ;;   "Map subarrays.  When ELEMENT-TYPE is given, it is used for the element type
 ;; of the result."
