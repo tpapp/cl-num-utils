@@ -8,11 +8,13 @@
 ;;;; and interval-intersection) return positive intervals by
 ;;;; construction.
 
-(defstruct+ (interval
+(defstruct (interval
              (:constructor make-interval (left right)))
   "An ordered pair of numbers."
   (left 0 :type real)
   (right 0 :type real))
+
+(define-structure-let+ (interval) left right)
 
 (defstruct (forced-interval
              (:include interval)

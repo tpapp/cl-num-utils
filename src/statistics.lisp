@@ -172,11 +172,13 @@ evaluates to this accumulator.  For use in SWEEP."
 
 ;;; mean accumulator for arrays
 
-(defstruct+ (array-mean-accumulator
+(defstruct (array-mean-accumulator
              (:constructor array-mean-accumulator% (mean)))
-    "Array of accumulators."
+  "Array of accumulators."
   (tally 0 :type fixnum)
   (mean nil :type array :read-only t))
+
+(define-structure-let+ (array-mean-accumulator) tally mean)
 
 (defun array-mean-accumulator (array)
   "Create an array mean accumulator for array."
@@ -255,15 +257,18 @@ evaluates to this accumulator.  For use in SWEEP."
 
 ;;; covariance accumulator
 
-(defstruct+ (covariance-accumulator
+(defstruct (covariance-accumulator
              (:constructor covariance-accumulator ())
              (:include tallier))
-    "Accumulator for covariances."
+  "Accumulator for covariances."
   (x-mean 0d0)
   (x-sse 0d0)
   (y-mean 0d0)
   (y-sse 0d0)
   (cross-sse 0d0))
+
+(define-structure-let+ (covariance-accumulator)
+    x-mean x-sse y-mean y-sse cross-sse)
 
 (defmethod add ((accumulator covariance-accumulator) (xy cons))
   (let+ (((x . y) xy)
@@ -407,7 +412,7 @@ evaluates to this accumulator.  For use in SWEEP."
 ;;; This is not the most elegant way of calculating quantiles, but it will do
 ;;; until I implement something nicer.
 
-(defstruct+ (sorting-accumulator
+(defstruct (sorting-accumulator
              (:constructor sorting-accumulator (&optional (predicate #'<=)))
              (:include mean-sse-accumulator))
   "Storage accumulator, simply saves elements.  When asked for ordered, order
@@ -415,6 +420,9 @@ them and return as a vector."
   (ordered-elements #() :type vector)
   (unordered-elements nil :type list)
   (predicate #'<=))
+
+(define-structure-let+ (sorting-accumulator)
+    ordered-elements unordered-elements predicate)
 
 (defmethod add :after ((accumulator sorting-accumulator) object)
   (push object (sorting-accumulator-unordered-elements accumulator)))
