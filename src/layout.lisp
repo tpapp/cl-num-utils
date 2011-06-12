@@ -19,9 +19,13 @@
 
 ;;; atomic layout
 
-(defstruct (atomic-layout (:constructor atomic-layout ()))
+(defstruct (atomic-layout (:constructor atomic-layout% ()))
   "Layout that maps to an atom.  Mostly for building up more complex
   layouts.")
+
+(defun atomic-layout ()
+  "Return an atomic layout.  May be the same object, recycled."
+  (load-time-value (atomic-layout%)))
 
 (defmethod layout-length ((atomic-layout atomic-layout))
   1)
@@ -70,11 +74,11 @@
   offsets
   test)
 
-(defun dictionary-layout (keys-and-layouts &key (test #'equal))
+(defun dictionary-layout (alist &key (test #'equal))
   "Create a dictionary layout from a plist of layout items."
   (iter
     (with offset := 0)
-    (for (key layout) :in keys-and-layouts)
+    (for (key . layout) :in alist)
     (collect key :into keys :result-type vector)
     (collect layout :into layouts :result-type vector)
     (collect (incf offset (layout-length layout))
@@ -88,8 +92,10 @@
 (defun dictionary-layout-lookup (layout key)
   "Return (values start end layout) when KEY is found in a dictionary layout,
   otherwise signal an error."
-  (let+ (((&structure-r/o dictionary-layout- keys offsets layouts) layout)
-         (index (aprog1 (position key keys) (assert it () "key not found")))
+  (let+ (((&structure-r/o dictionary-layout- keys offsets layouts test)
+          layout)
+         (index (aprog1 (position key keys :test test)
+                  (assert it () "key not found")))
          (start (if (zerop index)
                     0
                     (aref offsets (1- index))))
@@ -110,6 +116,12 @@
     (setf (apply #'layout-ref (subvector vector start end) layout rest)
           value)))
 
+(defun atomic-dictionary-layout (keys &key (test #'equal))
+  "Dictionary of atoms."
+  (dictionary-layout (map 'list
+                          (lambda (key) `(,key . ,(atomic-layout)))
+                          keys)
+                     :test test))
 
 ;;; shifted vector layout
 
