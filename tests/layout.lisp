@@ -9,9 +9,9 @@
 (addtest (layout-tests)
   layout-test1
   (let+ ((layout (dictionary-layout
-                  `((:A ,(array-layout 3))
-                    (:B ,(atomic-layout))
-                    (:C ,(array-layout '(3 2))))))
+                  `((:A . ,(array-layout 3))
+                    (:B . ,(atomic-layout))
+                    (:C . ,(array-layout '(3 2))))))
          (vector (ivec (layout-length layout)))
          (*lift-equality-test* #'equalp))
     (ensure-same (layout-ref vector layout :a)
@@ -27,6 +27,11 @@
                                                    (8 9)))
     (ensure-same (layout-ref vector layout :c 1) #(6 7))
     (ensure-same (layout-ref vector layout :c 1 0) 6)
-    (ensure-error (layout-ref vector layout :c 1 0 4))))
+    (ensure-error (layout-ref vector layout :c 1 0 4)))
+  (let+ ((layout (atomic-dictionary-layout '(:a :b :c)))
+         (vector (ivec (layout-length layout))))
+    (ensure-same (layout-ref vector layout :a) 0)
+    (ensure-same (layout-ref vector layout :c) 2)
+    (ensure-error (layout-ref vector layout :d))))
 
 
