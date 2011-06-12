@@ -94,13 +94,12 @@
 
    ;; layout
    
-   layout-ref layout-length atomic-layout array-layout dictionary-layout 
-   shifted-vector-layout
+   layout-ref layout-length atomic-layout array-layout dictionary-layout
+   atomic-dictionary-layout shifted-vector-layout
 
    ;; data-frame
 
-   data-frame make-data-frame data-frame-matrix data-frame-column-index
-   with-filter-data-frame
+   data-frame make-data-frame
 
    ;; interaction
    
