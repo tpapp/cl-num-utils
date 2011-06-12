@@ -26,7 +26,7 @@
      (:file "sub")
      (:file "elementwise")
      (:file "statistics")
-     (:file "ix")
+     (:file "layout")
      (:file "data-frame")
      ;; (:file "interactions")
      )))
