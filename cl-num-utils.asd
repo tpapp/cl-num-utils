@@ -34,7 +34,7 @@
      ;; (:file "histogram")
      (:file "sub")
      (:file "elementwise")
-     (:file "ix")
+     (:file "layout")
      (:file "data-frame")
      ;; (:file "interaction")
      (:file "optimization"))))

@@ -193,6 +193,11 @@ When STREAM is NIL, nothing is displayed."
   "Return non-nil iff value is in [left,right)."
   (and (<= left value) (< value right)))
 
+(declaim (inline fixnum?))
+(defun fixnum? (object)
+  "Check of type of OBJECT is fixnum."
+  (typep object 'fixnum))
+
 (deftype simple-fixnum-vector ()
   '(simple-array fixnum (*)))
 

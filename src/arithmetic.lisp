@@ -57,6 +57,37 @@ your implementation may upgrade the element type."
                length)))
       (t (error "Only 3 of FROM, TO, LENGTH and BY are needed.")))))
 
+(defun ivec (end-or-start &optional (end 0 end?) (by 1) strict-direction?)
+  "Return a vector of fixnums.
+
+   (ivec end) =>  #(0 ... end-1) (or #(0 ... end+1) when end is negative).
+   (ivec start end) => #(start ... end-1) or to end+1 when end is negative.
+
+   When BY is given it determines the increment, adjusted to match the
+   direction unless STRICT-DIRECTION, in which case an error is signalled. "
+  (check-types (end-or-start end by) fixnum)
+  (if end?
+      (let* ((abs-by (abs by))
+             (start end-or-start)
+             (diff (- end start))
+             (length (ceiling (abs diff) abs-by))
+             (by (aprog1 (* abs-by (signum diff))
+                   (when strict-direction?
+                     (assert (= it by) () "BY does not match direction."))))
+             (element start))
+        (aprog1 (make-array length :element-type 'fixnum)
+          (loop for index below length
+                do (setf (aref it index) element)
+                   (incf element by))))
+      (let* ((end end-or-start)
+             (abs-end (abs end)))
+        (aprog1 (make-array abs-end :element-type 'fixnum)
+          (if (plusp end)
+              (loop for index below abs-end
+                    do (setf (aref it index) index))
+              (loop for index below abs-end
+                    do (setf (aref it index) (- index))))))))
+
 (defun similar-element-type (element-type)
   "Return a type that is a supertype of ELEMENT-TYPE and is closed under
 arithmetic operations.  May not be the narrowest."

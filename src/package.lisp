@@ -19,14 +19,14 @@
 
    ;; arithmetic
 
-   numseq sum product cumulative-sum cumulative-product
+   numseq ivec sum product cumulative-sum cumulative-product
 
    ;; array
 
    first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
-   row-major-loop array-element-type-available displace-array
-   make-similar-array filled-array rep reshape flatten-array subarrays
-   subarray subvector combine map1 map-subarrays
+   nrow ncol square? row-major-loop array-element-type-available
+   displace-array make-similar-array filled-array rep reshape flatten-array
+   subarrays subarray subvector combine map1 ; map-subarrays
    
    as-array diagonal transpose transpose* valid-permutation? permute 
    as-row as-column dot outer norm1 norm2 normsup
@@ -81,10 +81,9 @@
 
    ;; sub
 
-   nrow ncol matrix matrix? square? sub sub-incompatible-dimensions
-   sub-invalid-array-index si cat rev resolve-index-specification 
-   row-major-coefficients column-major-coefficients drop-dimensions
-   index-specification-dimension with-indexing with-indexing* 
+   sub sub-incompatible-dimensions sub-invalid-array-index cat rev ivec*
+   sub-resolve-index sub-resolve-selection 
+
    positions mask which
 
    ;; elementwise
@@ -93,10 +92,10 @@
    e* e/ e2+ e2- e2* e2/ eexpt elog esqrt ereduce emin emax stack-dimensions
    stack-into stack* stack concat* concat
 
-   ;; ix
+   ;; layout
    
-   ix-key? ix ix-start ix-end ix-key ix-keys hashed-index make-hashed-index
-   resolve-ix-index-specification
+   layout-ref layout-length atomic-layout array-layout dictionary-layout 
+   shifted-vector-layout
 
    ;; data-frame
 

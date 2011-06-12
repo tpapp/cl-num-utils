@@ -37,6 +37,25 @@ ROW-MAJOR-INDEX, ROW-INDEX and COL-INDEX."
   same implementation."
   (type= (upgraded-array-element-type type) type))
 
+(defgeneric nrow (object)
+  (:documentation "Return number of rows in object.  Signal an error if OBJECT
+  doesn't have exactly two dimensions.")
+  (:method ((array array))
+    (assert (= 2 (array-rank array)) () "Array is not a matrix.")
+    (array-dimension array 0)))
+
+(defgeneric ncol (object)
+  (:documentation "Return number of columns in object.  Signal an error if
+  OBJECT doesn't have exactly two dimensions.")
+  (:method ((array array))
+    (assert (= 2 (array-rank array)) () "Array is not a matrix.")
+    (array-dimension array 1)))
+
+(defun square? (matrix)
+  "Test if a matrix (in the generalized sense, ie an object that has nrow and ncol)
+is square."
+  (= (nrow matrix) (ncol matrix)))
+
 (defun displace-array (array dimensions &optional (offset 0))
   "Shorthand function for displacing an array."
   (make-array dimensions

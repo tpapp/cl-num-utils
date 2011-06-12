@@ -5,3 +5,15 @@
 (deftestsuite arithmetic-tests (cl-num-utils-tests)
   ()
   (:equality-test #'equalp))
+
+(addtest (arithmetic-tests)
+  ivec-test
+  (let ((*lift-equality-test* #'equalp))
+    (ensure-same (ivec 3) #(0 1 2))
+    (ensure-same (ivec -2) #(0 -1))
+    (ensure-same (ivec 2 5) #(2 3 4))
+    (ensure-same (ivec 0) #())
+    (ensure-same (ivec 2 6 2) #(2 4))
+    (ensure-same (ivec 6 2 2) #(6 4))
+    (ensure-same (ivec -2 -9 3) #(-2 -5 -8))
+    (ensure-same (ivec 1 8 2) #(1 3 5 7))))
