@@ -8,7 +8,7 @@
 
 (asdf:defsystem #:cl-num-utils
   :description "Numerical utilities for Common Lisp"
-  :version "alpha"
+  :version "0.1"
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Boost Software License - Version 1.0"
   :serial t
