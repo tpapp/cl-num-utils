@@ -186,12 +186,13 @@ equal to DIMENSION."
   (with-unique-names (cumulative-sum)
     (once-only (coefficient next-walker)
       `(let+ (,@bindings
-              (,cumulative-sum (funcall ,next-walker)))
+              ,cumulative-sum)
          ,declarations
          (lambda ()
            (when ,test
              (setf ,cumulative-sum (funcall ,next-walker))
              ,reset)
+           (unlessf ,cumulative-sum (funcall ,next-walker))
            (prog1 (+ (* ,coefficient ,index) ,cumulative-sum)
              ,increment))))))
 
@@ -237,13 +238,13 @@ called more than one time, ie all indices have been visited."))
 
 (defun chained-walker (resolved-selections coefficients
                        &optional (offset 0))
-  "Drop single dimensions (ie FIXNUMS) from resolved selection.
-Return (values OFFSET NEW-SELECTIONS NEW-COEFFICIENTS)."
-  (let* ((end? nil)
+  "Drop single dimensions (ie FIXNUMS) from resolved selections, and build
+walker using COEFFICIENTS.  Return (values WALKER OFFSET)."
+  (let+ ((end? nil)
          (walker (lambda ()
-                   (if end?
-                       (error 'object-walked)
-                       (setf end? t))
+                   (when end?
+                     (error 'object-walked))
+                   (setf end? t)
                    offset)))
     (iter
       (for selection :in-vector resolved-selections)
