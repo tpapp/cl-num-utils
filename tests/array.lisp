@@ -7,6 +7,17 @@
   (:equality-test #'equalp))
 
 (addtest (array-tests)
+  matrix-type-tests
+  (let ((m (ia 3 4)))
+    (ensure (typep m 'matrix))
+    (ensure (typep m '(matrix *)))
+    (ensure (typep m '(matrix t)))
+    (ensure (typep m '(matrix t 3)))
+    (ensure (typep m '(matrix t * 4)))
+    (ensure (typep m '(matrix t 3 4)))
+    (ensure (not (typep m '(matrix * 2))))))
+
+(addtest (array-tests)
   diagonal
   (let ((a1 (ia 2 2))
         (a2 (ia 3 2))

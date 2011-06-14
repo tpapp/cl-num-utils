@@ -52,9 +52,13 @@ ROW-MAJOR-INDEX, ROW-INDEX and COL-INDEX."
     (array-dimension array 1)))
 
 (defun square? (matrix)
-  "Test if a matrix (in the generalized sense, ie an object that has nrow and ncol)
-is square."
+  "Test if a matrix (in the generalized sense, ie an object that has nrow and
+ncol) is square."
   (= (nrow matrix) (ncol matrix)))
+
+(deftype matrix (&optional (element-type '*) (nrow '*) (ncol '*))
+  "Array of rank 2."
+  `(array ,element-type (,nrow ,ncol)))
 
 (defun displace-array (array dimensions &optional (offset 0))
   "Shorthand function for displacing an array."

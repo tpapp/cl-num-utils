@@ -24,7 +24,7 @@
    ;; array
 
    first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
-   nrow ncol square? row-major-loop array-element-type-available
+   nrow ncol square? matrix row-major-loop array-element-type-available
    displace-array make-similar-array filled-array rep reshape flatten-array
    subarrays subarray subvector combine map1 ; map-subarrays
    
