@@ -116,12 +116,31 @@
     (setf (apply #'layout-ref (subvector vector start end) layout rest)
           value)))
 
+;;; atomic layout
+
+(defstruct (atomic-dictionary-layout (:constructor atomic-dictionary-layout%))
+  (test nil :type function)
+  (keys nil :type vector))
+
 (defun atomic-dictionary-layout (keys &key (test #'equal))
   "Dictionary of atoms."
-  (dictionary-layout (map 'list
-                          (lambda (key) `(,key . ,(atomic-layout)))
-                          keys)
-                     :test test))
+  (atomic-dictionary-layout% :test test :keys (coerce keys 'vector)))
+  
+(defmethod layout-length ((layout atomic-dictionary-layout))
+  (length (atomic-dictionary-layout-keys layout)))
+
+(defun atomic-dictionary-layout-find-key (layout keys)
+  (let+ (((key) keys)
+         ((&structure atomic-dictionary-layout- test (keys% keys)) layout))
+    (aprog1 (position key keys% :test test)
+      (assert it () "Key ~A not found." key))))
+
+(defmethod layout-ref (vector (layout atomic-dictionary-layout) &rest keys)
+  (aref vector (atomic-dictionary-layout-find-key layout keys)))
+
+(defmethod (setf layout-ref) (value vector (layout atomic-dictionary-layout)
+                              &rest keys)
+  (setf (aref vector (atomic-dictionary-layout-find-key layout keys)) value))
 
 ;;; shifted vector layout
 

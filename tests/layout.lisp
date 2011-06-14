@@ -27,7 +27,10 @@
                                                    (8 9)))
     (ensure-same (layout-ref vector layout :c 1) #(6 7))
     (ensure-same (layout-ref vector layout :c 1 0) 6)
-    (ensure-error (layout-ref vector layout :c 1 0 4)))
+    (ensure-error (layout-ref vector layout :c 1 0 4))))
+
+(addtest (layout-tests)
+  layout-test2
   (let+ ((layout (atomic-dictionary-layout '(:a :b :c)))
          (vector (ivec (layout-length layout))))
     (ensure-same (layout-ref vector layout :a) 0)
