@@ -6,6 +6,26 @@
 ;;; the structure may be selected using lists of keys, some objects accept a
 ;;; partial list of keys (eg you can select a subarray from an array-layout).
 
+(defgeneric layout-length (layout)
+  (:documentation "Return the length of the vector that can be mapped with
+  LAYOUT."))
+
+(defgeneric layout-position (layout &rest keys)
+  (:documentation "Return either a fixnum, or (cons START END) denoting the
+  position of KEYS in LAYOUT.  When applicable, also return the layout that
+  can resolve the subvector at this position; for fixnums the second value is
+  NIL."))
+
+(defun whole-layout-position (layout)
+  "Helper function for layout-position when there are no keys."
+  (values (cons 0 (layout-length layout)) layout))
+
+(defun shift-layout-position (position offset)
+  "Shift POSITION (usually returned by LAYOUT-POSITION) by OFFSET."
+  (etypecase position
+    (cons (cons (+ offset (car position)) (+ offset (cdr position))))
+    (fixnum (+ offset position))))
+
 (defgeneric layout-ref (vector layout &rest keys)
   (:documentation "Return object from vector, extracted using KEYS and LAYOUT.
   May share structure."))
@@ -13,28 +33,20 @@
 (defgeneric (setf layout-ref) (value vector layout &rest keys)
   (:documentation "Copy elements of object into vector at offset."))
 
-(defgeneric layout-length (layout)
-  (:documentation "Return the length of the vector that can be mapped with
-  LAYOUT."))
+;;; atomic layout - denoted by NIL
 
-;;; atomic layout
-
-(defstruct (atomic-layout (:constructor atomic-layout% ()))
-  "Layout that maps to an atom.  Mostly for building up more complex
-  layouts.")
-
-(defun atomic-layout ()
-  "Return an atomic layout.  May be the same object, recycled."
-  (load-time-value (atomic-layout%)))
-
-(defmethod layout-length ((atomic-layout atomic-layout))
+(defmethod layout-length ((layout null))
   1)
 
-(defmethod layout-ref (vector (layout atomic-layout) &rest keys)
+(defmethod layout-position ((layout null) &rest keys)
+  (assert (not keys))
+  (values 0 layout))
+
+(defmethod layout-ref (vector (layout null) &rest keys)
   (assert (not keys))
   (aref vector 0))
 
-(defmethod (setf layout-ref) (value vector (layout atomic-layout) &rest keys)
+(defmethod (setf layout-ref) (value vector (layout null) &rest keys)
   (assert (not keys))
   (assert (= (length vector) 1))
   (setf (aref vector 0) value))
@@ -50,8 +62,29 @@
 (defmethod layout-length ((array-layout array-layout))
   (product (array-layout-dimensions array-layout)))
 
+(defmethod layout-position ((layout array-layout) &rest keys)
+  (unless keys (return-from layout-position (whole-layout-position layout)))
+  (let+ (((&structure array-layout- dimensions) layout)
+         (rank (length dimensions))
+         (drop (length keys))
+         ((&assert (<= drop rank)))
+         (remaining-dimensions (subseq dimensions drop))
+         (remaining-size (product remaining-dimensions))
+         (offset 0))
+    (iter
+      (with product := remaining-size)
+      (for dimension :in (nreverse (subseq dimensions 0 drop)))
+      (for subscript :in (reverse keys))
+      (assert (within? 0 subscript dimension))
+      (incf offset (* product subscript))
+      (multf product dimension))
+    (if remaining-dimensions
+        (values
+         (cons offset (+ offset remaining-size))
+         (array-layout remaining-dimensions))
+        (values offset nil))))
+
 (defmethod layout-ref (vector (layout array-layout) &rest keys)
-  (declare (optimize debug))
   (apply #'subarray
          (displace-array vector
                          (array-layout-dimensions layout))
@@ -102,6 +135,14 @@
          (end (aref offsets index)))
     (values start end (aref layouts index))))
 
+(defmethod layout-position ((layout dictionary-layout) &rest keys)
+  (unless keys (return-from layout-position (whole-layout-position layout)))
+  (let+ (((first &rest rest) keys)
+         ((&values start nil layout) (dictionary-layout-lookup layout first))
+         ((&values sub-position sub-layout)
+          (apply #'layout-position layout rest)))
+    (values (shift-layout-position sub-position start) sub-layout)))
+
 (defmethod layout-ref (vector (layout dictionary-layout) &rest keys)
   (let+ (((first &rest rest) keys)
          ((&values start end layout)
@@ -116,7 +157,7 @@
     (setf (apply #'layout-ref (subvector vector start end) layout rest)
           value)))
 
-;;; atomic layout
+;;; atomic dictionary layout
 
 (defstruct (atomic-dictionary-layout (:constructor atomic-dictionary-layout%))
   (test nil :type function)
@@ -129,18 +170,19 @@
 (defmethod layout-length ((layout atomic-dictionary-layout))
   (length (atomic-dictionary-layout-keys layout)))
 
-(defun atomic-dictionary-layout-find-key (layout keys)
+(defmethod layout-position ((layout atomic-dictionary-layout) &rest keys)
+  (unless keys (return-from layout-position (whole-layout-position layout)))
   (let+ (((key) keys)
          ((&structure atomic-dictionary-layout- test (keys% keys)) layout))
     (aprog1 (position key keys% :test test)
       (assert it () "Key ~A not found." key))))
 
 (defmethod layout-ref (vector (layout atomic-dictionary-layout) &rest keys)
-  (aref vector (atomic-dictionary-layout-find-key layout keys)))
+  (aref vector (apply #'layout-position layout keys)))
 
 (defmethod (setf layout-ref) (value vector (layout atomic-dictionary-layout)
                               &rest keys)
-  (setf (aref vector (atomic-dictionary-layout-find-key layout keys)) value))
+  (setf (aref vector (apply #'layout-position layout keys)) value))
 
 ;;; shifted vector layout
 
@@ -160,6 +202,13 @@ to a vector."
 (defmethod limits ((layout shifted-vector-layout))
   (let+ (((&shifted-vector-layout start end) layout))
     (cons start end)))
+
+(defmethod layout-position ((layout shifted-vector-layout) &rest keys)
+  (unless keys (return-from layout-position (whole-layout-position layout)))
+  (let+ (((&shifted-vector-layout start end) layout))
+    (let+ (((key) keys))
+      (assert (within? start key end))
+      (values (- key start) nil))))
 
 (defmethod layout-ref (vector (layout shifted-vector-layout) &rest keys)
   (if keys
