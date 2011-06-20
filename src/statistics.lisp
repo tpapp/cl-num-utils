@@ -427,9 +427,6 @@ them and return as a vector."
 (defmethod add :after ((accumulator sorting-accumulator) object)
   (push object (sorting-accumulator-unordered-elements accumulator)))
 
-(defgeneric elements (object)
-  (:documentation "Return elements from object.  May share structure."))
-
 (defmethod elements ((sorting-accumulator sorting-accumulator))
   (let+ (((&sorting-accumulator ordered-elements unordered-elements
                                 predicate) sorting-accumulator))

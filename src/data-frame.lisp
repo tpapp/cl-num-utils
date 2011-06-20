@@ -22,6 +22,41 @@
                    :elements (maybe-copy-array elements copy?)
                    :layout layout)))
 
+(defstruct (w/keys (:constructor w/keys (&rest keys)))
+  (keys nil :type list :read-only t))
+
+(defmethod sub-resolve-selection ((w/keys w/keys) dimension object
+                                  &optional expand?)
+  (sub-resolve-selection (apply #'layout-position object (w/keys-keys w/keys))
+                         dimension object expand?))
+
+(defmethod sub-resolve-selection ((symbol symbol) dimension object
+                                  &optional expand?)
+  (sub-resolve-selection (layout-position object symbol)
+                         dimension object expand?))
+
+(defmethod sub-resolve-selection ((string string) dimension object
+                                  &optional expand?)
+  (sub-resolve-selection (layout-position object string)
+                         dimension object expand?))
+
+(defmethod sub ((data-frame data-frame) &rest selections)
+  (let+ (((&slots-r/o elements layout) data-frame)
+         ((nrow ncol) (array-dimensions elements))
+         ((row-selection col-selection) selections))
+    (sub elements
+         (sub-resolve-selection row-selection nrow nil)
+         (sub-resolve-selection col-selection ncol layout))))
+
+(defmethod (setf sub) (new-value (data-frame data-frame) &rest selections)
+  (let+ (((&slots-r/o elements layout) data-frame)
+         ((nrow ncol) (array-dimensions elements))
+         ((row-selection col-selection) selections))
+    (setf (sub elements
+               (sub-resolve-selection row-selection nrow nil)
+               (sub-resolve-selection col-selection ncol layout))
+          new-value)))
+
 ;; (defmacro data-frame-with-resolved-index-specification
 ;;     ((((matrix column-index) data-frame)
 ;;       ((is0 is1) index-specifications))

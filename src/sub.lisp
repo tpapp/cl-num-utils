@@ -262,26 +262,17 @@ fixnum selections."
     (unless (fixnum? selection)
       (collect (sub-dimension selection)))))
 
-(defun sub-resolve-selections (selections dimensions
-                               &optional (objects nil objects?))
-  "Helper function for resolving selections.  When OBJECTS is given, it is
-checked for the correct length and used in SUB-RESOLVE-SELECTIONS.  Otherwise
-NILs are used in its place."
-  (if objects?
-      (progn
-        (assert (= (length selections) (length objects)))
-        (map 'vector #'sub-resolve-selection selections dimensions objects))
-      (map 'vector (lambda (s d) (sub-resolve-selection s d nil))
-           selections dimensions)))
+(defun sub-resolve-selections (selections dimensions)
+  "Helper function for resolving selections, using NIL as the objects."
+  (map 'vector (lambda (s d) (sub-resolve-selection s d nil))
+       selections dimensions))
 
 (defmacro with-indexing ((selections dimensions index next 
-                          &key effective-dimensions
-                               (objects nil objects?)
-                               (resolved-selections nil resolved-selections?))
+                          &key effective-dimensions)
                          &body body)
   "Establish incrementation and index-calculation functions within BODY.  The
-sequence RESOLVED-SELECTIONS constains the index selections, and DIMENSIONS
-contains the dimensions of the object indexed.  These are walked.
+sequence SELECTIONS constains the index selections (which are resolved), and
+DIMENSIONS contains the dimensions of the object indexed.  These are walked.
 
 The current index is bound to INDEX, and is stepped with NEXT.  When NEXT
 returns non-nil, the last valid index has been reached.
@@ -297,15 +288,7 @@ elements traversed), but the return value of NEXT is recommended."
     (with-unique-names (walker resolved-selections-var)
       `(let+ ((,dimensions (as-simple-fixnum-vector ,dimensions))
               (,resolved-selections-var
-               ,(aif resolved-selections?
-                     (progn
-                       (assert (not selections) ()
-                               "When RESOLVED-SELECTIONS is given, selections
-                                should be NIL.")
-                       resolved-selections)
-                     `(sub-resolve-selections ,selections ,dimensions
-                                              ,@(when objects?
-                                                  `(,objects)))))
+               (sub-resolve-selections ,selections ,dimensions))
               ((&assert (= (length ,dimensions)
                            (length ,resolved-selections-var))
                         () 'sub-incompatible-dimensions))

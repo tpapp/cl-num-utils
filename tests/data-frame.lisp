@@ -6,32 +6,34 @@
   ()
   (:equality-test #'equalp))
 
-;; (addtest (data-frame-tests)
-;;   simple-data-frame-tests
-;;   (let* ((matrix (ia 2 3))
-;;          (sub-matrix #2A((0 2) (3 5)))
-;;          (sub-vector #(1 4))
-;;          (keys '(a b c))
-;;          (df (make-data-frame matrix keys))
-;;          (sub-df (make-data-frame sub-matrix (sub keys #(0 2))))
-;;          (*lift-equality-test* #'equalp))
-;;     (ensure-same (sub df t 'b) sub-vector)
-;;     (ensure-same (sub df t #(a c)) sub-df)
-;;     ;; should pass through regular arguments
-;;     (ensure-same (sub df t t) (make-data-frame matrix keys))
-;;     (ensure-same (sub df t 1) sub-vector)
-;;     (ensure-same (sub df t #(0 2)) sub-df)
-;;     (ensure-same (sub df t (si 0 nil)) (make-data-frame matrix keys))))
+(addtest (data-frame-tests)
+  simple-data-frame-tests
+  (let* ((matrix (ia 2 3))
+         (sub-matrix #2A((0 2) (3 5)))
+         (sub-vector #(1 4))
+         (layout (atomic-dictionary-layout '(a b c)))
+         (df (make-data-frame matrix layout))
+         ;; (sub-df (make-data-frame sub-matrix (sub keys #(0 2))))
+         (*lift-equality-test* #'equalp))
+    (ensure-same (sub df t (w/keys 'b)) sub-vector)
+    (ensure-same (sub df t 'b) sub-vector)
+    (ensure-same (sub df t (vector (w/keys 'a) (w/keys 'c))) sub-matrix)
+    (ensure-same (sub df t (vector 'a 'c)) sub-matrix)
+    ;; should pass through regular arguments
+    (ensure-same (sub df t t) matrix)
+    (ensure-same (sub df t 1) sub-vector)
+    (ensure-same (sub df t #(0 2)) sub-matrix)
+    (ensure-same (sub df t (cons 0 nil)) matrix)))
 
-;; (addtest (data-frame-tests)
-;;   data-frame-setf-tests
-;;   (let* ((matrix (ia 3 4))
-;;          (keys '(a b c d))
-;;          (df (make-data-frame (copy-array matrix) keys :copy? t))
-;;          (sub-vector (ia 3)))
-;;     (setf (sub df t 'c) sub-vector
-;;           (sub matrix t 2) sub-vector)
-;;     (ensure-same (data-frame-matrix df) matrix)))
+(addtest (data-frame-tests)
+  data-frame-setf-tests
+  (let* ((matrix (ia 3 4))
+         (layout (atomic-dictionary-layout '(a b c d)))
+         (df (make-data-frame matrix layout :copy? t))
+         (sub-vector (ia 3)))
+    (setf (sub df t 'c) sub-vector
+          (sub matrix t 2) sub-vector)
+    (ensure-same (elements df) matrix)))
 
 ;; (addtest (data-frame-tests)
 ;;   data-frame-filter-tests

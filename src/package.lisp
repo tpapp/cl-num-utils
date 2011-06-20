@@ -24,9 +24,10 @@
    ;; array
 
    first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
-   nrow ncol square? matrix row-major-loop array-element-type-available
-   displace-array make-similar-array filled-array rep reshape flatten-array
-   subarrays subarray subvector combine map1 ; map-subarrays
+   nrow ncol elements square? matrix row-major-loop
+   array-element-type-available displace-array make-similar-array filled-array
+   rep reshape flatten-array subarrays subarray subvector combine map1
+   ;; map-subarrays
    
    as-array diagonal transpose transpose* valid-permutation? permute 
    as-row as-column dot outer norm1 norm2 normsup
@@ -99,7 +100,7 @@
 
    ;; data-frame
 
-   data-frame make-data-frame
+   data-frame make-data-frame layout w/keys
 
    ;; interaction
    
@@ -109,5 +110,4 @@
    
    reached-max-iter golden-section-minimize
 
-   )
-  )
+   ))

@@ -51,6 +51,9 @@ ROW-MAJOR-INDEX, ROW-INDEX and COL-INDEX."
     (assert (= 2 (array-rank array)) () "Array is not a matrix.")
     (array-dimension array 1)))
 
+(defgeneric elements (object)
+  (:documentation "Return elements from object.  May share structure."))
+
 (defun square? (matrix)
   "Test if a matrix (in the generalized sense, ie an object that has nrow and
 ncol) is square."
