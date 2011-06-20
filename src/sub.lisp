@@ -89,78 +89,78 @@
   (:method ((vector vector))
     (reverse vector)))
 
-(defgeneric sub-resolve-index (index dimension)
-  (:documentation "Resolve a single index, always returning a FIXNUM >= 0 and
-  < dimension.  The default behavior is the following: possitive numbers are
-  resolved to themselves (checked to be lower than dimension), negative
-  numbers are resolved to dimension-index, and NIL is resolved to DIMENSION.")
-  (:method ((index null) dimension)
-    dimension)
-  (:method ((index fixnum) dimension)
-      (if (minusp index)
-          (aprog1 (+ dimension index)
-            (assert (<= 0 it)))
-          (aprog1 index
-            (assert (< it dimension))))))
+(defun sub-resolve-to-fixnum (selection dimension object)
+  "Resolve selection, ensuring that the result is a fixnum."
+  (aprog1 (sub-resolve-selection selection dimension object t)
+    (assert (fixnum? it))))
 
-(defun sub-resolve-end-index (index dimension)
-  "Resolve an index which denotes an end index, and thus it is allowed to be
-equal to DIMENSION."
-  (if (and index (= index dimension))
-      index
-      (sub-resolve-index index dimension)))
+(defun sub-resolve-end (selection dimension object)
+  "Resolve an end marker.  Ensure that the result is <= dimension."
+  (if (or (null selection) (and (fixnum? selection) (= selection dimension)))
+      dimension
+      (sub-resolve-to-fixnum selection dimension object)))
 
-(defgeneric sub-resolve-selection (selection dimension &optional expand?)
-  (:documentation "Resolve selection to an object representing indexes to
-  be walked.  FIXNUMs represent a single index that drops dimensions.  EXPAND?
-  forces expansion to either a FIXNUM or a vector of fixnums.")
+(defgeneric sub-resolve-selection (selection dimension object
+                                   &optional expand?)
+  (:documentation "Resolve selection to an object representing indexes to be
+  walked.  OBJECT may be used for additional information (eg resolving symbols
+  to indexes, etc).  FIXNUMs represent a single index that drops dimensions.
+  EXPAND?  forces expansion to either a FIXNUM or a vector of fixnums.
+
+  Methods are required to ensure that all indexes are valid, ie fit within
+  dimension.")
   ;; Implementation note: currently we resolve to one of the following:
   ;; FIXNUM, SIMPLE-FIXNUM-VECTOR and CONS.  Thus walkers only need to be
   ;; defined for these.
-  (:method ((index fixnum) dimension &optional expand?)
+  (:method ((index fixnum) dimension object &optional expand?)
     (declare (ignore expand?))
-    (sub-resolve-index index dimension))
-  (:method ((vector vector) dimension &optional expand?)
+    (if (minusp index)
+        (aprog1 (+ dimension index)
+          (assert (<= 0 it)))
+        (aprog1 index
+          (assert (< it dimension)))))
+  (:method ((vector vector) dimension object &optional expand?)
     (declare (ignore expand?))
     (map 'simple-fixnum-vector
-         (lambda (i) (sub-resolve-index i dimension))
+         (lambda (i) (sub-resolve-to-fixnum i dimension object))
          vector))
-  (:method ((range cons) dimension &optional expand?)
+  (:method ((range cons) dimension object &optional expand?)
     (let+ (((start . end) range)
-           (start (sub-resolve-index start dimension))
-           (end (sub-resolve-end-index end dimension)))
+           (start (sub-resolve-to-fixnum start dimension object))
+           (end (sub-resolve-end end dimension object)))
       (assert (< start end))
       (if expand?
           (ivec start end)
           (cons start end))))
-  (:method ((mask bit-vector) dimension &optional expand?)
+  (:method ((mask bit-vector) dimension object &optional expand?)
     (declare (ignore expand?))
     (assert (= (length mask) dimension))
     (positions mask))
-  (:method ((selection (eql t)) dimension &optional expand?)
+  (:method ((selection (eql t)) dimension object &optional expand?)
     (if expand?
         (ivec 0 dimension)
         (cons 0 dimension)))
-  (:method ((selection delayed-cat) dimension &optional expand?)
+  (:method ((selection delayed-cat) dimension object &optional expand?)
     (declare (ignore expand?))
     (concat* 'fixnum
-             (mapcar (lambda (s) (sub-resolve-selection s dimension t))
+             (mapcar (lambda (s) (sub-resolve-selection s dimension object t))
                      (delayed-cat-selections selection))))
-  (:method ((selection delayed-sub) dimension &optional expand?)
+  (:method ((selection delayed-sub) dimension object &optional expand?)
     (declare (ignore expand?))
     (let+ (((&structure-r/o delayed-sub- selection
                             sub-selection) selection))
-      (sub (sub-resolve-selection selection dimension t) sub-selection)))
-  (:method ((selection delayed-rev) dimension &optional expand?)
+      (sub (sub-resolve-selection selection dimension object t) sub-selection)))
+  (:method ((selection delayed-rev) dimension object &optional expand?)
     (declare (ignore expand?))
+    ;; note: fixnums should signal an error
     (reverse (sub-resolve-selection (delayed-rev-selection selection)
-                                    dimension t)))
-  (:method ((selection delayed-ivec) dimension &optional expand?)
+                                    dimension object t)))
+  (:method ((selection delayed-ivec) dimension object &optional expand?)
     (declare (ignore expand?))
     (let+ (((&structure-r/o delayed-ivec- start end by strict-direction?)
             selection))
-      (ivec (sub-resolve-index start dimension)
-            (sub-resolve-end-index end dimension)
+      (ivec (sub-resolve-to-fixnum start dimension object)
+            (sub-resolve-end end dimension object)
             by strict-direction?))))
 
 ;;; walking selections
@@ -262,12 +262,26 @@ fixnum selections."
     (unless (fixnum? selection)
       (collect (sub-dimension selection)))))
 
+(defun sub-resolve-selections (selections dimensions
+                               &optional (objects nil objects?))
+  "Helper function for resolving selections.  When OBJECTS is given, it is
+checked for the correct length and used in SUB-RESOLVE-SELECTIONS.  Otherwise
+NILs are used in its place."
+  (if objects?
+      (progn
+        (assert (= (length selections) (length objects)))
+        (map 'vector #'sub-resolve-selection selections dimensions objects))
+      (map 'vector (lambda (s d) (sub-resolve-selection s d nil))
+           selections dimensions)))
+
 (defmacro with-indexing ((selections dimensions index next 
-                          &key effective-dimensions)
+                          &key effective-dimensions
+                               (objects nil objects?)
+                               (resolved-selections nil resolved-selections?))
                          &body body)
   "Establish incrementation and index-calculation functions within BODY.  The
-sequence SELECTIONS constains the index selections, and DIMENSIONS contains
-the dimensions of the object indexed.  These are resolved and walked.  
+sequence RESOLVED-SELECTIONS constains the index selections, and DIMENSIONS
+contains the dimensions of the object indexed.  These are walked.
 
 The current index is bound to INDEX, and is stepped with NEXT.  When NEXT
 returns non-nil, the last valid index has been reached.
@@ -279,35 +293,40 @@ used to check for termination by calculating its product (the number of
 elements traversed), but the return value of NEXT is recommended."
   (check-type index symbol)
   (check-type next symbol)
-  (once-only (dimensions selections)
-    (with-unique-names (walker)
-      `(let+ ((,dimensions (as-simple-fixnum-vector ,dimensions)))
-         (assert (= (length ,selections) (length ,dimensions)) ()
-                 'sub-incompatible-dimensions)
-         (let+ ((,selections
-                 (map 'vector 
-                      (lambda (s d) (sub-resolve-selection s d))
-                      ,selections ,dimensions))
-                (,walker (chained-walker ,selections
-                                         (row-major-coefficients ,dimensions)))
-                ,@(when effective-dimensions
-                    `((,effective-dimensions
-                       (effective-dimensions ,selections))))
-                (,index (funcall ,walker))
-                ((&flet ,next ()
-                   (handler-case (prog1 nil
-                                   (setf ,index (funcall ,walker)))
-                     (object-walked () t)))))
-           ;; !!! dynamic extent & type declarations
-           ;; !!! check optimizations
-           ,@body)))))
+  (once-only (dimensions)
+    (with-unique-names (walker resolved-selections-var)
+      `(let+ ((,dimensions (as-simple-fixnum-vector ,dimensions))
+              (,resolved-selections-var
+               ,(aif resolved-selections?
+                     (progn
+                       (assert (not selections) ()
+                               "When RESOLVED-SELECTIONS is given, selections
+                                should be NIL.")
+                       resolved-selections)
+                     `(sub-resolve-selections ,selections ,dimensions
+                                              ,@(when objects?
+                                                  `(,objects)))))
+              ((&assert (= (length ,dimensions)
+                           (length ,resolved-selections-var))
+                        () 'sub-incompatible-dimensions))
+              (,walker (chained-walker ,resolved-selections-var
+                                       (row-major-coefficients
+                                        ,dimensions)))
+              ,@(when effective-dimensions
+                  `((,effective-dimensions
+                     (effective-dimensions ,resolved-selections-var))))
+              (,index (funcall ,walker))
+              ((&flet ,next ()
+                 (handler-case (prog1 nil
+                                 (setf ,index (funcall ,walker)))
+                   (object-walked () t)))))
+         ,@body))))
 
 ;;; sub for arrays
 
 (defmethod sub ((array array) &rest selections)
-  (with-indexing (selections (array-dimensions array) index
-                                       next-index
-                                       :effective-dimensions dimensions)
+  (with-indexing (selections (array-dimensions array) index next-index
+                             :effective-dimensions dimensions)
     (if (zerop (length dimensions))
         (row-major-aref array index)
         (let ((result (make-array (coerce dimensions 'list)
@@ -324,7 +343,7 @@ elements traversed), but the return value of NEXT is recommended."
 
 (defmethod sub ((list list) &rest selections)
   (with-indexing (selections (vector (length list)) index next-index
-                                   :effective-dimensions dimensions)
+                             :effective-dimensions dimensions)
     (if (zerop (length dimensions))
         (nth index list)
         ;; not very efficient, but lists are not ideal for random access
@@ -336,7 +355,7 @@ elements traversed), but the return value of NEXT is recommended."
 
 (defmethod (setf sub) (source (target array) &rest selections)
   (with-indexing (selections (array-dimensions target) index
-                                       next-index)
+                             next-index)
     (iter
       (setf (row-major-aref target index) source)
       (until (next-index))))
