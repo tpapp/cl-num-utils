@@ -100,7 +100,7 @@
 
    ;; data-frame
 
-   data-frame make-data-frame layout w/keys
+   data-frame make-data-frame layout w/keys sub-rows
 
    ;; interaction
    

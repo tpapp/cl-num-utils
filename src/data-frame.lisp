@@ -6,6 +6,11 @@
   ((elements :accessor elements :initarg :elements)
    (layout :accessor layout :initarg :layout)))
 
+(defmethod print-object ((data-frame data-frame) stream)
+  (print-unreadable-object (data-frame stream :type t)
+    (format stream "layout: ~A~&elements:~%~A"
+            (layout data-frame) (elements data-frame))))
+
 ;; (defmacro define-column-index-function (function &optional args)
 ;;  `(defmethod ,function ((data-frame data-frame) ,@args)
 ;;      (,function (data-frame-column-index data-frame) ,@args)))
@@ -56,6 +61,12 @@
                (sub-resolve-selection row-selection nrow nil)
                (sub-resolve-selection col-selection ncol layout))
           new-value)))
+
+(defun sub-rows (data-frame selection)
+  "Select rows from data frame."
+  (make-instance 'data-frame 
+                 :elements (sub (elements data-frame) selection t)
+                 :layout (layout data-frame)))
 
 ;; (defmacro data-frame-with-resolved-index-specification
 ;;     ((((matrix column-index) data-frame)
