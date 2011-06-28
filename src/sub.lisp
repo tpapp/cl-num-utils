@@ -42,6 +42,10 @@
 
 ;;; resolution of selections
 
+(defstruct (incl (:constructor incl (from to)))
+  "Like a CONS, but includes the second limit."
+  from to)
+
 (defstruct (delayed-cat (:constructor cat (&rest selections)))
   "Delayed concatenation."
   (selections nil :type list))
@@ -100,6 +104,13 @@
       dimension
       (sub-resolve-to-fixnum selection dimension object)))
 
+(defun sub-resolved-cons (start end expand?)
+  "Return a resolved CONS, expanded if necessary."
+  (assert (< start end))
+  (if expand?
+      (ivec start end)
+      (cons start end)))
+
 (defgeneric sub-resolve-selection (selection dimension object
                                    &optional expand?)
   (:documentation "Resolve selection to an object representing indexes to be
@@ -125,21 +136,19 @@
          (lambda (i) (sub-resolve-to-fixnum i dimension object))
          vector))
   (:method ((range cons) dimension object &optional expand?)
-    (let+ (((start . end) range)
-           (start (sub-resolve-to-fixnum start dimension object))
-           (end (sub-resolve-end end dimension object)))
-      (assert (< start end))
-      (if expand?
-          (ivec start end)
-          (cons start end))))
+    (sub-resolved-cons (sub-resolve-to-fixnum (car range) dimension object)
+                       (sub-resolve-end (cdr range) dimension object)
+                       expand?))
+  (:method ((incl incl) dimension object &optional expand?)
+    (sub-resolved-cons (sub-resolve-to-fixnum (incl-from incl) dimension object)
+                       (1+ (sub-resolve-to-fixnum (incl-to incl) dimension object))
+                       expand?))
   (:method ((mask bit-vector) dimension object &optional expand?)
     (declare (ignore expand?))
     (assert (= (length mask) dimension))
     (positions mask))
   (:method ((selection (eql t)) dimension object &optional expand?)
-    (if expand?
-        (ivec 0 dimension)
-        (cons 0 dimension)))
+    (sub-resolved-cons 0 dimension expand?))
   (:method ((selection delayed-cat) dimension object &optional expand?)
     (declare (ignore expand?))
     (concat* 'fixnum

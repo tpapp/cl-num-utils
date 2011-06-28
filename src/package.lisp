@@ -82,7 +82,7 @@
 
    ;; sub
 
-   sub sub-incompatible-dimensions sub-invalid-array-index cat rev ivec*
+   sub sub-incompatible-dimensions sub-invalid-array-index incl cat rev ivec*
    sub-resolve-index sub-resolve-selection 
 
    positions mask which

@@ -15,6 +15,8 @@
                      (4 5 6)))
     (ensure-same (sub a (cons 1 -1) t)
                  #2A((4 5 6 7)))
+    (ensure-same (sub a (incl 1 1) t)
+                 #2A((4 5 6 7)))
     (ensure-same (sub a 1 t)
                  #(4 5 6 7))
     (ensure-same (sub a (rev t) (cat (cons 0 2) (cons 2 4)))
