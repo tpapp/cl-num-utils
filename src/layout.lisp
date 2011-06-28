@@ -54,8 +54,7 @@
 ;;; array layout
 
 (defstruct (array-layout 
-             (:constructor array-layout
-              (dimensions% &aux (dimensions (ensure-list dimensions%)))))
+             (:constructor array-layout (&rest dimensions)))
   "Layout for elements in a row-major order."
   (dimensions nil :type list))
 
@@ -81,7 +80,7 @@
     (if remaining-dimensions
         (values
          (cons offset (+ offset remaining-size))
-         (array-layout remaining-dimensions))
+         (apply #'array-layout remaining-dimensions))
         (values offset nil))))
 
 (defmethod layout-ref (vector (layout array-layout) &rest keys)
