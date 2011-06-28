@@ -62,3 +62,7 @@
     (ensure-same (sub a (ivec* 1 -1 3)) #(1 4 7))
     (ensure-same (sub a (ivec* 1 7 3)) #(1 4))
     (ensure-same (sub a (sub (rev (ivec* 0 nil 3)) #(0 1))) #(9 6))))
+
+(addtest (sub-tests)
+  test-asub
+  (ensure-same (asub (ia 10) (mask #'evenp it)) #(0 2 4 6 8)))

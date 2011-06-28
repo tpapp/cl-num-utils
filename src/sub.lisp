@@ -27,6 +27,11 @@
   this, resolution may be delayed until SUB is invoked, this is handled
   transparently."))
 
+(defmacro asub (object &rest selections)
+  "Anaphoric SUB, binding OBJECT to IT."
+  `(let ((it ,object))
+     (sub it ,@selections)))
+
 (defgeneric (setf sub) (source target &rest selections)
   (:documentation "Set the subset of TARGET (according to SELECTIONS) in
   SOURCE.  See SUB for the documentation on the syntax of index selections."))
