@@ -14,7 +14,7 @@
     :pathname #P"tests/"
     :components
     ((:file "setup")
-     (:file "utilities")))
+     (:file "test-utilities")))
    (:module 
     "tests"
     :pathname #P"tests/"
