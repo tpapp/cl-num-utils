@@ -93,6 +93,10 @@
    e* e/ e2+ e2- e2* e2/ eexpt elog esqrt ereduce emin emax stack-dimensions
    stack-into stack* stack concat* concat
 
+   ;; utilities
+   
+   demean
+
    ;; layout
    
    layout-length layout-ref layout-position array-layout dictionary-layout
