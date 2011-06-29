@@ -167,7 +167,8 @@ displaced and share structure."
   "Given a partial list of subscripts, return the subarray that starts there,
 with all the other subscripts set to 0, dimensions inferred from the original.
 If no subscripts are given, the original array is returned.  Implemented by
-discplacing, shares structure."
+displacing, shares structure unless the second value is true, which indicates
+that a single element was returned (ie subarray was equivalent to aref)."
   (let* ((rank (array-rank array))
          (drop (length subscripts)))
     (assert (<= 0 drop rank))
@@ -179,15 +180,15 @@ discplacing, shares structure."
                        (apply #'array-row-major-index array
                               (aprog1 (make-list rank :initial-element 0)
                                 (replace it subscripts)))))
-      (t (apply #'aref array subscripts)))))
+      (t (values (apply #'aref array subscripts) t)))))
 
 (defun (setf subarray) (value array &rest subscripts)
-  (let ((subarray (apply #'subarray array subscripts)))
-    (if (vectorp subarray)
+  (let+ (((&values subarray atom?) (apply #'subarray array subscripts)))
+    (if atom?
+        (setf (apply #'aref array subscripts) value)
         (prog1 value
           (assert (common-dimensions value subarray))
-          (replace (flatten-array subarray) (flatten-array value)))
-        (setf (apply #'aref array subscripts) value))))
+          (replace (flatten-array subarray) (flatten-array value))))))
 
 (defun combine (array &optional element-type)
   "The opposite of SUBARRAYS.  If ELEMENT-TYPE is not given, it is inferred
