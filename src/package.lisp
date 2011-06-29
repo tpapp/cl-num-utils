@@ -48,8 +48,8 @@
    ;; statistics
    
    add pool pool* conforming-accumulator with-accumulator sweep
-   define-conforming-accumulator tally mean sse variance quantile sum product 
-   tallier mean-accumulator incf-mean array-mean-accumulator
+   define-conforming-accumulator tally mean sse variance quantile quantiles
+   sum product tallier mean-accumulator incf-mean array-mean-accumulator
    mean-sse-accumulator
 
    covariance-accumulator covariance correlation covariance-xy correlation-xy

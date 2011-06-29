@@ -108,6 +108,13 @@ evaluates to this accumulator.  For use in SWEEP."
     (let ((accumulator (sweep 'quantiles object)))
       (values (quantile accumulator q) accumulator))))
 
+(defgeneric quantiles (object qs)
+  (:documentation "Multiple quantiles, see QUANTILE.")
+  (:method (object qs)
+    (let ((accumulator (sweep 'quantiles object)))
+      (values (map1 (lambda (q) (quantile accumulator q)) qs)
+              accumulator))))
+
 ;; (defun median (object)
 ;;   "Median of OBJECT."
 ;;   (quantile object 0.5))
