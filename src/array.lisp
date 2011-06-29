@@ -183,8 +183,11 @@ discplacing, shares structure."
 
 (defun (setf subarray) (value array &rest subscripts)
   (let ((subarray (apply #'subarray array subscripts)))
-    (assert (common-dimensions value subarray))
-    (replace (flatten-array subarray) (flatten-array value))))
+    (if (vectorp subarray)
+        (prog1 value
+          (assert (common-dimensions value subarray))
+          (replace (flatten-array subarray) (flatten-array value)))
+        (setf (apply #'aref array subscripts) value))))
 
 (defun combine (array &optional element-type)
   "The opposite of SUBARRAYS.  If ELEMENT-TYPE is not given, it is inferred

@@ -121,12 +121,16 @@
 
 (addtest (array-tests)
   setf-subarray-tests
-  (let ((a (ia 3 4)))
+  (let ((a (ia 3 4))
+        (*lift-equality-test* #'equalp))
     (setf (subarray a 1) #(4 3 2 1))
     (ensure-same a #2A((0 1 2 3)
                        (4 3 2 1)
-                       (8 9 10 11))
-                 :test #'equalp)))
+                       (8 9 10 11)))
+    (setf (subarray a 1 3) 9)
+    (ensure-same a #2A((0 1 2 3)
+                       (4 3 2 9)
+                       (8 9 10 11)))))
 
 (addtest (array-tests)
   subarrays-tests
