@@ -33,6 +33,11 @@
 (defgeneric (setf layout-ref) (value vector layout &rest keys)
   (:documentation "Copy elements of object into vector at offset."))
 
+(defun flatten-using-layout (layout value &optional (element-type t))
+  "Flatten VALUE into a vector using LAYOUT."
+  (aprog1 (make-array (layout-length layout) :element-type element-type)
+    (setf (layout-ref it layout) value)))
+
 ;;; atomic layout - denoted by NIL
 
 (defmethod layout-length ((layout null))
@@ -135,26 +140,35 @@
     (values start end (aref layouts index))))
 
 (defmethod layout-position ((layout dictionary-layout) &rest keys)
-  (unless keys (return-from layout-position (whole-layout-position layout)))
-  (let+ (((first &rest rest) keys)
-         ((&values start nil layout) (dictionary-layout-lookup layout first))
-         ((&values sub-position sub-layout)
-          (apply #'layout-position layout rest)))
-    (values (shift-layout-position sub-position start) sub-layout)))
+  (if keys
+      (let+ (((first &rest rest) keys)
+             ((&values start nil layout)
+              (dictionary-layout-lookup layout first))
+             ((&values sub-position sub-layout)
+              (apply #'layout-position layout rest)))
+        (values (shift-layout-position sub-position start) sub-layout))
+      (whole-layout-position layout)))
 
 (defmethod layout-ref (vector (layout dictionary-layout) &rest keys)
-  (let+ (((first &rest rest) keys)
-         ((&values start end layout)
-          (dictionary-layout-lookup layout first)))
-    (apply #'layout-ref (subvector vector start end) layout rest)))
+  (if keys
+      (let+ (((first &rest rest) keys)
+             ((&values start end layout)
+              (dictionary-layout-lookup layout first)))
+        (apply #'layout-ref (subvector vector start end) layout rest))
+      vector))
 
 (defmethod (setf layout-ref) (value vector (layout dictionary-layout)
                               &rest keys)
-  (let+ (((first &rest rest) keys)
-         ((&values start end layout)
-          (dictionary-layout-lookup layout first)))
-    (setf (apply #'layout-ref (subvector vector start end) layout rest)
-          value)))
+  (if keys
+      (let+ (((first &rest rest) keys)
+             ((&values start end layout)
+              (dictionary-layout-lookup layout first)))
+        (setf (apply #'layout-ref (subvector vector start end) layout rest)
+              value))
+      (prog1 value
+        (iter
+          (for (key . val) :in value)
+          (setf (layout-ref vector layout key) val)))))
 
 ;;; atomic dictionary layout
 
@@ -222,7 +236,7 @@ to a vector."
       (let+ (((&shifted-vector-layout start nil) layout)
              ((key) keys))
         (setf (aref vector (- key start)) value))
-      (progn
+      (prog1 value
         (assert (= (length vector) (length value)))
         (replace vector value))))
 

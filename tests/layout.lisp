@@ -14,6 +14,7 @@
                     (:C . ,(array-layout 3 2)))))
          (vector (ivec (layout-length layout)))
          (*lift-equality-test* #'equalp))
+    (ensure-same (layout-ref vector layout) vector)
     (ensure-same (layout-ref vector layout :a)
                  #(0 1 2))
     (ensure-same (layout-ref vector layout :a 1)
@@ -28,6 +29,26 @@
     (ensure-same (layout-ref vector layout :c 1) #(6 7))
     (ensure-same (layout-ref vector layout :c 1 0) 6)
     (ensure-error (layout-ref vector layout :c 1 0 4))))
+
+(addtest (layout-tests)
+  layout-setf-test1
+  (let* ((layout (dictionary-layout
+                  `((:A . nil)
+                    (:B . ,(array-layout 3))
+                    (:C . nil))))
+         (initial-value '((:A . 2)
+                          (:B . #(3 5 7))
+                          (:C . 11)))
+         (vector (make-array 5 :initial-element (gensym)))
+         (*lift-equality-test* #'equalp))
+    (setf (layout-ref vector layout) initial-value)
+    (ensure-same vector #(2 3 5 7 11))
+    (setf (layout-ref vector layout :A) 9)
+    (ensure-same vector #(9 3 5 7 11))
+    (setf (layout-ref vector layout :B 2) 13)
+    (ensure-same vector #(9 3 5 13 11))
+    (setf (layout-ref vector layout) initial-value)
+    (ensure-same vector (flatten-using-layout layout initial-value))))
 
 (addtest (layout-tests)
   layout-test2

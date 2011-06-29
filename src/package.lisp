@@ -99,8 +99,8 @@
 
    ;; layout
    
-   layout-length layout-ref layout-position array-layout dictionary-layout
-   atomic-dictionary-layout shifted-vector-layout
+   layout-length layout-ref layout-position flatten-using-layout array-layout
+   dictionary-layout atomic-dictionary-layout shifted-vector-layout
 
    ;; data-frame
 
