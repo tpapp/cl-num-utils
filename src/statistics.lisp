@@ -441,8 +441,8 @@ them and return as a vector."
       (setf ordered-elements (concatenate 'vector ordered-elements
                                           unordered-elements)
             unordered-elements nil
-            ordered-elements (sort ordered-elements predicate))
-      ordered-elements)))
+            ordered-elements (sort ordered-elements predicate)))
+    ordered-elements))
 
 (defmethod quantile ((sorting-accumulator sorting-accumulator) q)
   (let+ (((&accessors-r/o elements) sorting-accumulator))
