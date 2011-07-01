@@ -388,3 +388,16 @@ type."
 (defun normsup (a)
   (reduce #'max a :key #'abs))
 
+;;; iterate clause for columns
+
+(defmacro-driver (for var in-columns matrix :with-index index)
+  (with-unique-names (matrix-var ncol-var)
+    (let ((kwd (if generate 'generate 'for)))
+      `(progn
+         (with ,matrix-var := ,matrix)
+         (with ,ncol-var := (ncol ,matrix-var))
+         (with ,index := -1)
+         (,kwd ,var next (progn
+                           (incf ,index)
+                           (when (>= ,index ,ncol-var) (terminate))
+                           (sub ,matrix-var t ,index)))))))
