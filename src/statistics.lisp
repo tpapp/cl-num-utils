@@ -101,6 +101,11 @@ evaluates to this accumulator.  For use in SWEEP."
       (when (plusp n-1)
         (/ sse n-1)))))
 
+(defgeneric sd (object)
+  (:documentation "Return the standard deviation.")
+  (:method (object)
+    (sqrt (variance object))))
+
 (defgeneric quantile (object q)
   (:documentation "Return an element at quantile Q.  May be an interpolation
   or an approximation, depending on OBJECT and Q.")
@@ -446,7 +451,8 @@ them and return as a vector."
 
 (defmethod quantile ((sorting-accumulator sorting-accumulator) q)
   (let+ (((&accessors-r/o elements) sorting-accumulator))
-    (assert (let+ (((&sorting-accumulator nil nil predicate) sorting-accumulator))
+    (assert (let+ (((&sorting-accumulator nil nil predicate)
+                    sorting-accumulator))
               (or (eq predicate #'<=)
                   (eq predicate #'<)))
             () "Accumulator has to be sorted by < or <=.")
@@ -556,6 +562,246 @@ them and return as a vector."
   (let+ (((&structure residual-pair- x x-index y y-index) residual-pair))
     (when (<= x-index y-index)
       (add-with-subscripts% instance (* x y) (list (- y-index x-index))))))
+
+
+;;; Histograms
+;;; 
+;;; data structures for counting the frequencies of multivariate indexes
+;;; (always of the same rank).  Building block for a histogram, but does not
+;;; have information on where the indexes came from.  Frequencies can only be
+;;; added, not set or subtracted.  The total is available, but is not
+;;; necessarily cached/saved.  Some combinations of subscripts may be invalid
+;;; or unavailable, in that case an error is raised.
+;;; 
+;;; !! define condition
+;;; !! write methods for using an array as frequencies
+
+(defgeneric histogram-limits (histogram)
+  (:documentation "Return (cons START END)."))
+
+(defgeneric histogram-bins (histogram)
+  (:documentation "Return the bins."))
+
+(defgeneric frequency (histogram index)
+  (:documentation "Return frequency at index."))
+
+(defgeneric total-frequency (histogram)
+  (:documentation "The sum of all frequencies."))
+
+;;; univariate histogram
+
+(defstruct histogram
+  table bins%
+  (dirty? nil)
+  (total-frequency 0)
+  (start nil)
+  (end nil))
+
+(defun make-empty-histogram (&key (bins (integer-bins)))
+  (make-histogram :table (make-hash-table :test #'eql) :bins% bins))
+
+(defun add-to-histogram (histogram value frequency)
+  "Add VALUE to HISTOGRAM with FREQUENCY."
+  ;; Note: factored out interface for implementation of weighted values, will
+  ;; be added in the future.
+  (unless (zerop frequency)
+    (assert (plusp frequency))
+    (let+ (((&structure-r/o histogram- table bins%) histogram)
+           (index (bin-index bins% value)))
+      (setf (histogram-dirty? histogram) t)
+      (incf (gethash index table 0) frequency))))
+
+(defun calculate-histogram-summary (histogram)
+  "Calculate and save START, END and TOTAL-FREQUENCY when DIRTY?."
+  (let+ (((&structure histogram- dirty?) histogram))
+    (when dirty?
+      (let+ (((&structure-r/o histogram- table) histogram)
+             ((&structure histogram- (tf total-frequency) (s start) (e end))
+              histogram)
+             (total-frequency 0)
+             start
+             end-1)
+        (maphash (lambda (index frequency)
+                   (incf total-frequency frequency)
+                   (if start
+                       (minf start index)
+                       (setf start index))
+                   (if end-1
+                       (maxf end-1 index)
+                       (setf end-1 index)))
+                 table)
+        (setf tf total-frequency
+              s start
+              e (1+ end-1)
+              dirty? nil)))))
+
+(defmethod histogram-limits ((histogram histogram))
+  (calculate-histogram-summary histogram)
+  (let+ (((&structure-r/o histogram- start end) histogram))
+    (cons start end)))
+
+(defmethod histogram-bins ((histogram histogram))
+  (histogram-bins% histogram))
+
+(defmethod frequency ((histogram histogram) index)
+  (gethash index (histogram-table histogram) 0))
+
+(defmethod total-frequency ((histogram histogram))
+  (calculate-histogram-summary histogram)
+  (histogram-total-frequency histogram))
+
+(defmethod add ((histogram histogram) value)
+  (add-to-histogram histogram value 1))
+
+(defparameter *frequency-print-width* 40
+  "The number of columns used for printing frequencies using text symbols.
+  Does not include the space used by labels etc.")
+
+(defun print-univariate-frequencies% (stream labels-frequencies character)
+  "Print univaritate frequencies from TABLE to stream using CHARACTERs.
+LABELS-FREQUENCIES should be a vector of sorted (LABEL . FREQUENCY) conses.
+Not exported."
+  (check-type character character)
+  (iter
+    (for (label . frequency) :in labels-frequencies)
+    (maximize (length label) :into label-width)
+    (maximize frequency :into maximum-frequency)
+    (finally 
+     (let ((step (max (pretty-step maximum-frequency *frequency-print-width*)
+                      1)))
+       (loop for (label . frequency) in labels-frequencies
+             do (format stream "~&~vA " label-width label)
+                (loop repeat (floor frequency step)
+                      do (princ character stream)))
+       (format stream "~&(each ~A = frequency of ~A)" character step)))))
+
+(defmethod print-object ((histogram histogram) stream)
+  (print-unreadable-object (histogram stream :type t)
+    (let+ (((start . end) (histogram-limits histogram))
+           (bins (histogram-bins histogram))
+           (labels-frequencies
+            (iter
+              (for index :from start :below end)
+              (collect (cons (format-bin-location (bin-location bins index))
+                             (frequency histogram index))))))
+      (print-univariate-frequencies% stream labels-frequencies #\*))))
+
+(defun histogram (object bins)
+  "Return a univariate histogram of OBJECT."
+  (sweep (make-empty-histogram :bins bins) object))
+
+(defun scott-rule (sequence &optional (pretty? t))
+  "Scott (1979) rule for bin width."
+  (let+ (((&accessors-r/o tally sd) (sweep 'sse sequence))
+         (width (* 3.5d0 (expt tally -1/3) sd)))
+    (if pretty?
+        (pretty width)
+        width)))
+
+;; (defun histogram-from-matrix (matrix &rest bins)
+;;   (let+ ((histogram (apply #'make-hashed-histogram bins))
+;;          ((nrow ncol) (array-dimensions matrix)))
+;;     (assert (= (subscript-rank histogram) ncol))
+;;     (loop for row :below nrow do
+;;       (apply #'add-observation histogram
+;;              1 (coerce (subarray matrix row) 'list)))
+;;     histogram))
+
+;; (defclass binned-data ()
+;;   ((indexes :accessor indexes :initarg :indexes)))
+
+;; (defmethod indexes ((vector vector))
+;;   vector)
+
+;; (defmethod as-array ((binned-data binned-data) &key copy?)
+;;   (maybe-copy-array (indexes binned-data) copy?))
+
+;; (defgeneric bin-limit (binned-data)
+;;   (:documentation "Return an integer which larger than all indexes (but does not
+;;   have to be the smallest of such values).")
+;;   (:method ((vector vector))
+;;     (1+ (reduce #'max vector)))
+;;   (:method ((binned-data binned-data))
+;;     (bin-limit (indexes binned-data))))
+
+;; (defgeneric bin-origin (binned-data bin-index)
+;;   (:documentation "Return information on the particular bin (what value/range is
+;;   mapped to this bin) if available.")
+;;   (:method ((vector vector) bin-index)
+;;     bin-index)
+;;   (:method ((binned-data binned-data) bin-index)
+;;     bin-index))
+
+;; (defgeneric bin-origins (binned-data)
+;;   (:documentation "Bin origin for all bins.")
+;;   (:method (binned-data)
+;;     (iter
+;;       (for bin-index :below (bin-limit binned-data))
+;;       (collect (bin-origin binned-data bin-index) :result-type vector))))
+
+;; ;;; continuous bins
+
+;; (defclass continuous-binned-data (binned-data)
+;;   ((breaks :accessor breaks :initarg :breaks))
+;;   (:documentation "Used for binning real numbers."))
+
+;; (defmethod bin-limit ((binned-data continuous-binned-data))
+;;   (length (breaks binned-data)))
+
+;; (defmethod bin-origin ((binned-data continuous-binned-data) bin-index)
+;;   (bind (((:slots-r/o breaks) binned-data))
+;;     (make-interval (aref breaks bin-index)
+;;                    (let ((right-index (1+ bin-index)))
+;;                      (when (< right-index (length breaks))
+;;                        (aref breaks right-index))))))
+
+;; (defun bin-using-breaks (vector breaks &key (below 0)
+;;                          (above (- (length breaks) 2)) copy? skip-check?)
+;;   (make-instance 'continuous-binned-data
+;;                  :indexes (map 'simple-fixnum-vector
+;;                                (irregular-bins breaks :below below :above above
+;;                                                :copy? copy?
+;;                                                :skip-check? skip-check?)
+;;                                vector)
+;;                  :breaks breaks))
+
+;; (defun bin-using-quantiles (vector quantiles)
+;;   "Bin VECTOR using its quantiles.  Quantiles has to contain 0 and 1.  Highest
+;; element is put in the last bin."
+;;   (assert (and (vector-satisfies? quantiles #'<)
+;;                (= (aref quantiles 0) 0)
+;;                (= (vector-last quantiles) 1)))
+;;   (bin-using-breaks vector (sample-quantiles vector quantiles)
+;;                     :skip-check? t))
+
+;; ;;; discrete bins
+
+;; (defclass discrete-binned-data (binned-data)
+;;   ((keys :accessor keys :initarg :keys)))
+
+;; (defmethod bin-limit ((binned-data discrete-binned-data))
+;;   (length (keys binned-data)))
+
+;; (defmethod bin-origin ((binned-data discrete-binned-data) bin-index)
+;;   (aref (keys binned-data) bin-index))
+
+;; (defmethod bin-origins ((binned-data discrete-binned-data))
+;;   (keys binned-data))
+
+;; (defun bin-discrete (vector &key (test #'eql))
+;;   "Bin discrete data, using TEST.  The implementation uses a hash-table, and
+;; TEST has to be acceptable to MAKE-HASH-TABLE."
+;;   (let ((table (make-hash-table :test test)))
+;;     (map nil (lambda (v)
+;;                (setf (gethash v table) t))
+;;          vector)
+;;     (let ((keys (sort (coerce (hash-table-keys table) 'vector) #'<)))
+;;       (iter
+;;         (for key :in-vector keys :with-index key-index)
+;;         (setf (gethash key table) key-index))
+;;       (make-instance 'discrete-binned-datann==
+;;                      :indexes (map 'vector (lambda (v) (gethash v table)) vector)
+;;                      :keys keys))))
 
 
 ;; (defun weighted-mean-accumulator ()

@@ -39,16 +39,14 @@
    ;; bins
 
    bin-index bin-locations bin-location even-bins even-bins-p pretty-bins
-   integer-bins integer-bins-p add-observation total-frequency
-   frequency relative-frequency subscript-limits subscript-limit
-   subscript-rank hashed-frequencies *frequency-print-width*
-   histogram-locations hashed-histogram make-hashed-histogram
-   histogram-from-sequence binary-search
+   integer-bins integer-bins-p
+   
+   format-bin-location binary-search
 
    ;; statistics
    
    add pool pool* conforming-accumulator with-accumulator sweep
-   define-conforming-accumulator tally mean sse variance quantile quantiles
+   define-conforming-accumulator tally mean sse variance sd quantile quantiles
    sum product tallier mean-accumulator incf-mean array-mean-accumulator
    mean-sse-accumulator
 
@@ -57,6 +55,10 @@
    
    sorting-accumulator @ sparse-accumulator-array ref limits residual-pair
    acf-accumulator
+
+   histogram-limits histogram-bins frequency total-frequency
+   
+   histogram make-empty-histogram *frequency-print-width*
 
    subranges
      

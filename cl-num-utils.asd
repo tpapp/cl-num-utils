@@ -31,7 +31,6 @@
      (:file "bins")
      (:file "statistics")
      (:file "interval")
-     ;; (:file "histogram")
      (:file "sub")
      (:file "elementwise")
      (:file "utilities")

@@ -41,34 +41,6 @@ BIN-INDEX and BIN-FUNCTION map VALUE to INDEX."
 ;;     (ensure-error (bin-value bins 4))))
 
 (addtest (bins-tests)
-  histogram-test
-  (let ((histogram (make-hashed-histogram (even-bins 2 -1))))
-    (add-observation histogram 1 0)
-    (add-observation histogram 1 0.5)
-    (add-observation histogram 3 1.5)
-    (ensure-same (total-frequency histogram) 5)
-    (ensure-same (frequency histogram 0) 2)
-    (ensure-same (frequency histogram 1) 3)
-    (ensure-same (frequency histogram -7) 0)
-    (ensure-error (add-observation histogram 1 0 0))))
-
-(addtest (bins-tests)
-  histogram-test2
-  (let ((histogram (histogram-from-sequence '(1 2 3 2 3 3)
-                                            (integer-bins))))
-    (ensure-same (frequency histogram 1) 1)
-    (ensure-same (frequency histogram 2) 2)
-    (ensure-same (frequency histogram 3) 3)
-    (ensure-same (frequency histogram 7) 0)
-    (ensure-same (total-frequency histogram) 6)
-    (ensure-same (relative-frequency histogram 1) 1/6)
-    (ensure-same (relative-frequency histogram 2) 2/6)
-    (ensure-same (relative-frequency histogram 3) 3/6)
-    (ensure-same (relative-frequency histogram 7) 0)
-    (ensure-same (subscript-limit histogram 0) (cons 1 4))
-    (ensure-error (subscript-limit histogram 1))))
-
-(addtest (bins-tests)
   binary-search
   (flet ((test-binary-search (n &key (max n))
            "Test fixnum binary search by generating N random elements below
