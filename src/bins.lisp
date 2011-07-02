@@ -4,28 +4,30 @@
 
 ;;; bins -- generic interface
 ;;;
-;;; BINS are univariate mappings to FIXNUMs, either based on exact correspondence
-;;; (discrete bins) or location on the real line (continuous bins).  They are the
-;;; (univariate) building blocks for histograms, used as cross products when
-;;; necessary.
+;;; BINS are univariate mappings to FIXNUMs, either based on exact
+;;; correspondence (discrete bins) or location on the real line (continuous
+;;; bins).  They are the (univariate) building blocks for histograms, used as
+;;; cross products when necessary.
 
 (defgeneric bin-index (bins value)
-  (:documentation "Return the index (a FIXNUM) that corresponds to VALUE in BIN."))
+  (:documentation
+   "Return the index (a FIXNUM) that corresponds to VALUE in BIN."))
 
 (defgeneric bin-locations (bins start end)
-  (:documentation "Return a vector of locations.  If the second value is T, BINS are
-  discrete (- END START) values are returned, otherwise BINS are contiguous intervals
-  on the real line, and the returned vector has (1+ (- END START)) elements which
-  denote the breakpoints."))
+  (:documentation "Return a vector of locations.  If the second value is T,
+  BINS are discrete (- END START) values are returned, otherwise BINS are
+  contiguous intervals on the real line, and the returned vector has (1+ (-
+  END START)) elements which denote the breakpoints."))
 
 (defgeneric bin-location (bins index)
-  (:documentation "Return the value or interval that corresponds to the bin with
-  INDEX."))
+  (:documentation
+   "Return the value or interval that corresponds to the bin with INDEX."))
 
 ;;; evenly distributed bins
 
 (defstruct (even-bins (:constructor even-bins (width &optional (offset 0))))
-  "Evenly distributed bins.  Especially fast as binning requires simple arithmetic."
+  "Evenly distributed bins.  Especially fast as binning requires simple
+  arithmetic."
   (offset nil :type real :read-only t)
   (width nil :type real :read-only t))
 
@@ -36,7 +38,8 @@
 (defmethod bin-locations ((even-bins even-bins) start end)
   (let+ (((&structure even-bins- offset width) even-bins))
     (values
-      (numseq (+ (* start width) offset) nil :length (- (1+ end) start) :by offset)
+      (numseq (+ (* start width) offset) nil :length (- (1+ end) start)
+                                             :by offset)
       t)))
 
 (defmethod bin-location ((even-bins even-bins) index)
@@ -47,7 +50,7 @@
 (defun pretty-bins (width n &key (min-step (default-min-step width))
                          (bias *pretty-bias*) (five-bias *pretty-five-bias*)) 
   "Bins with a pretty step size, calculated using PRETTY-STEP (see its
-documentation)."
+  documentation)."
   (even-bins (pretty-step width n :min-step min-step :bias bias
                           :five-bias five-bias)))
 
@@ -59,8 +62,8 @@ using Sturges's rule. "
 ;;; integer bins
 
 (defstruct (integer-bins (:constructor integer-bins))
-  "Integer bins, for exact categorization.  All integers (fixnums) are mapped to
-  themselves, other values raise an error.")
+  "Integer bins, for exact categorization.  All integers (fixnums) are mapped
+  to themselves, other values raise an error.")
 
 (defmethod bin-index ((integer-bins integer-bins) value)
   (check-type value fixnum)
@@ -201,13 +204,14 @@ ordering of subscripts.  Not exported."
         :key #'car))
 
 (defparameter *frequency-print-width* 40
-  "The number of columns used for printing frequencies using text symbols.  Does not
-  include the space used by labels etc.")
+  "The number of columns used for printing frequencies using text symbols.
+  Does not include the space used by labels etc.")
 
-(defun print-univariate-frequencies% (stream sorted-frequencies subscript-to-label)
-  "Print univaritate frequencies from TABLE to stream using *'s.  Subscripts are
-converted to labels using SUBSCRIPT-TO-LABEL (should return a string).  Not
-exported."
+(defun print-univariate-frequencies% (stream sorted-frequencies
+                                      subscript-to-label)
+  "Print univaritate frequencies from TABLE to stream using *'s.  Subscripts
+are converted to labels using SUBSCRIPT-TO-LABEL (should return a string).
+Not exported."
   (when sorted-frequencies
     (iter
       (for s-f :in sorted-frequencies)
@@ -217,10 +221,12 @@ exported."
         (maximize (length label) :into label-width)
         (maximize frequency :into maximum-frequency)
         (finally 
-         (let ((step (max (pretty-step maximum-frequency *frequency-print-width*) 1)))
+         (let ((step (max (pretty-step maximum-frequency
+                                       *frequency-print-width*) 1)))
            (loop for (label . frequency) in labels-and-frequencies
                  do (format stream "~&~vA " label-width label)
-                    (loop repeat (floor frequency step) do (princ #\* stream)))
+                    (loop repeat (floor frequency step)
+                          do (princ #\* stream)))
            (format stream "~&(each * = frequency of ~A)" step)))))))
 
 (defmethod print-object ((hashed-frequencies hashed-frequencies) stream)
@@ -234,8 +240,8 @@ exported."
           (loop for (subscripts . frequency) in sorted-frequencies do
             (format stream "~&~A=~A" subscripts frequency))))))
 
-(defmethod initialize-instance :after ((hashed-frequencies hashed-frequencies) 
-                                       &key rank &allow-other-keys)
+(defmethod initialize-instance :after
+    ((hashed-frequencies hashed-frequencies) &key rank &allow-other-keys)
   (setf (limits hashed-frequencies) (make-array rank :initial-element nil)))
 
 (defmethod add-observation ((hashed-frequencies hashed-frequencies) frequency
@@ -264,9 +270,9 @@ exported."
 
 ;;; histogram -- generic interface
 ;;; 
-;;; A histogram is extends the FREQUENCIES interface with information on how the
-;;; indexes were mapped to bins.  This can be queried with HISTOGRAM-LOCATIONS and
-;;; used for plotting.
+;;; A histogram is extends the FREQUENCIES interface with information on how
+;;; the indexes were mapped to bins.  This can be queried with
+;;; HISTOGRAM-LOCATIONS and used for plotting.
 
 (defgeneric histogram-locations (histogram)
   (:documentation "Return locations along each dimension, with START and END
@@ -295,7 +301,8 @@ exported."
           (format stream " ~A cells (not printed)" (hash-table-count table))
           (print-univariate-frequencies%
            stream (sort-frequencies% table)
-           (lambda (subscript) (format-location (bin-location bin subscript))))))))
+           (lambda (subscript)
+             (format-location (bin-location bin subscript))))))))
 
 (defun make-hashed-histogram (&rest bins)
   (make-instance 'hashed-histogram :bins bins :rank (length bins)))
@@ -306,14 +313,15 @@ exported."
                 (bin-locations bin (car limit) (cdr limit)))
             limits bins)))
 
-(defmethod add-observation ((histogram hashed-histogram) frequency &rest coordinates)
+(defmethod add-observation ((histogram hashed-histogram) frequency
+                            &rest coordinates)
   (let+ (((&slots-r/o bins) histogram))
     (assert (= (length coordinates) (length bins)))
-    (apply #'call-next-method histogram frequency (mapcar (lambda (bin coordinate)
-                                                            (bin-index bin coordinate))
-                                                          bins coordinates))))
+    (apply #'call-next-method histogram frequency
+           (mapcar (lambda (bin coordinate) (bin-index bin coordinate))
+                   bins coordinates))))
 
-(defun histogram-from-sequence (sequence bin)
+(defun histogram (sequence bin)
   (aprog1 (make-hashed-histogram bin)
     (map nil (curry #'add-observation it 1) sequence)))
 
