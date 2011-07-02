@@ -54,11 +54,6 @@
   (even-bins (pretty-step width n :min-step min-step :bias bias
                           :five-bias five-bias)))
 
-(defun sturges-bins (width length)
-  "Bins with a pretty step size, n based on length of data, calculated
-using Sturges's rule. "
-  (pretty-bins width (1+ (ceiling (log length 2)))))
-
 ;;; integer bins
 
 (defstruct (integer-bins (:constructor integer-bins))

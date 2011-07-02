@@ -39,11 +39,11 @@
    ;; bins
 
    bin-index bin-locations bin-location even-bins even-bins-p pretty-bins
-   sturges-bins integer-bins integer-bins-p add-observation total-frequency
+   integer-bins integer-bins-p add-observation total-frequency
    frequency relative-frequency subscript-limits subscript-limit
    subscript-rank hashed-frequencies *frequency-print-width*
    histogram-locations hashed-histogram make-hashed-histogram
-   histogram-from-sequence histogram-from-matrix binary-search
+   histogram-from-sequence binary-search
 
    ;; statistics
    
