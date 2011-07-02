@@ -317,14 +317,14 @@ exported."
   (aprog1 (make-hashed-histogram bin)
     (map nil (curry #'add-observation it 1) sequence)))
 
-(defun histogram-from-matrix (matrix &rest bins)
-  (let+ ((histogram (apply #'make-hashed-histogram bins))
-         ((nrow ncol) (array-dimensions matrix)))
-    (assert (= (subscript-rank histogram) ncol))
-    (loop for row :below nrow do
-      (apply #'add-observation histogram
-             1 (coerce (subarray matrix row) 'list)))
-    histogram))
+;; (defun histogram-from-matrix (matrix &rest bins)
+;;   (let+ ((histogram (apply #'make-hashed-histogram bins))
+;;          ((nrow ncol) (array-dimensions matrix)))
+;;     (assert (= (subscript-rank histogram) ncol))
+;;     (loop for row :below nrow do
+;;       (apply #'add-observation histogram
+;;              1 (coerce (subarray matrix row) 'list)))
+;;     histogram))
 
 ;; (defclass binned-data ()
 ;;   ((indexes :accessor indexes :initarg :indexes)))
