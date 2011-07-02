@@ -92,15 +92,20 @@ finding a common array element type."
   "Like LAST, but for vectors."
   (aref vector (- (length vector) n)))
 
-(defun common (sequence &key (key #'identity) (test #'eql))
+(defun common (sequence &key (key #'identity) (test #'eql) failure error)
   "If the elements of sequence are the same (converted with KEY, compared with
-TEST), return that, otherwise NIL."
-  (reduce (lambda (a b)
-            (if (funcall test a b)
-                a
-                (return-from common nil)))
-          sequence
-          :key key))
+TEST), return that, otherwise FAILURE.  When ERROR?, an error is signalled
+instead.  The second value is true iff elements are the same."
+  (values
+   (reduce (lambda (a b)
+             (if (funcall test a b)
+                 a
+                 (if error
+                     (error error)
+                     (return-from common failure))))
+           sequence
+           :key key)
+   t))
 
 (defun common-length (&rest sequences)
   "If sequences have the same length, return that, otherwise NIL."
