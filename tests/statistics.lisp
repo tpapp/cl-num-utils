@@ -121,6 +121,25 @@
                  quantiles)))
 
 (addtest (statistics-tests)
+  (let+ ((end 5)
+         (pairs (filled-array 100
+                              (lambda ()
+                                (@ (random 100d0) (random end)))))
+         (acc #'mean-sse-accumulator)
+         (result (sweep (sparse-accumulator-array 1 acc) pairs))
+         (*lift-equality-test* #'==)
+         ((&flet sparse-acc (pairs accumulator &rest s)
+            "For testing."
+            (map nil (lambda+ ((&structure @- object subscripts))
+                       (when (equal s subscripts)
+                         (add accumulator object)))
+                 pairs)
+            (when (plusp (tally accumulator))
+              accumulator))))
+    (loop for i below end do
+      (ensure-same (ref result i) (sparse-acc pairs (funcall acc) i)))))
+
+(addtest (statistics-tests)
   subranges
   (let+ (((&flet random-ranges (n &key (max 200) (order? t))
             (filled-array n (lambda ()
