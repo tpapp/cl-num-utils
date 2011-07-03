@@ -212,4 +212,3 @@ they don't share structure."
   (if (and (typep sequence 'simple-fixnum-vector) copy?)
       (copy-seq sequence)
       (coerce sequence 'simple-fixnum-vector)))
-
