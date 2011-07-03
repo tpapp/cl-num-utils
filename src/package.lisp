@@ -58,7 +58,7 @@
 
    histogram-limits histogram-bins frequency total-frequency
    
-   histogram make-empty-histogram *frequency-print-width*
+   histogram make-empty-histogram *frequency-print-width* scott-rule
 
    subranges
      
