@@ -42,15 +42,15 @@ evaluates to this accumulator.  For use in SWEEP."
          ,@body
          ,accumulator))))
 
-(defgeneric sweep (accumulator object)
+(defgeneric sweep (accumulator object &key key)
   (:documentation "Apply ACCUMULATOR to elements of OBJECT.  When ACCUMULATOR
   is a function, it is used to generate a conforming accumulator.")
-  (:method (accumulator (sequence sequence))
+  (:method (accumulator (sequence sequence) &key (key #'identity))
     (with-accumulator (accumulator add)
-      (map nil #'add sequence)))
-  (:method (accumulator (array array))
+      (map nil (compose #'add key) sequence)))
+  (:method (accumulator (array array) &key (key #'identity))
     (with-accumulator (accumulator add)
-      (map nil #'add (flatten-array array)))))
+      (map nil (compose #'add key) (flatten-array array)))))
 
 ;;; sweep also resolves some symbols and functions into default accumulators,
 ;;; the helper macros below take care of defining these
@@ -139,6 +139,10 @@ evaluates to this accumulator.  For use in SWEEP."
 (define-conforming-accumulator (tally object)
   (tallier))
 
+(defmethod == ((a tallier) (b tallier) &optional tolerance)
+  (declare (ignore tolerance))
+  (= (tallier-tally a) (tallier-tally b)))
+
 ;;; mean accumulator for scalars
 
 (defstruct (mean-accumulator
@@ -167,7 +171,6 @@ evaluates to this accumulator.  For use in SWEEP."
                     &optional (tally (+ tally1 tally2)))
   "Pooled mean.  For internal use."
   (/ (+ (* tally1 mean1) (* tally2 mean2)) tally))
-    
 
 (defmethod pool2 ((acc1 mean-accumulator) (acc2 mean-accumulator))
   (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
@@ -475,13 +478,18 @@ them and return as a vector."
   (object)
   (subscripts nil :type list))
 
-(defclass sparse-accumulator-array ()
-  ((table :accessor table :initarg :table
-          :initform (make-hash-table :test #'equal))
-   (init-function :accessor init-function :initarg :init-function)
-   (rank :accessor rank :initarg :rank))
-  (:documentation "Array of accumulators.  New accumulators are created at
-  particular subscripts on demand, initialized with INIT-FUNCTION."))
+(defstruct (sparse-accumulator-array)
+  "See documentation of the function SPARSE-ACCUMULATOR-ARRAY."
+  table init-function rank)
+
+(defun sparse-accumulator-array (rank init-function)
+  "Create a sparse accumulator array.  Elements are added with subscripts (see
+  the function @), and init-function is called to generate an accumulator when
+  the first element is added with given subscripts.  Use LIMITS and REF to
+  access the result."
+  (make-sparse-accumulator-array :table (make-hash-table :test #'equal)
+                                 :init-function init-function
+                                 :rank rank))
 
 (defun valid-subscripts? (subscripts rank)
   "Check if subscripts are valid (list of fixnums of length RANK)."
@@ -494,17 +502,18 @@ them and return as a vector."
 
 (defun add-with-subscripts% (instance object subscripts)
   "Function that implements (add ... (@ ...)).  Not exported"
-  (let+ (((&slots-r/o table init-function rank) instance)
+  (let+ (((&structure-r/o sparse-accumulator-array-
+                          table init-function rank) instance)
          (subscripts (aprog1 (coerce subscripts 'list)
                        (assert (valid-subscripts? it rank))))
          ((&values accumulator present?) (gethash subscripts table)))
     (unless present?
-      (setf accumulator (apply init-function subscripts)
-            (gethash subscripts accumulator) accumulator))
+      (setf accumulator (funcall init-function)
+            (gethash subscripts table) accumulator))
     (add accumulator object)))
 
-(defmethod add ((instance sparse-accumulator-array) (object @))
-  (let+ (((&structure @- object subscripts) object))
+(defmethod add ((instance sparse-accumulator-array) (obj @))
+  (let+ (((&structure @- object subscripts) obj))
     (add-with-subscripts% instance object subscripts)))
 
 ;;; !!! define (add instance (@ object subscripts)) compiler macro
@@ -512,25 +521,25 @@ them and return as a vector."
 (defmethod ref ((instance sparse-accumulator-array) &rest subscripts)
   (let+ (((&slots-r/o table rank) instance))
     (assert (valid-subscripts? subscripts rank))
-    ;; !!! what happes if not found? save "touched" instances?
-    (gethash subscripts table)))
+    (gethash subscripts table nil)))
 
 (defmethod limits ((instance sparse-accumulator-array))
   (let+ (((&slots-r/o table rank) instance)
-         (min (make-array rank :element-type 'fixnum))
-         (max (make-array rank :element-type 'fixnum)))
+         (start (make-array rank :element-type 'fixnum))
+         (end-1 (make-array rank :element-type 'fixnum)))
     (iter
       (for (subscripts nil) :in-hashtable table)
       (if (first-iteration-p)
           (progn
-            (replace min subscripts)
-            (replace max subscripts))
+            (replace start subscripts)
+            (replace end-1 subscripts))
           (iter
             (for subscript :in subscripts)
             (for index :from 0)
-            (maxf (aref max index) subscript)
-            (minf (aref min index) subscript))))
-    (values min max)))
+            (minf (aref start index) subscript)
+            (maxf (aref end-1 index) subscript))))
+    (map-into end-1 #'1+ end-1)
+    (values start end-1)))
 
 ;;; moments accumulator 
 
@@ -546,22 +555,22 @@ them and return as a vector."
 
 ;;; acf accumulator
 
-(defstruct (residual-pair (:constructor residual-pair (x x-index y y-index)))
-  "Pair of residuals."
-  (x)
-  (x-index nil :type fixnum)
-  (y)
-  (y-index nil :type fixnum))
+;; (defstruct (residual-pair (:constructor residual-pair (x x-index y y-index)))
+;;   "Pair of residuals."
+;;   (x)
+;;   (x-index nil :type fixnum)
+;;   (y)
+;;   (y-index nil :type fixnum))
 
-(defclass acf-accumulator (sparse-accumulator-array)
-  ()
-  (:documentation ""))
+;; (defclass acf-accumulator (sparse-accumulator-array)
+;;   ()
+;;   (:documentation ""))
 
-(defmethod add ((instance acf-accumulator) (residual-pair residual-pair))
-  ;; !!! factor out part, write compiler macro
-  (let+ (((&structure residual-pair- x x-index y y-index) residual-pair))
-    (when (<= x-index y-index)
-      (add-with-subscripts% instance (* x y) (list (- y-index x-index))))))
+;; (defmethod add ((instance acf-accumulator) (residual-pair residual-pair))
+;;   ;; !!! factor out part, write compiler macro
+;;   (let+ (((&structure residual-pair- x x-index y y-index) residual-pair))
+;;     (when (<= x-index y-index)
+;;       (add-with-subscripts% instance (* x y) (list (- y-index x-index))))))
 
 
 ;;; Histograms
@@ -687,16 +696,23 @@ Not exported."
       (print-univariate-frequencies% stream labels-frequencies #\*))))
 
 (defun histogram (object bins)
-  "Return a univariate histogram of OBJECT."
-  (sweep (make-empty-histogram :bins bins) object))
+  "Return a univariate histogram of OBJECT.  If BINS is a function, call it on
+object to generate the bins."
+  (sweep (make-empty-histogram :bins (if (functionp bins)
+                                         (funcall bins object)
+                                         bins))
+         object))
 
-(defun scott-rule (sequence &optional (pretty? t))
-  "Scott (1979) rule for bin width."
-  (let+ (((&accessors-r/o tally sd) (sweep 'sse sequence))
-         (width (* 3.5d0 (expt tally -1/3) sd)))
-    (if pretty?
-        (pretty width)
-        width)))
+(defun scott-rule (object &key (pretty? t) (correction 1d0) offset)
+  "Return a bin object using Scott's (1979) rule for bin width, multiplied by
+CORRECTION, rounded when PRETTY?.  When OFFSET is given, it is used for the
+bins, otherwise they are centered around 0."
+  (let+ (((&accessors-r/o tally sd) (sweep 'sse object))
+         (width (* 3.5d0 (expt tally -1/3) sd correction))
+         (width (if pretty?
+                    (pretty width)
+                    width)))
+    (even-bins width (aif offset it (/ width 2)))))
 
 ;; (defun histogram-from-matrix (matrix &rest bins)
 ;;   (let+ ((histogram (apply #'make-hashed-histogram bins))
