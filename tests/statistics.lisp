@@ -122,9 +122,14 @@
 
 (addtest (statistics-tests)
   (let+ ((end 5)
+         (index 0)                      ; to make sure we have 1 of each
          (pairs (filled-array 100
                               (lambda ()
-                                (@ (random 100d0) (random end)))))
+                                (prog1 (@ (random 100d0)
+                                          (if (< index end)
+                                              index
+                                              (random end)))
+                                  (incf index)))))
          (acc #'mean-sse-accumulator)
          (result (sweep (sparse-accumulator-array 1 acc) pairs))
          (*lift-equality-test* #'==)
@@ -136,6 +141,7 @@
                  pairs)
             (when (plusp (tally accumulator))
               accumulator))))
+    (ensure-same (limits result) (vector `(0 . ,end)))
     (loop for i below end do
       (ensure-same (ref result i) (sparse-acc pairs (funcall acc) i)))))
 
