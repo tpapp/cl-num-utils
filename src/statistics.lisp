@@ -538,8 +538,7 @@ them and return as a vector."
             (for index :from 0)
             (minf (aref start index) subscript)
             (maxf (aref end-1 index) subscript))))
-    (map-into end-1 #'1+ end-1)
-    (values start end-1)))
+    (map 'vector (lambda (s e-1) (cons s (1+ e-1))) start end-1)))
 
 ;;; moments accumulator 
 
