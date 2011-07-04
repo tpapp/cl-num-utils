@@ -132,7 +132,10 @@ etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
            (for index :below (array-total-size a))
            (always (== (row-major-aref a index)
                        (row-major-aref b index)
-                       tolerance))))))
+                       tolerance)))))
+  (:method ((a cons) (b cons) &optional (tolerance *==-tolerance*))
+    (and (== (car a) (car b) tolerance)
+         (== (cdr a) (cdr b) tolerance))))
 
 (defun format-number (number &key (int-digits 3) (exp-digits 1))
   "Format number nicely."
