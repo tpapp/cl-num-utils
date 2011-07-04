@@ -46,9 +46,9 @@
    ;; statistics
    
    add pool pool* conforming-accumulator with-accumulator sweep
-   define-conforming-accumulator tally mean sse variance sd quantile quantiles
-   sum product tallier mean-accumulator incf-mean array-mean-accumulator
-   mean-sse-accumulator
+   define-conforming-accumulator tally sample-ratio mean sse variance sd
+   quantile quantiles sum product tallier sample-ratio-accumulator
+   mean-accumulator incf-mean array-mean-accumulator mean-sse-accumulator
 
    covariance-accumulator covariance correlation covariance-xy correlation-xy
    autocovariance-accumulator autocovariances autocorrelations lags
@@ -87,7 +87,7 @@
    sub asub sub-incompatible-dimensions sub-invalid-array-index incl cat rev
    ivec* sub-resolve-index sub-resolve-selection 
 
-   positions mask which
+   positions mask which bit-to-boolean boolean-to-bit
 
    ;; elementwise
 

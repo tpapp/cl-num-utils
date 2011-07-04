@@ -78,6 +78,12 @@ evaluates to this accumulator.  For use in SWEEP."
   (:method ((array array))
     (array-total-size array)))
 
+(defgeneric sample-ratio (object)
+  (:documentation "Return the proportion of non-nil elements.")
+  (:method (object)
+    (let ((accumulator (sweep (sample-ratio-accumulator) object)))
+      (values (sample-ratio accumulator) accumulator))))
+
 (defgeneric mean (object)
   (:documentation "Return the mean.")
   (:method (object)
@@ -142,6 +148,25 @@ evaluates to this accumulator.  For use in SWEEP."
 (defmethod == ((a tallier) (b tallier) &optional tolerance)
   (declare (ignore tolerance))
   (= (tallier-tally a) (tallier-tally b)))
+
+;;; sample ratio
+
+(defstruct (sample-ratio-accumulator 
+            (:constructor sample-ratio-accumulator ())
+            (:include tallier))
+  "Sample ratio accumulator."
+  (count 0 :type fixnum))
+
+(defmethod add ((accumulator sample-ratio-accumulator) object)
+  (let+ (((&structure sample-ratio-accumulator- tally count) accumulator))
+    (incf tally)
+    (when object
+      (incf count))))
+
+(defmethod sample-ratio ((accumulator sample-ratio-accumulator))
+  (let+ (((&structure-r/o sample-ratio-accumulator- tally count) accumulator))
+    (/ count tally)))
+
 
 ;;; mean accumulator for scalars
 

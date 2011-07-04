@@ -411,11 +411,17 @@ elements traversed), but the return value of NEXT is recommended."
 
 ;;; utility functions
 
-(declaim (inline boolean-to-bit predicate-as-flag))
+(declaim (inline boolean-to-bit bit-to-boolean predicate-as-flag))
 
 (defun boolean-to-bit (boolean)
   "Convert a boolean to a bit."
   (if boolean 1 0))
+
+(defun bit-to-boolean (bit)
+  "Convert a bit to boolean."
+  (ecase bit
+    (0 nil)
+    (1 t)))
 
 (defun predicate-as-flag (predicate)
   "For convert a predicate to a function that returns a bit."

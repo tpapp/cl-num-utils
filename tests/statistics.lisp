@@ -7,6 +7,13 @@
   (:equality-test #'equalp))
 
 (addtest (statistics-tests)
+  test-ratio
+  (let+ ((v (map1 #'bit-to-boolean #*000011111))
+         ((&values ratio acc) (ratio v)))
+    (ensure-same ratio 5/9)
+    (ensure-same (tally acc) 9)))
+
+(addtest (statistics-tests)
   test-mean
   (ensure-same (mean (ia 5)) 2)
   (ensure-same (mean (ia 9)) 4))
