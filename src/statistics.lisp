@@ -167,7 +167,6 @@ evaluates to this accumulator.  For use in SWEEP."
   (let+ (((&structure-r/o sample-ratio-accumulator- tally count) accumulator))
     (/ count tally)))
 
-
 ;;; mean accumulator for scalars
 
 (defstruct (mean-accumulator

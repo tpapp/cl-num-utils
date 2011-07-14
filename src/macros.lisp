@@ -19,9 +19,10 @@ place, or a list of a place and a type-string."
                          (let+ (((place type-string) argument))
                            `(check-type ,place ,type ,type-string)))))))
 
-(defmacro define-with-multiple-bindings (macro &key 
-                                         (plural (intern (format nil "~aS" macro)))
-                                         (docstring (format nil "Multiple binding version of ~(~a~)." macro)))
+(defmacro define-with-multiple-bindings
+    (macro &key 
+             (plural (intern (format nil "~aS" macro)))
+             (docstring (format nil "Multiple binding version of ~(~a~)." macro)))
   "Define a version of `macro' with multiple arguments, given as a
 list.  Application of `macro' will be nested.  The new name is the 
 plural of the old one (generated using format by default)."
@@ -33,35 +34,26 @@ plural of the old one (generated using format by default)."
 			       ,@body))
          `(progn ,@body))))
 
-(defun concatenate-as-strings (args)
-  (apply #'concatenate 'string (mapcar #'string args)))
+(defun concatenate-as-string (things)
+  "Concatenate THINGS, converted to string."
+  (apply #'concatenate 'string (mapcar #'string things)))
 
-(defun make-symbol-in (package &rest args)
-  "Build a symbol by concatenating each element of ARGS as strings,
-  and intern it in PACKAGE."
-  (intern (concatenate-as-strings args) package))
-
-(defun make-symbol* (&rest args)
-  "Build a symbol by concatenating each element of ARGS as strings,
-  and intern it (in *PACKAGE*, INTERN's default)."
-  (apply #'make-symbol-in *package* args))
-
-(defun make-keyword* (&rest args)
+(defun make-keyword+ (&rest things)
   "Build a symbol by concatenating each element of ARGS as strings,
   and intern it the KEYWORD package."
-  (apply #'make-symbol-in (load-time-value (find-package :keyword)) args))
+  (make-keyword (concatenate-as-string things)))
 
-(defun gensym* (&rest args)
+(defun gensym+ (&rest things)
   "Gensym with concatenating each element of ARGS as strings."
-  (gensym (concatenate-as-strings args)))
+  (gensym (concatenate-as-strings things)))
 
-(defmacro define-make-symbol% (package &optional
-                               (name (make-symbol-in package '#:make-symbol%)))
-  "Define a MAKE-SYMBOL% that interns in PACKAGE."
-  `(defun ,name (&rest args) 
-     ,(format nil "Build a symbol by concatenating each element of ~
-                   ARGS as strings, and intern it in ~A." package)
-     (intern (concatenate-as-strings args) ,package)))
+;; (defmacro define-make-symbol% (package &optional
+;;                                (name (make-symbol-in package '#:make-symbol%)))
+;;   "Define a MAKE-SYMBOL% that interns in PACKAGE."
+;;   `(defun ,name (&rest args) 
+;;      ,(format nil "Build a symbol by concatenating each element of ~
+;;                    ARGS as strings, and intern it in ~A." package)
+;;      (intern (concatenate-as-strings args) ,package)))
 
 
 (defmacro lazy-let-block ((variable init-form) &body body)
@@ -76,7 +68,8 @@ plural of the old one (generated using format by default)."
 
 (define-with-multiple-bindings lazy-let-block 
     :plural lazy-let*
-    :docstring "Similar to LET*, except that the values are evaluated on demand.")
+    :docstring "Similar to LET*, except that the values are evaluated on
+    demand.")
 
 (defmacro unlessf (place value-form &environment environment)
   "When PLACE is NIL, evaluate VALUE-FORM and save it there."
@@ -87,10 +80,11 @@ plural of the old one (generated using format by default)."
          (let ((,(car store-vars) ,value-form))
            ,writer-form)))))
 
-(defmacro define-structure-slot-accessor (accessor structure 
-                                          &key (conc-name (format nil "~A-" structure))
-                                               (slot-name accessor) lambda-list-rest
-                                               (read-only? nil))
+(defmacro define-structure-slot-accessor
+    (accessor structure 
+     &key (conc-name (format nil "~A-" structure))
+          (slot-name accessor) lambda-list-rest
+          (read-only? nil))
   "Define a method for the generic function ACCESSOR that acts as an accessor
 for a slot in an instance of STRUCTURE.  "
   (let ((lambda-list `((instance ,structure) ,@lambda-list-rest))

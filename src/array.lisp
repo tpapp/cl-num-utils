@@ -18,8 +18,8 @@
 (define-vector-accessors)
 
 (defmacro row-major-loop ((dimensions row-major-index row-index col-index
-                                      &key (nrow (gensym* '#:nrow))
-                                           (ncol (gensym* '#:ncol)))
+                                      &key (nrow (gensym "nrow"))
+                                           (ncol (gensym "ncol")))
                           &body body)
   "Loop through row-major matrix with given DIMENSIONS, incrementing
 ROW-MAJOR-INDEX, ROW-INDEX and COL-INDEX."

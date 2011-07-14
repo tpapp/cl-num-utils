@@ -6,8 +6,7 @@
 
    ;; macros
    
-   silent check-types define-with-multiple-bindings concatenate-as-strings
-   make-symbol-in make-symbol* make-keyword* gensym* define-make-symbol%
+   silent check-types define-with-multiple-bindings make-keyword+ gensym+
    lazy-let* unlessf
 
    ;; misc
