@@ -190,6 +190,15 @@ that a single element was returned (ie subarray was equivalent to aref)."
           (assert (common-dimensions value subarray))
           (replace (flatten-array subarray) (flatten-array value))))))
 
+(defun partition (array start &optional end)
+  "Return a subset of the array, on the first indexes between START and END."
+  (let* ((d0 (array-dimension array 0))
+         (stride (/ (array-total-size array) d0)))
+    (unlessf end d0)
+    (assert (and (<= 0 start) (< start end) (<= end d0)))
+    (displace-array array (cons (- end start) (cdr (array-dimensions array)))
+                    (* start stride))))
+
 (defun combine (array &optional element-type)
   "The opposite of SUBARRAYS.  If ELEMENT-TYPE is not given, it is inferred
 from the first element of array, which also determines the dimensions.  If

@@ -159,6 +159,18 @@
                      c-sub)))))
 
 (addtest (array-tests)
+  (let ((*lift-equality-test* #'equalp)
+        (a (ia 3 2))
+        (b (ia 3)))
+    (ensure-same (partition a 0) a)
+    (ensure-same (partition a 1) #2A((2 3)
+                                     (4 5)))
+    (ensure-same (partition a 1 2) #2A((2 3)))
+    (ensure-same (partition b 0) b)
+    (ensure-same (partition b 1) #(1 2))
+    (ensure-same (partition b 2) #(2))))
+
+(addtest (array-tests)
   combine-tests
   (let ((a (ia 4 3 5))
         (*lift-equality-test* #'==))
