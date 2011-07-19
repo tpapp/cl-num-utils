@@ -45,7 +45,7 @@ plural of the old one (generated using format by default)."
 
 (defun gensym+ (&rest things)
   "Gensym with concatenating each element of ARGS as strings."
-  (gensym (concatenate-as-strings things)))
+  (gensym (concatenate-as-string things)))
 
 ;; (defmacro define-make-symbol% (package &optional
 ;;                                (name (make-symbol-in package '#:make-symbol%)))
