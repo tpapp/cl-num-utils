@@ -245,7 +245,7 @@ that element is not an array, the original ARRAY is returned as it is."
 
 ;;; generic interface for array-like objects
 
-(defgeneric as-array (object &key copy?)
+(defgeneric as-array (object &key copy? &allow-other-keys)
   (:documentation "Return OBJECT as an array.  May share structure.")
   (:method ((array array) &key copy?)
     (maybe-copy-array array copy?)))
