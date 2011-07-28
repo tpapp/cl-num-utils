@@ -131,7 +131,7 @@ product equals size."
                   dimensions))
         dimensions)))
 
-(defun reshape (array dimensions &key (offset 0) copy?)
+(defun reshape (dimensions array &key (offset 0) copy?)
   (let* ((size (array-total-size array))
          (dimensions (fill-in-dimensions dimensions (- size offset))))
     (maybe-copy-array (displace-array array dimensions offset) copy?)))
@@ -246,7 +246,10 @@ that element is not an array, the original ARRAY is returned as it is."
 ;;; generic interface for array-like objects
 
 (defgeneric as-array (object &key copy? &allow-other-keys)
-  (:documentation "Return OBJECT as an array.  May share structure.")
+  (:documentation "(as-array object) always returns OBJECT as a Common Lisp
+  which may nevertheless share structure with something.  COPY? can be used to
+  avoid that.  Other keyword arguments may make as-array return something
+  else (eg an array wrapped in a structure to indicate that it is special).")
   (:method ((array array) &key copy?)
     (maybe-copy-array array copy?)))
 
@@ -410,3 +413,4 @@ type."
                            (incf ,index)
                            (when (>= ,index ,ncol-var) (terminate))
                            (sub ,matrix-var t ,index)))))))
+
