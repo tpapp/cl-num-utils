@@ -6,6 +6,12 @@
   ((elements :accessor elements :initarg :elements)
    (layout :accessor layout :initarg :layout)))
 
+(defmethod nrow ((df data-frame))
+  (nrow (elements df)))
+
+(defmethod ncol ((df data-frame))
+  (ncol (elements df)))
+
 (defmethod print-object ((data-frame data-frame) stream)
   (print-unreadable-object (data-frame stream :type t)
     (format stream "layout: ~A~&elements:~%~A"
