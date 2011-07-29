@@ -435,18 +435,40 @@ elements traversed), but the return value of NEXT is recommended."
     (unless (zerop element)
       (collect position :result-type simple-fixnum-vector))))
 
+(defun resolve-predicate (predicate)
+  "Some values may be used as a shorthand for predicates in CLNU functions,
+  and this function should be used for resolving them.
+
+  Currently the list is:
+
+  T => #'IDENTITY
+
+  All other values are returned as is."
+  (case predicate
+    ((t) #'identity)
+    (otherwise predicate)))
+
 (defun mask (predicate sequence)
   "Map sequence into a simple-bit-vector, using 1 when PREDICATE yields true,
   0 otherwise."
-  (map 'simple-bit-vector (predicate-as-flag predicate) sequence))
+  (map 'simple-bit-vector (predicate-as-flag (resolve-predicate predicate))
+       sequence))
 
 (defun which (predicate sequence)
   "Return an index of the positions in SEQUENCE which satisfy PREDICATE."
   (let ((index 0)
-        positions)
+        positions
+        (predicate (resolve-predicate predicate)))
     (map nil (lambda (element)
                (when (funcall predicate element)
                  (push index positions))
                (incf index))
          sequence)
     (coerce (nreverse positions) 'simple-fixnum-vector)))
+
+(defun bracket (predicate sequence &key (start 0) (end nil))
+  "Return the narrowest range of [start,end) indexes on which PREDICATE is
+satisfied as (cons start end).  If there are no such elements, return NIL."
+  (let ((predicate (resolve-predicate predicate)))
+    (awhen (position-if predicate sequence :start start)
+      (cons it (1+ (position-if predicate sequence :from-end t :end end))))))

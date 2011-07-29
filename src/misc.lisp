@@ -216,10 +216,3 @@ they don't share structure."
       (copy-seq sequence)
       (coerce sequence 'simple-fixnum-vector)))
 
-(defun bracket (predicate sequence &key (start 0) (end nil))
-  "Return the narrowest range of [start,end) indexes on which PREDICATE is
-satisfied as (cons start end).  If there are no such elements, return NIL."
-  (when (eq predicate t)
-    (setf predicate #'identity))
-  (awhen (position-if predicate sequence :start start)
-    (cons it (1+ (position-if predicate sequence :from-end t :end end)))))

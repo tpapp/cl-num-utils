@@ -234,3 +234,11 @@
     (ensure-same (sub vector odd-bits) #(1 3 5))
     (ensure-same (sub vector div3-bits) #(0 3))
     (ensure-same (sub vector (bit-ior even-bits div3-bits)) #(0 2 3 4))))
+
+(addtest (array-tests)
+  bracket-test
+  (let ((a #(0 1 2 3 4 3 2 1 0)))
+    (ensure-same (bracket #'plusp a) (cons 1 8))
+    (ensure-same (bracket (curry #'<= 3) a) (cons 3 6))
+    (ensure-same (bracket (curry #'<= 5) a) nil)
+    (ensure-same (bracket t #(nil nil nil t t nil nil)) (cons 3 5))))
