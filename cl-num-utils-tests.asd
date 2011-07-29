@@ -19,8 +19,7 @@
     "tests"
     :pathname #P"tests/"
     :components
-    ((:file "misc")
-     (:file "arithmetic")
+    ((:file "arithmetic")
      (:file "array")
      (:file "bins")
      (:file "sub")
