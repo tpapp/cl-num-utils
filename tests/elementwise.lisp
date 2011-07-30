@@ -33,7 +33,7 @@
                                   2 4 6
                                   8 10 12))
     (ensure-same (e+ a 2 b) (e+ (e+ a b) 2))
-    (ensure-error (e/ a 0))             ; division by 0
+    ;; (ensure-error (e/ a 0))             ; division by 0
     (ensure-error (e+ a  ; dimension incompatibility
                       (array* '(1 1) 'double-float 2)))
     (ensure-same (e+ a) (e+ a 0))
