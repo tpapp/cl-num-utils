@@ -45,7 +45,7 @@
                            (3 4 5)
                            (6 7 8)
                            (9 10 11))))
-    (ensure-same (reshape a '(4 t)) a-reshaped-rm)
+    (ensure-same (reshape '(4 t) a) a-reshaped-rm)
     ;; (ensure-same (reshape a '(4 t) :column-major) 
     ;;              #2A((0 5 10)
     ;;                  (4 9 3)
