@@ -216,3 +216,13 @@ they don't share structure."
       (copy-seq sequence)
       (coerce sequence 'simple-fixnum-vector)))
 
+(defmacro define-indirect-accessors (specializer slot-accessor
+                                     &rest accessors)
+  "Define accessor methods for specializer going though a slot."
+  (with-unique-names (instance)
+    `(progn
+       ,@(loop for accessor in accessors collect
+               `(defmethod ,accessor ((,instance ,specializer))
+                  (,accessor (,slot-accessor ,instance)))))))
+
+

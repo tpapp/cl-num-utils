@@ -14,7 +14,8 @@
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* convex-combination vector-last common common-length
    common-dimension == *==-tolerance* format-number ignore-error ignore-nil
-   text-progress-bar within? fixnum? simple-fixnum-vector bracket
+   text-progress-bar within? fixnum? simple-fixnum-vector
+   define-indirect-accessors
 
    ;; arithmetic
 
@@ -87,7 +88,7 @@
    sub asub sub-incompatible-dimensions sub-invalid-array-index incl cat rev
    ivec* sub-resolve-index sub-resolve-selection 
 
-   positions mask which bit-to-boolean boolean-to-bit
+   positions mask which bit-to-boolean boolean-to-bit bracket
 
    ;; elementwise
 
