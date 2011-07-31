@@ -8,13 +8,16 @@
 
 (addtest (elementwise-tests)
   emap-type-tests
-  (let ((*lift-equality-test* (lambda (type1 type2)
-                                (type= type1 (upgraded-array-element-type type2)))))
+  (let ((*lift-equality-test*
+          (lambda (type1 type2)
+            (type= type1 (upgraded-array-element-type type2)))))
     (ensure-same (emap-common-numeric-type 'single-float 'double-float)
                  'double-float)
-    (ensure-same (emap-common-numeric-type '(complex single-float) 'double-float)
+    (ensure-same (emap-common-numeric-type '(complex single-float)
+                                           'double-float)
                  '(complex double-float))
-    (ensure-same (emap-common-numeric-type 'fixnum 'double-float) 'double-float)
+    (ensure-same (emap-common-numeric-type 'fixnum 'double-float)
+                 'double-float)
     (ensure-same (emap-common-numeric-type 'fixnum 'integer) 'integer)))
 
 (addtest (elementwise-tests)
@@ -39,7 +42,9 @@
     (ensure-same (e+ a) (e+ a 0))
     (ensure-same (e* a) (e* a 1))
     (ensure-same (e- a) (e- 0 a))
-    (ensure-same (e/ a) (e/ 1 a))))
+    (ensure-same (e/ a) (e/ 1 a))
+    (ensure-same (e+ a (zero)) a :test #'eq)
+    (ensure-same (e+ (zero) a) a :test #'eq)))
 
 (addtest (elementwise-tests)
   recycled-vector-tests

@@ -410,3 +410,13 @@ means automatic determination of type using emap-common-type*).  Lists are
 treated as SIMPLE-VECTORS."
   (concat* element-type sequences))
 
+
+;;; zero
+
+(defstruct (zero (:constructor zero)))
+
+(defmethod e2+ (a (zero zero))
+  a)
+
+(defmethod e2+ ((zero zero) b)
+  b)
