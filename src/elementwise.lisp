@@ -108,8 +108,6 @@ specifications:
     (dimensions1 dimensions1)
     (t dimensions2)))
 
-
-
 (defun emap (element-type function &rest objects)
   "Map OBJECTS elementwise using FUNCTION.  If the result is an array, it has
 the given ELEMENT-TYPE."
