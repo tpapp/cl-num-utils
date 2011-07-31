@@ -420,3 +420,15 @@ treated as SIMPLE-VECTORS."
 
 (defmethod e2+ ((zero zero) b)
   b)
+
+(defmethod e2- (a (zero zero))
+  a)
+
+(defmethod e2- ((zero zero) b)
+  b)
+
+(defmethod e2* (a (zero zero))
+  zero)
+
+(defmethod e2* ((zero zero) b)
+  zero)
