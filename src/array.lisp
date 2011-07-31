@@ -338,29 +338,6 @@ that particular axis is coming from in ARRAY."
   (check-type vector vector)
   (maybe-copy-array (displace-array vector (list (length vector) 1)) copy?))
 
-;;;; dot product
-
-(defgeneric dot (a b)
-  (:documentation "Dot product."))
-
-(defun sum-of-conjugate-squares (vector)
-  (reduce #'+ vector :key (lambda (x) (* x (conjugate x)))))
-
-(defmethod dot ((a vector) (b (eql t)))
-  (sum-of-conjugate-squares a))
-
-(defmethod dot ((a (eql t)) (b vector))
-  (sum-of-conjugate-squares b))
-
-(defmethod dot ((a vector) (b vector))
-  (check-types (a b) vector)
-  (let ((n (length a)))
-    (assert (= n (length b)))
-    (iter
-      (for a-elt :in-vector a)
-      (for b-elt :in-vector b)
-      (summing (* (conjugate a-elt) b-elt)))))
-
 ;;; outer product
 
 (defun outer (a b &key (function #'*) (element-type t))
