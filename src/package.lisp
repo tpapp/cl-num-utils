@@ -31,7 +31,7 @@
    ;; map-subarrays
    
    as-array diagonal transpose transpose* valid-permutation? permute 
-   as-row as-column outer norm1 norm2 normsup
+   as-row as-column outer* norm1 norm2 normsup
 
    ;; pretty
 

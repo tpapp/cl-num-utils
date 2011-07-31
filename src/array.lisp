@@ -340,18 +340,14 @@ that particular axis is coming from in ARRAY."
 
 ;;; outer product
 
-(defun outer (a b &key (function #'*) (element-type t))
-  "Generalized outer product of A and B, using FUNCTION.  If either one is T,
-it is replaced by the other one.  ELEMENT-TYPE can be used to give the element
-type."
-  (cond
-    ((and (eq t a) (eq t b)) (error "A and B can't both be T!"))
-    ((eq t a) (setf a b))
-    ((eq t b) (setf b a)))
+(defun outer* (a b &key (function #'*) (element-type t))
+  "Generalized outer product of A and B, using FUNCTION.  ELEMENT-TYPE can be
+used to give the element type.  Also see LLA:OUTER."
   (check-types (a b) vector)
   (let* ((a-length (length a))
          (b-length (length b))
-         (result (make-array (list a-length b-length) :element-type element-type))
+         (result (make-array (list a-length b-length)
+                             :element-type element-type))
          (result-index 0))
     (iter
       (for a-element :in-vector a)
