@@ -14,6 +14,15 @@
     (ensure-same (tally acc) 9)))
 
 (addtest (statistics-tests)
+  test-invalid-types
+  (ensure-error (add (mean-accumulator) 'foo))
+  (ensure-error (add (mean-accumulator) #(1 2 3)))
+  (ensure-error (add (mean-sse-accumulator) 'foo))
+  (ensure-error (add (mean-sse-accumulator) #(1 2 3)))
+  (ensure-error (add (autocovariance-accumulator 9) 'foo))
+  (ensure-error (add (autocovariance-accumulator 9) #(1 2 3))))
+
+(addtest (statistics-tests)
   test-mean
   (ensure-same (mean (ia 5)) 2)
   (ensure-same (mean (ia 9)) 4))

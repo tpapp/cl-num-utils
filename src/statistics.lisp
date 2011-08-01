@@ -23,6 +23,12 @@
 
 ;;; !! write compiler macro for (pool acc1 acc2) => (pool2 acc1 acc2)
 
+(defmacro define-default-add (accumulator)
+  "This macro is used to define default ADD methods so that we don't default
+to a superclass."
+  `(defmethod add ((accumulator ,accumulator) object)
+     (error "Accumulator does not handle objects of this type.")))
+
 (defgeneric conforming-accumulator (statistic element)
   (:documentation "Return an accumulator that provides the desired
   STATISTIC and handles objects similar to ELEMENT."))
@@ -175,6 +181,8 @@ evaluates to this accumulator.  For use in SWEEP."
   "Accumulator for a (scalar) mean."
   (mean 0d0))
 
+(define-default-add mean-accumulator)
+
 (define-modify-macro incf-mean (value tally)
   (lambda (mean value tally) (+ mean (/ (- value mean) tally)))
   "When MEAN is the MEAN of (1- TALLY) numbers, update it with VALUE.  In
@@ -306,6 +314,8 @@ evaluates to this accumulator.  For use in SWEEP."
   (y-sse 0d0)
   (cross-sse 0d0))
 
+(define-default-add covariance-accumulator)
+
 (define-structure-let+ (covariance-accumulator)
     x-mean x-sse y-mean y-sse cross-sse)
 
@@ -374,6 +384,8 @@ evaluates to this accumulator.  For use in SWEEP."
   "Autocovariance accumulator.  Handles missing values (NIL)."
   (circular-buffer nil :type list)
   (covariance-accumulators nil :type vector))
+
+(define-default-add autocovariance-accumulator)
 
 (defun autocovariance-accumulator (lags)
   "Create an autocovariance accumulator with a given number of lags."
