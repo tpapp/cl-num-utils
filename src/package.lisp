@@ -65,13 +65,13 @@
      
    ;; interval
      
-   interval interval-left interval-right make-interval forced-interval
-   make-forced-interval interval-diff interval-width interval-midpoint
-   positive-interval? negative-interval? weakly-positive-interval?
-   weakly-negative-interval? zero-interval? flip-interval interval-abs
-   make-interval-or-nil range combined-range interval-intersection
-   fraction proper-fraction? fraction-value fractions percent percents spacer
-   spacer-value spacers split-interval extend-interval
+   interval interval-left interval-right interval &interval &interval-r/o
+   forced-interval make-forced-interval interval-diff interval-width
+   interval-midpoint positive-interval? negative-interval?
+   weakly-positive-interval? weakly-negative-interval? zero-interval?
+   flip-interval interval-abs interval-or-nil range combined-range
+   interval-intersection fraction proper-fraction? fraction-value fractions
+   percent percents spacer spacer-value spacers split-interval extend-interval
 
    ;; histogram
 

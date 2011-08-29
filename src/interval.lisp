@@ -9,7 +9,7 @@
 ;;;; construction.
 
 (defstruct (interval
-             (:constructor make-interval (left right)))
+             (:constructor interval (left right)))
   "An ordered pair of numbers."
   (left 0 :type real)
   (right 0 :type real))
@@ -17,9 +17,9 @@
 (define-structure-let+ (interval) left right)
 
 (defstruct (forced-interval
-             (:include interval)
-             (:constructor make-forced-interval (left right))
-             (:conc-name interval-))
+            (:include interval)
+            (:constructor make-forced-interval (left right))
+            (:conc-name interval-))
   "When combined using combined-range, replaces the last effective union.")
 
 (declaim (inline interval%))
@@ -62,7 +62,7 @@ weight on right."
 
 (defun flip-interval (interval)
   "Exchange left and right."
-  (make-interval (interval-right interval) (interval-left interval)))
+  (interval (interval-right interval) (interval-left interval)))
 
 (defun interval-abs (interval &optional min?)
   "Return the maximum of the absolute values of the endpoints, or the minimum if
@@ -70,34 +70,34 @@ MIN?."
   (let+ (((&interval left right) interval))
     (funcall (if min? #'min #'max) (abs left) (abs right))))
 
-(defun make-interval-or-nil (minimum maximum)
+(defun interval-or-nil (minimum maximum)
   "When both arguments are given, return an interval, otherwise nil. "
   (when (and minimum maximum)
-    (make-interval minimum maximum)))
+    (interval minimum maximum)))
 
 (defgeneric range (object)
   (:documentation "Return the range of an object as a weakly positive
   interval.  If there are no elements, return NIL.  NILs are
   ignored.")
   (:method ((x real))
-     (make-interval x x))
+    (interval x x))
   (:method ((array array))
-     (iter
-       (for index :from 0 :below (array-total-size array))
-       (for elt := (row-major-aref array index))
-       (when elt
-         (maximizing elt :into maximum)
-         (minimizing elt :into minimum))
-       (finally
-        (return (make-interval-or-nil minimum maximum)))))
+    (iter
+      (for index :from 0 :below (array-total-size array))
+      (for elt := (row-major-aref array index))
+      (when elt
+        (maximizing elt :into maximum)
+        (minimizing elt :into minimum))
+      (finally
+       (return (interval-or-nil minimum maximum)))))
   (:method ((list list))
-     (iter
-       (for elt :in list)
-       (when elt
-         (maximizing elt :into maximum)
-         (minimizing elt :into minimum))
-       (finally
-        (return (make-interval-or-nil minimum maximum))))))
+    (iter
+      (for elt :in list)
+      (when elt
+        (maximizing elt :into maximum)
+        (minimizing elt :into minimum))
+      (finally
+       (return (interval-or-nil minimum maximum))))))
 
 (defun combined-range (&rest objects)
   "Return the combined range of all objects, from left to right.  An
@@ -117,13 +117,13 @@ so far."
       (typecase object
         (nil)
         (forced-interval
-           (let+ (((&interval left right) object))
-             (setf min left)
-             (setf max right)))
+         (let+ (((&interval left right) object))
+           (setf min left)
+           (setf max right)))
         (interval (update-with object))
         (t (update-with (range object)))))
     (finally
-     (return (make-interval-or-nil min max)))))
+     (return (interval-or-nil min max)))))
 
 (defun interval-intersection (&rest intervals)
   "Return intersection of intervals, which is always a (weakly) positive
@@ -138,7 +138,7 @@ nil, nil is returned."
       (minimizing right :into min-right)
       (maximizing left :into max-left))
     (finally
-     (return (make-interval-or-nil max-left min-right)))))
+     (return (interval-or-nil max-left min-right)))))
 
 
 ;;;;  percentages, fractions and spacers - interpreted relative to the
@@ -194,20 +194,20 @@ nil, (vector interval) is returned."
 				    (etypecase div
                                       ;; numbers just passed through
 				      ((real 0)
-                                         (incf non-spacers div)
-                                         div)
+                                       (incf non-spacers div)
+                                       div)
 				      ;; fractions are interpreted
 				      (fraction
-                                         (assert (proper-fraction? div))
-                                         (let ((x (* width 
-                                                     (fraction-value div))))
-                                           (incf non-spacers x)
-                                           x))
+                                       (assert (proper-fraction? div))
+                                       (let ((x (* width 
+                                                   (fraction-value div))))
+                                         (incf non-spacers x)
+                                         x))
 				      ;; spacers are passed through
 				      (spacer 
-                                         (incf spacers 
-                                               (spacer-value div))
-                                         div)))
+                                       (incf spacers 
+                                             (spacer-value div))
+                                       div)))
 			    subdivisions))
 	 (rest (- width non-spacers)))
     (when (minusp rest)
@@ -217,17 +217,18 @@ nil, (vector interval) is returned."
 	    subdivisions (nconc subdivisions (list (spacer 1)))))
     (let* ((left (interval-left interval)))
       (map 'vector (lambda (div)
-		     (let ((right (+ left (* direction
-					     (etypecase div
-					       (number div)
-					       (spacer (* rest (/ (spacer-value div)
-								  spacers))))))))
-		       (prog1 (make-interval left right)
+		     (let ((right (+ left 
+                                     (* direction
+                                        (etypecase div
+                                          (number div)
+                                          (spacer (* rest (/ (spacer-value div)
+                                                             spacers))))))))
+		       (prog1 (interval left right)
 			 (setf left right))))
 	   subdivisions))))
 
-(defun extend-interval (interval left-ext &optional
-                        (right-ext left-ext))
+(defun extend-interval (interval left-ext
+                        &optional (right-ext left-ext))
   "Extend interval with given magnitudes and fractions, the latter
 intepreted proportionally to width (see FRACTION and PERCENT)."
   (let+ (((&interval left right) interval)
@@ -236,5 +237,5 @@ intepreted proportionally to width (see FRACTION and PERCENT)."
             (etypecase ext
               (fraction (* width (fraction-value ext)))
               (real ext)))))
-    (make-interval (- left (absolute left-ext))
-                   (+ right (absolute right-ext)))))
+    (interval (- left (absolute left-ext))
+              (+ right (absolute right-ext)))))
