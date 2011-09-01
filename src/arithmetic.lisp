@@ -141,3 +141,7 @@ second value."
                  sequence)
             sum)))
 
+(defun same-sign? (&rest arguments)
+  "Test whether all arguments have the same sign (ie all are positive,
+negative, or zero)."
+  (reduce #'= arguments :key #'signum))
