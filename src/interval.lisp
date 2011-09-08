@@ -70,10 +70,9 @@ if MIN?."
   (when (and minimum maximum)
     (interval minimum maximum)))
 
-(defgeneric range (object)
-  (:documentation "Return the range of an object as a weakly positive
-  interval.  If there are no elements, return NIL.  NILs are
-  ignored.")
+(defgeneric limits (object)
+  (:documentation "Return the limits of an object as a weakly positive
+  interval.  If there are no elements, return NIL.  NILs are ignored.")
   (:method ((x real))
     (interval x x))
   (:method ((array array))
@@ -94,8 +93,8 @@ if MIN?."
       (finally
        (return (interval-or-nil minimum maximum))))))
 
-(defun combined-range (&rest objects)
-  "Return the combined range of all objects, from left to right."
+(defun combined-limits (&rest objects)
+  "Return the combined limits of all objects."
   (iter
     (with min := nil)
     (with max := nil)
@@ -110,7 +109,7 @@ if MIN?."
       (typecase object
         (nil)
         (interval (update-with object))
-        (t (update-with (range object)))))
+        (t (update-with (limits object)))))
     (finally
      (return (interval-or-nil min max)))))
 
