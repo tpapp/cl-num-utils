@@ -80,6 +80,15 @@ plural of the old one (generated using format by default)."
          (let ((,(car store-vars) ,value-form))
            ,writer-form)))))
 
+(defmacro setf-nil (place value-form &environment environment)
+  "Assert that PLACE is NIL, then evaluate VALUE-FORM and save it there."
+  (multiple-value-bind (vars vals store-vars writer-form reader-form)
+      (get-setf-expansion place environment)
+    `(let* ,(mapcar #'list vars vals)
+       (assert (not ,reader-form) () "~A is already non-nil." ',place)
+       (let ((,(car store-vars) ,value-form))
+           ,writer-form))))
+
 (defmacro define-structure-slot-accessor
     (accessor structure 
      &key (conc-name (format nil "~A-" structure))
