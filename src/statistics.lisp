@@ -507,25 +507,26 @@ them and return as a vector."
 (define-conforming-accumulator ((quantile quantiles) (number number))
   (sorting-accumulator))
 
-;;; sparce accumulator arrays
+;;; sparse accumulator arrays
 
-(defstruct (@ (:constructor @ (object &rest subscripts)))
+(defstruct (at (:constructor at (object &rest subscripts)))
   "Object (observation) with given subscripts."
   (object)
   (subscripts nil :type list))
 
 (defstruct (sparse-accumulator-array)
   "See documentation of the function SPARSE-ACCUMULATOR-ARRAY."
-  table init-function rank)
+  (table (make-hash-table :test #'equal) :type hash-table :read-only t)
+  (init-function nil :type function :read-only t)
+  (rank nil :type fixnum :read-only t)
+  (limits nil :type list))
 
 (defun sparse-accumulator-array (rank init-function)
   "Create a sparse accumulator array.  Elements are added with subscripts (see
-  the function @), and init-function is called to generate an accumulator when
-  the first element is added with given subscripts.  Use LIMITS and REF to
-  access the result."
-  (make-sparse-accumulator-array :table (make-hash-table :test #'equal)
-                                 :init-function init-function
-                                 :rank rank))
+  the function AT), and INIT-FUNCTION is called to generate an accumulator
+  when the first element is added with given subscripts.  Use LIMITS and REF
+  to access the result."
+  (make-sparse-accumulator-array :init-function init-function :rank rank))
 
 (defun valid-subscripts? (subscripts rank)
   "Check if subscripts are valid (list of fixnums of length RANK)."
@@ -536,45 +537,43 @@ them and return as a vector."
                 subscripts)
          (= rank n))))
 
-(defun add-with-subscripts% (instance object subscripts)
-  "Function that implements (add ... (@ ...)).  Not exported"
-  (let+ (((&structure-r/o sparse-accumulator-array-
-                          table init-function rank) instance)
-         (subscripts (aprog1 (coerce subscripts 'list)
-                       (assert (valid-subscripts? it rank))))
+(defun sparse-accumulator-ref% (sparse-accumulator-array subscripts
+                                &optional save-new?)
+  "Return the accumulator corresponding to subscripts, or create one on demand
+when there isn't one.  When SAVE-NEW?, the latter is saved to the array,
+otherwise it isn't."
+  (let+ (((&structure-r/o sparse-accumulator-array- table init-function rank)
+          sparse-accumulator-array)
+         ((&assert (valid-subscripts? subscripts rank)))
          ((&values accumulator present?) (gethash subscripts table)))
     (unless present?
-      (setf accumulator (funcall init-function)
-            (gethash subscripts table) accumulator))
-    (add accumulator object)))
+      (setf accumulator (funcall init-function))
+      (when save-new?
+        (setf (gethash subscripts table) accumulator)
+        (let+ (((&structure sparse-accumulator-array- limits)
+                sparse-accumulator-array))
+          (if limits
+              (map nil (lambda (l s)
+                         (minf (car l) s)
+                         (maxf (cdr l) (1+ s)))
+                   limits subscripts)
+              (setf limits (mapcar (lambda (s) (cons s s)) subscripts))))))
+    accumulator))
 
-(defmethod add ((instance sparse-accumulator-array) (obj @))
-  (let+ (((&structure @- object subscripts) obj))
-    (add-with-subscripts% instance object subscripts)))
+(defmethod add ((instance sparse-accumulator-array) (object at))
+  (add (sparse-accumulator-ref% instance (at-subscripts object) t)
+       (at-object object)))
 
-;;; !!! define (add instance (@ object subscripts)) compiler macro
+;;; !!! define (add instance (at object subscripts)) compiler macro
+
+(defgeneric ref (object &rest subscripts)
+  (:documentation "Generalization of AREF."))
 
 (defmethod ref ((instance sparse-accumulator-array) &rest subscripts)
-  (let+ (((&slots-r/o table rank) instance))
-    (assert (valid-subscripts? subscripts rank))
-    (gethash subscripts table nil)))
+  (sparse-accumulator-ref% instance subscripts))
 
 (defmethod limits ((instance sparse-accumulator-array))
-  (let+ (((&slots-r/o table rank) instance)
-         (start (make-array rank :element-type 'fixnum))
-         (end-1 (make-array rank :element-type 'fixnum)))
-    (iter
-      (for (subscripts nil) :in-hashtable table)
-      (if (first-iteration-p)
-          (progn
-            (replace start subscripts)
-            (replace end-1 subscripts))
-          (iter
-            (for subscript :in subscripts)
-            (for index :from 0)
-            (minf (aref start index) subscript)
-            (maxf (aref end-1 index) subscript))))
-    (map 'vector (lambda (s e-1) (cons s (1+ e-1))) start end-1)))
+  (sparse-accumulator-array-limits instance))
 
 ;;; moments accumulator 
 

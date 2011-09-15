@@ -141,23 +141,23 @@
          (index 0)                      ; to make sure we have 1 of each
          (pairs (filled-array 100
                               (lambda ()
-                                (prog1 (@ (random 100d0)
-                                          (if (< index end)
-                                              index
-                                              (random end)))
+                                (prog1 (at (random 100d0)
+                                           (if (< index end)
+                                               index
+                                               (random end)))
                                   (incf index)))))
          (acc #'mean-sse-accumulator)
          (result (sweep (sparse-accumulator-array 1 acc) pairs))
          (*lift-equality-test* #'==)
          ((&flet sparse-acc (pairs accumulator &rest s)
             "For testing."
-            (map nil (lambda+ ((&structure @- object subscripts))
+            (map nil (lambda+ ((&structure at- object subscripts))
                        (when (equal s subscripts)
                          (add accumulator object)))
                  pairs)
             (when (plusp (tally accumulator))
               accumulator))))
-    (ensure-same (limits result) (vector `(0 . ,end)))
+    (ensure-same (limits result) `((0 . ,end)))
     (loop for i below end do
       (ensure-same (ref result i) (sparse-acc pairs (funcall acc) i)))))
 

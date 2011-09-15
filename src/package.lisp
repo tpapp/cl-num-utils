@@ -55,7 +55,7 @@
    covariance-accumulator covariance correlation covariance-xy correlation-xy
    autocovariance-accumulator autocovariances autocorrelations lags
    
-   sorting-accumulator @ @-object @-subscripts sparse-accumulator-array ref
+   sorting-accumulator at at-object at-subscripts sparse-accumulator-array ref
    limits residual-pair acf-accumulator
 
    histogram-limits histogram-bins frequency total-frequency
