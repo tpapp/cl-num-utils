@@ -22,7 +22,7 @@
 
 (addtest (elementwise-tests)
   e-operations-tests
-  (let ((*lift-equality-test* #'array=)
+  (let ((*lift-equality-test* #'equalp)
         (a (array* '(2 3) 'double-float
                    1 2 3
                    4 5 6))
