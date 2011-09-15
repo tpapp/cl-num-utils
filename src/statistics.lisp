@@ -517,16 +517,16 @@ them and return as a vector."
 (defstruct (sparse-accumulator-array)
   "See documentation of the function SPARSE-ACCUMULATOR-ARRAY."
   (table (make-hash-table :test #'equal) :type hash-table :read-only t)
-  (init-function nil :type function :read-only t)
+  (generator nil :type function :read-only t)
   (rank nil :type fixnum :read-only t)
   (limits nil :type list))
 
-(defun sparse-accumulator-array (rank init-function)
+(defun sparse-accumulator-array (rank generator)
   "Create a sparse accumulator array.  Elements are added with subscripts (see
-  the function AT), and INIT-FUNCTION is called to generate an accumulator
-  when the first element is added with given subscripts.  Use LIMITS and REF
-  to access the result."
-  (make-sparse-accumulator-array :init-function init-function :rank rank))
+the function AT), and GENERATOR is called to generate an accumulator when the
+first element is added with given subscripts.  Use LIMITS and REF to access
+the result."
+  (make-sparse-accumulator-array :generator generator :rank rank))
 
 (defun valid-subscripts? (subscripts rank)
   "Check if subscripts are valid (list of fixnums of length RANK)."
@@ -542,12 +542,12 @@ them and return as a vector."
   "Return the accumulator corresponding to subscripts, or create one on demand
 when there isn't one.  When SAVE-NEW?, the latter is saved to the array,
 otherwise it isn't."
-  (let+ (((&structure-r/o sparse-accumulator-array- table init-function rank)
+  (let+ (((&structure-r/o sparse-accumulator-array- table generator rank)
           sparse-accumulator-array)
          ((&assert (valid-subscripts? subscripts rank)))
          ((&values accumulator present?) (gethash subscripts table)))
     (unless present?
-      (setf accumulator (funcall init-function))
+      (setf accumulator (funcall generator))
       (when save-new?
         (setf (gethash subscripts table) accumulator)
         (let+ (((&structure sparse-accumulator-array- limits)
@@ -574,6 +574,21 @@ otherwise it isn't."
 
 (defmethod limits ((instance sparse-accumulator-array))
   (sparse-accumulator-array-limits instance))
+
+(defmethod as-array ((object sparse-accumulator-array) &key once-only? copy?)
+  (assert (not copy?) () "Copying is not implemented.")
+  (let+ (((&structure-r/o sparse-accumulator-array- table generator limits)
+          object)
+         (offset (mapcar #'car limits))
+         (dimensions (mapcar (lambda (c) (- (cdr c) (car c))) limits))
+         (array (filled-array dimensions
+                              (if once-only?
+                                  (funcall generator)
+                                  generator))))
+    (maphash (lambda (key value)
+               (setf (apply #'aref array (mapcar #'- key offset)) value))
+             table)
+    (values array offset)))
 
 ;;; moments accumulator 
 

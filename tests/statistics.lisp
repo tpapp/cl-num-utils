@@ -156,10 +156,17 @@
                          (add accumulator object)))
                  pairs)
             (when (plusp (tally accumulator))
-              accumulator))))
+              accumulator)))
+         (array1 (iter
+                   (for i below end)
+                   (collect (sparse-acc pairs (funcall acc) i)
+                     :result-type vector)))
+         ((&values array2 offset) (as-array result)))
     (ensure-same (limits result) `((0 . ,end)))
+    (ensure-same offset '(0))
+    (ensure-same array1 array2)
     (loop for i below end do
-      (ensure-same (ref result i) (sparse-acc pairs (funcall acc) i)))))
+      (ensure-same (ref result i) (aref array1 i)))))
 
 (addtest (statistics-tests)
   subranges
