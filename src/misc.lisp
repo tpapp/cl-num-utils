@@ -135,7 +135,10 @@ etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
                        tolerance)))))
   (:method ((a cons) (b cons) &optional (tolerance *==-tolerance*))
     (and (== (car a) (car b) tolerance)
-         (== (cdr a) (cdr b) tolerance))))
+         (== (cdr a) (cdr b) tolerance)))
+  (:method ((a null) (b null) &optional (tolerance *==-tolerance*))
+    (declare (ignore tolerance))
+    t))
 
 (defun format-number (number &key (int-digits 3) (exp-digits 1))
   "Format number nicely."
