@@ -15,7 +15,7 @@
    common-supertype round* convex-combination vector-last common common-length
    common-dimension == *==-tolerance* format-number ignore-error ignore-nil
    text-progress-bar within? fixnum? simple-fixnum-vector
-   define-indirect-accessors
+   define-indirect-accessors keys-and-values
 
    ;; arithmetic
 
@@ -63,6 +63,8 @@
    histogram make-empty-histogram *frequency-print-width* scott-rule
 
    subranges
+
+   demean 
      
    ;; interval
      
@@ -72,11 +74,6 @@
    zero-interval? flip-interval interval-abs interval-or-nil limits
    combined-limits interval-intersection relative relative-fraction
    shrink-interval spacer spacer-value split-interval
-
-   ;; histogram
-
-   histogram-counter with-histogram-counter histogram-count
-   hash-key-range hash-key-range2 hash-table->array hash-table->array2
 
    ;; elementwise
 
@@ -98,7 +95,6 @@
 
    ;; utilities
    
-   demean
 
    ;; layout
    

@@ -186,7 +186,7 @@ evaluates to this accumulator.  For use in SWEEP."
 (define-modify-macro incf-mean (value tally)
   (lambda (mean value tally) (+ mean (/ (- value mean) tally)))
   "When MEAN is the MEAN of (1- TALLY) numbers, update it with VALUE.  In
-  practice, TALLY should be INCF'd before using incf-mean.")
+practice, TALLY should be INCF'd before using incf-mean.")
 
 (defmethod add ((instance mean-accumulator) (object number))
   (let+ (((&structure mean-accumulator- tally mean) instance))
@@ -564,6 +564,8 @@ otherwise it isn't."
   (add (sparse-accumulator-ref% instance (at-subscripts object) t)
        (at-object object)))
 
+
+
 ;;; !!! define (add instance (at object subscripts)) compiler macro
 
 (defgeneric ref (object &rest subscripts)
@@ -589,6 +591,9 @@ otherwise it isn't."
                (setf (apply #'aref array (mapcar #'- key offset)) value))
              table)
     (values array offset)))
+
+(defmethod keys-and-values ((object sparse-accumulator-array))
+  (keys-and-values (sparse-accumulator-array-table object)))
 
 ;;; moments accumulator 
 
@@ -1057,6 +1062,10 @@ partition of [0 ... 999]."
                (push subrange-index (aref subrange-lists within-index))))
            (return (values subranges
                            (map 'vector #'nreverse subrange-lists)))))))))
+
+(defun demean (object &optional (mean (mean object)))
+  "Subtract mean from object.  The mean is returned as the second value."
+  (values (e- object mean) mean))
 
 ;;; references
 ;;; 

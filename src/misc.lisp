@@ -228,4 +228,17 @@ they don't share structure."
                `(defmethod ,accessor ((,instance ,specializer))
                   (,accessor (,slot-accessor ,instance)))))))
 
-
+(defgeneric keys-and-values (object)
+  (:documentation "Return keys and values in OBJECT (eg a hash-table)
+  as (values KEYS VALUES), which are two vectors of the same length.")
+  (:method ((object hash-table))
+    (let* ((size (hash-table-count object))
+           (keys (make-array size))
+           (values (make-array size))
+           (index 0))
+      (maphash (lambda (key value)
+                 (setf (aref keys index) key)
+                 (setf (aref values index) value)
+                 (incf index))
+               object)
+      (values keys values))))
