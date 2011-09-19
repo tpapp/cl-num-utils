@@ -371,7 +371,7 @@ used to give the element type.  Also see LLA:OUTER."
 
 (defun norm2 (a)
   "L2 norm."
-  (sqrt (sum-of-conjugate-squares a)))
+  (sqrt (reduce #'+ a :key (lambda (x) (* (conjugate x) x)))))
 
 (defun normsup (a)
   (reduce #'max a :key #'abs))
