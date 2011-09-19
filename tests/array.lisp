@@ -242,3 +242,15 @@
     (ensure-same (bracket (curry #'<= 3) a) (cons 3 6))
     (ensure-same (bracket (curry #'<= 5) a) nil)
     (ensure-same (bracket t #(nil nil nil t t nil nil)) (cons 3 5))))
+
+(addtest (array-tests)
+  norm-test
+  (let ((a #(1 -2 3))
+        (b #(1 #C(0 -4) 3))
+        (*lift-equality-test* #'==))
+    (ensure-same (norm1 a) 6)
+    (ensure-same (norm1 b) 8)
+    (ensure-same (norm2 a) (sqrt 14))
+    (ensure-same (norm2 b) (sqrt 26))
+    (ensure-same (normsup a) 3)
+    (ensure-same (normsup b) 4)))
