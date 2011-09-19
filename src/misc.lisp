@@ -79,7 +79,8 @@ finding a common array element type."
         rounded-number)))
 
 (defun maybe-copy-array (array copy?)
-  "If COPY?, return a shallow copy of array, otherwise the original."
+  "If COPY?, return a shallow copy of array, otherwise the original.  Useful
+for implementing the COPY? semantics of methods."
   (if copy?
       (copy-array array)
       array))
