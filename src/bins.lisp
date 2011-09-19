@@ -32,7 +32,7 @@
 (defmethod bin-location ((even-bins even-bins) index)
   (let+ (((&structure even-bins- offset width) even-bins)
          (left (+ (* index width) offset)))
-    (make-interval left (+ left width))))
+    (interval left (+ left width))))
 
 (defun pretty-bins (width n &key (min-step (default-min-step width))
                          (bias *pretty-bias*) (five-bias *pretty-five-bias*)) 
