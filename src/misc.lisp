@@ -102,7 +102,7 @@ instead.  The second value is true iff elements are the same."
              (if (funcall test a b)
                  a
                  (if error
-                     (error error)
+                     (apply #'error (ensure-list error))
                      (return-from common failure))))
            sequence
            :key key)
