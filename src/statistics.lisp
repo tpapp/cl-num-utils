@@ -5,7 +5,9 @@
 ;;; Generic interface
 
 (defgeneric add (accumulator object)
-  (:documentation "Add accumulator to object."))
+  (:documentation "Add accumulator to object.  NILs are ignored by the
+  accumulator, unless a specialized method decides otherwise.")
+  (:method (accumulator (object null))))
 
 (defgeneric pool2 (accumulator1 accumulator2)
   (:documentation "Pool two accumulators.  When they are of a different type,
@@ -23,11 +25,14 @@
 
 ;;; !! write compiler macro for (pool acc1 acc2) => (pool2 acc1 acc2)
 
-(defmacro define-default-add (accumulator)
+(defmacro define-default-add (accumulator &key (ignore-nil? t))
   "This macro is used to define default ADD methods so that we don't default
-to a superclass."
-  `(defmethod add ((accumulator ,accumulator) object)
-     (error "Accumulator does not handle objects of this type.")))
+to a superclass.  When IGNORE-NIL?, NILs are silently ignored."
+  `(progn
+     (defmethod add ((accumulator ,accumulator) object)
+       (error "Accumulator does not handle objects of this type."))
+     ,(when ignore-nil?
+        `(defmethod add ((accumulator ,accumulator) (object null))))))
 
 (defgeneric conforming-accumulator (statistic element)
   (:documentation "Return an accumulator that provides the desired
