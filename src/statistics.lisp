@@ -519,7 +519,7 @@ them and return as a vector."
   (object)
   (subscripts nil :type list))
 
-(defstruct (sparse-accumulator-array)
+(defstruct sparse-accumulator-array
   "See documentation of the function SPARSE-ACCUMULATOR-ARRAY."
   (table (make-hash-table :test #'equal) :type hash-table :read-only t)
   (generator nil :type function :read-only t)
@@ -644,92 +644,50 @@ otherwise it isn't."
 ;;; !! define condition
 ;;; !! write methods for using an array as frequencies
 
-(defgeneric histogram-limits (histogram)
-  (:documentation "Return (cons START END)."))
+(defstruct (histogram-accumulator
+            (:include sparse-accumulator-array))
+  bins)
 
-(defgeneric histogram-bins (histogram)
-  (:documentation "Return the bins."))
+(defmethod bins ((accumulator histogram-accumulator))
+  (histogram-accumulator-bins accumulator))
 
-(defgeneric frequency (histogram index)
-  (:documentation "Return frequency at index."))
+(defun histogram-accumulator (&rest bins)
+  (make-histogram-accumulator :bins bins :generator #'tallier
+                              :rank (length bins)))
 
-(defgeneric total-frequency (histogram)
-  (:documentation "The sum of all frequencies."))
+(defmethod add ((accumulator histogram-accumulator) (sequence sequence))
+  (let+ (((&structure-r/o histogram-accumulator- bins) accumulator))
+    (assert (= (length sequence) (length bins)))
+    (add accumulator (apply #'at 1 (map 'list #'bin-index bins sequence)))))
 
-;;; univariate histogram
+(defmethod add ((accumulator histogram-accumulator) (number number))
+  (add accumulator (list number)))
 
-(defstruct histogram
-  table bins%
-  (dirty? nil)
-  (total-frequency 0)
-  (start nil)
-  (end nil))
+(defun locations-and-tallies (histogram)
+  (let+ (((&structure-r/o histogram- bins) histogram)
+         ((&values keys values) (keys-and-values histogram)))
+    (values (map1 (lambda (indexes)
+                    (mapcar (lambda (b i) (bin-location b i))
+                            bins indexes))
+                  keys)
+            values)))
 
-(defun make-empty-histogram (&key (bins (integer-bins)))
-  (make-histogram :table (make-hash-table :test #'eql) :bins% bins))
+(defun location-limits (histogram)
+  (mapcar (lambda (l b)
+            (combined-limits (bin-location b (car l))
+                             (bin-location b (cdr l))))
+          (limits histogram) (bins histogram)))
 
-(defun add-to-histogram (histogram value frequency)
-  "Add VALUE to HISTOGRAM with FREQUENCY."
-  ;; Note: factored out interface for implementation of weighted values, will
-  ;; be added in the future.
-  (unless (zerop frequency)
-    (assert (plusp frequency))
-    (let+ (((&structure-r/o histogram- table bins%) histogram)
-           (index (bin-index bins% value)))
-      (setf (histogram-dirty? histogram) t)
-      (incf (gethash index table 0) frequency))))
-
-(defun calculate-histogram-summary (histogram)
-  "Calculate and save START, END and TOTAL-FREQUENCY when DIRTY?."
-  (let+ (((&structure histogram- dirty?) histogram))
-    (when dirty?
-      (let+ (((&structure-r/o histogram- table) histogram)
-             ((&structure histogram- (tf total-frequency) (s start) (e end))
-              histogram)
-             (total-frequency 0)
-             start
-             end-1)
-        (maphash (lambda (index frequency)
-                   (incf total-frequency frequency)
-                   (if start
-                       (minf start index)
-                       (setf start index))
-                   (if end-1
-                       (maxf end-1 index)
-                       (setf end-1 index)))
-                 table)
-        (setf tf total-frequency
-              s start
-              e (1+ end-1)
-              dirty? nil)))))
-
-(defmethod histogram-limits ((histogram histogram))
-  (calculate-histogram-summary histogram)
-  (let+ (((&structure-r/o histogram- start end) histogram))
-    (cons start end)))
-
-(defmethod histogram-bins ((histogram histogram))
-  (histogram-bins% histogram))
-
-(defmethod frequency ((histogram histogram) index)
-  (gethash index (histogram-table histogram) 0))
-
-(defmethod total-frequency ((histogram histogram))
-  (calculate-histogram-summary histogram)
-  (histogram-total-frequency histogram))
-
-(defmethod add ((histogram histogram) value)
-  (add-to-histogram histogram value 1))
+(defmethod ref ((accumulator histogram-accumulator) &rest subscripts)
+  (tally (apply #'call-next-method accumulator subscripts)))
 
 (defparameter *frequency-print-width* 40
   "The number of columns used for printing frequencies using text symbols.
   Does not include the space used by labels etc.")
 
-(defun print-univariate-frequencies% (stream labels-frequencies character)
-  "Print univaritate frequencies from TABLE to stream using CHARACTERs.
-LABELS-FREQUENCIES should be a vector of sorted (LABEL . FREQUENCY) conses.
-Not exported."
-  (check-type character character)
+(defun print-univariate-frequencies% (stream labels-frequencies)
+  "Print univaritate frequencies from TABLE to stream.  LABELS-FREQUENCIES
+should be a vector of sorted (LABEL . FREQUENCY) conses.  Not exported."
   (iter
     (for (label . frequency) :in labels-frequencies)
     (maximize (length label) :into label-width)
@@ -739,28 +697,24 @@ Not exported."
                       1)))
        (loop for (label . frequency) in labels-frequencies
              do (format stream "~&~vA " label-width label)
-                (loop repeat (floor frequency step)
-                      do (princ character stream)))
-       (format stream "~&(each ~A = frequency of ~A)" character step)))))
+                (let+ (((&values quotient remainder) (floor frequency step)))
+                  (loop repeat quotient do (princ #\* stream))
+                  (when (plusp remainder) (princ #\. stream))))
+       (format stream "~&(each * = frequency of ~A)" step)))))
 
-(defmethod print-object ((histogram histogram) stream)
-  (print-unreadable-object (histogram stream :type t)
-    (let+ (((start . end) (histogram-limits histogram))
-           (bins (histogram-bins histogram))
-           (labels-frequencies
-            (iter
-              (for index :from start :below end)
-              (collect (cons (format-bin-location (bin-location bins index))
-                             (frequency histogram index))))))
-      (print-univariate-frequencies% stream labels-frequencies #\*))))
-
-(defun histogram (object bins)
-  "Return a univariate histogram of OBJECT.  If BINS is a function, call it on
-object to generate the bins."
-  (sweep (make-empty-histogram :bins (if (functionp bins)
-                                         (funcall bins object)
-                                         bins))
-         object))
+(defmethod print-object ((accumulator histogram-accumulator) stream)
+  (let+ (((&accessors-r/o limits) accumulator))
+    (if (= (length limits) 1)
+        (let+ ((((start . end)) limits)
+               ((bin) (bins accumulator))
+               (labels-frequencies
+                (iter
+                  (for index :from start :below end)
+                  (collect (cons (format-bin-location (bin-location bin index))
+                                 (ref accumulator index))))))
+          (print-unreadable-object (accumulator stream :type t)
+            (print-univariate-frequencies% stream labels-frequencies)))
+        (call-next-method))))
 
 (defun scott-rule (object &key (pretty? t) (correction 1d0) offset)
   "Return a bin object using Scott's (1979) rule for bin width, multiplied by
@@ -772,6 +726,14 @@ bins, otherwise they are centered around 0."
                     (pretty width)
                     width)))
     (even-bins width (aif offset it (/ width 2)))))
+
+(defun histogram1 (object &optional (bins #'scott-rule))
+  "Return a univariate histogram of OBJECT.  If BINS is a function, call it on
+object to generate the bins."
+  (sweep (histogram-accumulator (if (functionp bins)
+                                    (funcall bins object)
+                                    bins))
+         object))
 
 ;; (defun histogram-from-matrix (matrix &rest bins)
 ;;   (let+ ((histogram (apply #'make-hashed-histogram bins))

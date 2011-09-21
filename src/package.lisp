@@ -58,9 +58,8 @@
    sorting-accumulator at at-object at-subscripts sparse-accumulator-array ref
    limits residual-pair acf-accumulator
 
-   histogram-limits histogram-bins frequency total-frequency
-   
-   histogram make-empty-histogram *frequency-print-width* scott-rule
+   histogram-accumulator bins locations-and-tallies location-limits
+   *frequency-print-width* scott-rule histogram1
 
    subranges
 
