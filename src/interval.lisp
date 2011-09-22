@@ -70,6 +70,31 @@ if MIN?."
   (when (and minimum maximum)
     (interval minimum maximum)))
 
+(defmacro interval-including ((include) &body body)
+  "Return the narrowses interval of objects which were incorporated
+with (INCLUDE OBJECT) within BODY.  If the resulting interval is the empty
+set, return NIL."
+  (with-unique-names (minimum maximum update)
+    `(let+ (,minimum
+            ,maximum
+            ((&flet ,update (min max)
+               (if ,minimum
+                   (setf ,minimum (min ,minimum min)
+                         ,maximum (max ,maximum max))
+                   (setf ,minimum min
+                         ,maximum max))))
+            ((&flet ,include (object)
+               (typecase object
+                 (null)
+                 (real (,update object object))
+                 (interval (let+ (((&interval-r/o left right) object))
+                             (when (> left right) (rotatef left right))
+                             (,update left right)))
+                 (t (let+ (((&interval-r/o left right) (limits object)))
+                      (,update left right)))))))
+       ,@body
+       (interval-or-nil ,minimum ,maximum))))
+
 (defgeneric limits (object)
   (:documentation "Return the limits of an object as a weakly positive
   interval.  If there are no elements, return NIL.  NILs are ignored.")
@@ -77,28 +102,13 @@ if MIN?."
     (interval x x))
   (:method ((x interval))
     x)
-  (:method ((x sequence))
-    (let+ (min
-           max
-           ((&flet update (min% max%)
-              (if min
-                  (setf min (min min min%)
-                        max (max max max%))
-                  (setf min min%
-                        max max%)))))
-      (map nil (lambda (object)
-                 (typecase object
-                   (null)
-                   (real (update object object))
-                   (interval (let+ (((&interval-r/o left right) object))
-                               (when (> left right) (rotatef left right))
-                               (update left right)))
-                   (t (let+ (((&interval-r/o left right) (limits object)))
-                        (update left right)))))
-           x)
-      (interval-or-nil min max)))
+  (:method ((list list))
+    (interval-including (include)
+      (loop for element in list do (include element))))
   (:method ((array array))
-    (limits (flatten-array array))))
+    (interval-including (include)
+      (loop for index below (array-total-size array)
+            do (include (row-major-aref array index))))))
 
 (defun interval-intersection (&rest intervals)
   "Return intersection of intervals, which is always a (weakly) positive
