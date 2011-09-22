@@ -25,6 +25,7 @@
      (:file "sub")
      (:file "elementwise")
      (:file "statistics")
+     (:file "interval")
      (:file "utilities")
      (:file "layout")
      (:file "data-frame")
