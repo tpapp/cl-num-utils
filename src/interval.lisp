@@ -75,43 +75,30 @@ if MIN?."
   interval.  If there are no elements, return NIL.  NILs are ignored.")
   (:method ((x real))
     (interval x x))
+  (:method ((x interval))
+    x)
+  (:method ((x sequence))
+    (let+ (min
+           max
+           ((&flet update (min% max%)
+              (if min
+                  (setf min (min min min%)
+                        max (max max max%))
+                  (setf min min%
+                        max max%)))))
+      (map nil (lambda (object)
+                 (typecase object
+                   (null)
+                   (real (update object object))
+                   (interval (let+ (((&interval-r/o left right) object))
+                               (when (> left right) (rotatef left right))
+                               (update left right)))
+                   (t (let+ (((&interval-r/o left right) (limits object)))
+                        (update left right)))))
+           x)
+      (interval-or-nil min max)))
   (:method ((array array))
-    (iter
-      (for index :from 0 :below (array-total-size array))
-      (for elt := (row-major-aref array index))
-      (when elt
-        (maximizing elt :into maximum)
-        (minimizing elt :into minimum))
-      (finally
-       (return (interval-or-nil minimum maximum)))))
-  (:method ((list list))
-    (iter
-      (for elt :in list)
-      (when elt
-        (maximizing elt :into maximum)
-        (minimizing elt :into minimum))
-      (finally
-       (return (interval-or-nil minimum maximum))))))
-
-(defun combined-limits (&rest objects)
-  "Return the combined limits of all objects."
-  (iter
-    (with min := nil)
-    (with max := nil)
-    (for object :in objects)
-    (flet ((update-with (interval)
-             (let+ (((&interval left right) interval))
-               (if min 
-                   (setf min (min min left)
-                         max (max max right))
-                   (setf min left
-                         max right)))))
-      (typecase object
-        (nil)
-        (interval (update-with object))
-        (t (update-with (limits object)))))
-    (finally
-     (return (interval-or-nil min max)))))
+    (limits (flatten-array array))))
 
 (defun interval-intersection (&rest intervals)
   "Return intersection of intervals, which is always a (weakly) positive

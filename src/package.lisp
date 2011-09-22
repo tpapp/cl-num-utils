@@ -71,7 +71,7 @@
    interval-diff interval-width interval-midpoint positive-interval?
    negative-interval? weakly-positive-interval? weakly-negative-interval?
    zero-interval? flip-interval interval-abs interval-or-nil limits
-   combined-limits interval-intersection relative relative-fraction
+    interval-intersection relative relative-fraction
    shrink-interval spacer spacer-value split-interval
 
    ;; elementwise
