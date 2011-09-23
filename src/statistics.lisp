@@ -493,6 +493,21 @@ them and return as a vector."
             ordered-elements (sort ordered-elements predicate)))
     ordered-elements))
 
+(defun empirical-quantile (sorted-vector q)
+  "Return the empirical quantiles with a 0.5 correction."
+  (let* ((n (length sorted-vector))
+         (c (/ 1/2 n)))
+    (cond
+      ((<= q c) (aref sorted-vector 0))
+      ((<= (- 1 c) q) (aref sorted-vector (1- n)))
+      (t (let+ ((r (- (* q n) 1/2))
+                ((&values int frac) (floor r))
+                (left (aref sorted-vector int)))
+           (if (zerop frac)
+               left
+               (convex-combination left (aref sorted-vector (1+ int))
+                                   frac)))))))
+
 (defmethod quantile ((sorting-accumulator sorting-accumulator) q)
   (let+ (((&accessors-r/o elements) sorting-accumulator))
     (assert (let+ (((&sorting-accumulator nil nil predicate)
