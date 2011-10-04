@@ -145,3 +145,8 @@ second value."
   "Test whether all arguments have the same sign (ie all are positive,
 negative, or zero)."
   (reduce #'= arguments :key #'signum))
+
+(declaim (inline absolute-square))
+(defun absolute-square (number)
+  "Number multiplied by its complex conjugate."
+  (* (conjugate number) number))

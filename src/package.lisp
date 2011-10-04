@@ -19,7 +19,8 @@
 
    ;; arithmetic
 
-   numseq ivec sum product cumulative-sum cumulative-product same-sign?
+   numseq ivec sum product cumulative-sum cumulative-product same-sign? 
+   absolute-square
 
    ;; array
 
@@ -109,4 +110,5 @@
    ;; optimization
    
    reached-max-iter  golden-section-minimize
+   
    ))
