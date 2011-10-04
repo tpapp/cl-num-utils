@@ -75,7 +75,7 @@
    ;; elementwise
 
    emap-dimensions emap-next recycle recycled-vector emap e+ e- e* e/ e2+ e2-
-   e2* e2/ e1- e1/ eexpt eexp elog esqrt econjugate ereduce emax emin zero
+   e2* e2/ e1- e1/ eexpt eexp elog esqrt econjugate ereduce emax emin
 
    ;; sub
 
