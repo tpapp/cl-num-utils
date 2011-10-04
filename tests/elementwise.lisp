@@ -42,9 +42,7 @@
     (ensure-same (e+ a) (e+ a 0))
     (ensure-same (e* a) (e* a 1))
     (ensure-same (e- a) (e- 0 a))
-    (ensure-same (e/ a) (e/ 1 a))
-    (ensure-same (e+ a (zero)) a :test #'eq)
-    (ensure-same (e+ (zero) a) a :test #'eq)))
+    (ensure-same (e/ a) (e/ 1 a))))
 
 (addtest (elementwise-tests)
   recycled-vector-tests
