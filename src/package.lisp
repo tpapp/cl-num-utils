@@ -7,7 +7,7 @@
    ;; macros
    
    silent check-types define-with-multiple-bindings make-keyword+ gensym+
-   lazy-let* unlessf setf-nil
+   lazy-let* unlessf setf-nil expanding
 
    ;; misc
    

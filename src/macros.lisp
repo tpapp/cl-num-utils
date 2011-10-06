@@ -104,3 +104,10 @@ for a slot in an instance of STRUCTURE.  "
        ,@(unless read-only?
            `((defmethod (setf ,accessor) ,(cons 'value lambda-list)
                (setf (,slot-accessor instance) value)))))))
+
+(defmacro expanding (&body body)
+  "Expand BODY.  Useful for generating code programmatically."
+  (with-gensyms (local-macro)
+    `(macrolet ((,local-macro ()
+                  ,@body))
+       (,local-macro))))
