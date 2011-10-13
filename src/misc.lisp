@@ -241,4 +241,3 @@ hash-table).")
                  (incf index))
                object)
       result)))
-
