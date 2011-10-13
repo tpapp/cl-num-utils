@@ -241,3 +241,13 @@ hash-table).")
                  (incf index))
                object)
       result)))
+
+(defun thin (vector thinning &optional (start 0))
+  "Thin vector, keeping every THINNING element, starting at START."
+  (let* ((n (length vector))
+         (m (ceiling (- n start) thinning))
+         (result (make-array m :element-type (array-element-type vector))))
+    (loop for index below m
+          do (setf (aref result index) (aref vector start))
+             (incf start thinning))
+    result))
