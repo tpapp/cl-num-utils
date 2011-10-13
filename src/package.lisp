@@ -1,7 +1,7 @@
 (defpackage cl-num-utils
   (:nicknames clnu)
   (:use cl iterate let-plus anaphora alexandria)
-  (:shadow mean variance flatten)
+  (:shadow mean variance median)
   (:export
 
    ;; macros
@@ -50,7 +50,7 @@
    
    add pool pool* conforming-accumulator with-accumulator sweep
    define-conforming-accumulator tally sample-ratio mean sse variance sd
-   quantile quantiles sum product tallier sample-ratio-accumulator
+   quantile quantiles median sum product tallier sample-ratio-accumulator
    mean-accumulator incf-mean array-mean-accumulator mean-sse-accumulator
 
    covariance-accumulator covariance correlation covariance-xy correlation-xy

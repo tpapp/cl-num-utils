@@ -137,9 +137,12 @@ evaluates to this accumulator.  For use in SWEEP."
       (values (map1 (lambda (q) (quantile accumulator q)) qs)
               accumulator))))
 
-;; (defun median (object)
-;;   "Median of OBJECT."
-;;   (quantile object 0.5))
+(defgeneric median (object)
+  (:documentation "Median of OBJECT.")
+  (:method ((object sequence))
+    (alexandria:median object))
+  (:method (object)
+    (quantile object 0.5)))
 
 ;;; Specific accumulators
 
