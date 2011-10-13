@@ -230,16 +230,15 @@ they don't share structure."
                   (,accessor (,slot-accessor ,instance)))))))
 
 (defgeneric keys-and-values (object)
-  (:documentation "Return keys and values in OBJECT (eg a hash-table)
-  as (values KEYS VALUES), which are two vectors of the same length.")
+  (:documentation "Return a vector of (cons KEY VALUE) in OBJECT (eg a
+hash-table).")
   (:method ((object hash-table))
     (let* ((size (hash-table-count object))
-           (keys (make-array size))
-           (values (make-array size))
+           (result (make-array size))
            (index 0))
       (maphash (lambda (key value)
-                 (setf (aref keys index) key)
-                 (setf (aref values index) value)
+                 (setf (aref result index) (cons key value))
                  (incf index))
                object)
-      (values keys values))))
+      result)))
+
