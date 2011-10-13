@@ -502,11 +502,12 @@ them and return as a vector."
       ((<= (- 1 c) q) (aref sorted-vector (1- n)))
       (t (let+ ((r (- (* q n) 1/2))
                 ((&values int frac) (floor r))
-                (left (aref sorted-vector int)))
+                ((&flet value (index)
+                   (aref sorted-vector index)))
+                (left (value int)))
            (if (zerop frac)
                left
-               (convex-combination left (aref sorted-vector (1+ int))
-                                   frac)))))))
+               (convex-combination left (value (1+ int)) frac)))))))
 
 (defmethod quantile ((sorting-accumulator sorting-accumulator) q)
   (let+ (((&accessors-r/o elements) sorting-accumulator))
