@@ -251,3 +251,13 @@ hash-table).")
           do (setf (aref result index) (aref vector start))
              (incf start thinning))
     result))
+
+(declaim (inline log10 log2))
+
+(defun log10 (number)
+  "Abbreviation for decimal logarithm."
+  (log number 10))
+
+(defun log2 (number)
+  "Abbreviation for binary logarithm."
+  (log number 2))

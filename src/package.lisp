@@ -16,6 +16,7 @@
    common common-length common-dimension == *==-tolerance* format-number
    ignore-error ignore-nil text-progress-bar within? fixnum?
    simple-fixnum-vector define-indirect-accessors keys-and-values thin
+   log10 log2
 
    ;; arithmetic
 
