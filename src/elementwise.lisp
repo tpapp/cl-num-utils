@@ -203,7 +203,7 @@ of arguments, no optional, key, rest etc)."
 
 (defmacro define-elementwise-reducing-operation
     (function bivariate-function elementwise-function documentation-verb 
-     &key univariate-function)
+     &key univariate-function identities)
   (check-type documentation-verb string)
   (check-types (function bivariate-function elementwise-function) symbol)
   `(progn
@@ -217,7 +217,13 @@ of arguments, no optional, key, rest etc)."
            (reduce #',bivariate-function objects)
            ,(if univariate-function
                 `(,univariate-function (car objects))
-                '(car objects))))))
+                '(car objects))))
+     ,@(mapcan (lambda (identity)
+                 `((defmethod ,bivariate-function (a (b ,identity))
+                     a)
+                   (defmethod ,bivariate-function ((a ,identity) b)
+                     b)))
+               identities)))
 
 ;;; optimization
 
@@ -313,12 +319,18 @@ of arguments, no optional, key, rest etc)."
 ;;                 (sqrt (row-major-aref a index))))
 ;;         result)))
 
-(define-elementwise-reducing-operation e+ e2+ + "add")
+(define-elementwise-reducing-operation e+ e2+ + "add"
+  :identities (null))
 (define-elementwise-reducing-operation e* e2* * "multiply")
+
+;;; absorbing elements
+(defmethod e2* (a (b null)) nil)
+(defmethod e2* ((a null) b) nil)
 
 (define-elementwise-operation e1- (object) "Negate object elementwise." -)
 (define-elementwise-reducing-operation e- e2- - "subtract"
-  :univariate-function e1-)
+  :univariate-function e1-
+  :identities (null))
 
 (define-elementwise-operation e1/ (x) "Invert object elementwise." /)
 (define-elementwise-reducing-operation e/ e2/ / "divide"
