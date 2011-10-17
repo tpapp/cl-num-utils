@@ -242,15 +242,41 @@ hash-table).")
                object)
       result)))
 
+;;;; Thinning
+;;; 
+;;; Thinning is always by a uniform step interval.
+
+(defun thinned-length% (length thinning &optional (start 0))
+  "Internal function for calculating the thinned length."
+  (ceiling (- length start) thinning))
+
 (defun thin (vector thinning &optional (start 0))
   "Thin vector, keeping every THINNING element, starting at START."
   (let* ((n (length vector))
-         (m (ceiling (- n start) thinning))
+         (m (thinned-length% n thinning start))
          (result (make-array m :element-type (array-element-type vector))))
     (loop for index below m
           do (setf (aref result index) (aref vector start))
              (incf start thinning))
     result))
+
+(defun thin-to (vector length &optional (rounding :closest))
+  "Thin close to the desired length.  ROUNDING can be :CLOSEST, :BELOW,
+and :ABOVE, which determines how the length of the result is selected relative
+to the desired length."
+  (let+ ((vector-length (length vector))
+         (above (floor vector-length length))
+         (below (ceiling vector-length length)))
+   (thin vector (ecase rounding
+                  (:below below)
+                  (:above above)
+                  (:closest
+                   (if (< (- length (thinned-length% vector-length below))
+                          (- (thinned-length% vector-length above) length))
+                       below
+                       above))))))
+
+;;;; Aliases for commonly used log bases.
 
 (declaim (inline log10 log2))
 
