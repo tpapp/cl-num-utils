@@ -111,5 +111,9 @@
    ;; optimization
    
    reached-max-iter  golden-section-minimize
+
+   ;; differentiation
    
-   ))
+   differentiate
+   #:derivative
+   #:elasticity))

@@ -36,7 +36,8 @@
      (:file "layout")
      (:file "data-frame")
      ;; (:file "interaction")
-     (:file "optimization"))))
+     (:file "optimization")
+     (:file "differentiation"))))
   :depends-on (alexandria iterate let-plus anaphora))
 
 (defsystem :cl-num-utils-tests
@@ -71,6 +72,7 @@
      (:file "layout")
      (:file "data-frame")
      ;; (:file "interactions")
+     (:file "differentiation")
      )))
   :depends-on
   (iterate metabang-bind anaphora lift alexandria cl-num-utils))
