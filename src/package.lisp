@@ -114,6 +114,4 @@
 
    ;; differentiation
    
-   differentiate
-   #:derivative
-   #:elasticity))
+   differentiate elasticity derivative))
