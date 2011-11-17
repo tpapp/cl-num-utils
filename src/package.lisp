@@ -13,7 +13,7 @@
    
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
    common-supertype round* maybe-copy-array convex-combination vector-last
-   common common-length common-dimension == *==-tolerance* format-number
+   common common-length common-dimension *==-tolerance* == ==* format-number
    ignore-error ignore-nil text-progress-bar within? fixnum?
    simple-fixnum-vector define-indirect-accessors keys-and-values thin thin-to
    log10 log2
@@ -114,4 +114,11 @@
 
    ;; differentiation
    
-   differentiate elasticity derivative))
+   differentiate elasticity derivative
+   
+   ;; rootfinding 
+
+   *rootfinding-epsilon* *rootfinding-delta-relative* rootfinding-delta 
+   root-bisection
+
+   ))
