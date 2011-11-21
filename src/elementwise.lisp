@@ -258,7 +258,9 @@ of arguments, no optional, key, rest etc)."
                      (row-major-aref b index))))
           result))
       (let* ((dimensions (common-dimensions a b))
-             (result (make-array dimensions :element-type t))
+             (result (make-array dimensions
+				 :element-type (emap-common-numeric-type
+						(array-element-type a) (array-element-type b))))
              (size (array-total-size result)))
         (assert dimensions)
         (dotimes (index size)
@@ -281,7 +283,9 @@ of arguments, no optional, key, rest etc)."
                      (row-major-aref b index))))
           result))
       (let* ((dimensions (common-dimensions a b))
-             (result (make-array dimensions :element-type t))
+             (result (make-array dimensions
+				 :element-type (emap-common-numeric-type
+						(array-element-type a) (array-element-type b))))
              (size (array-total-size result)))
         (assert dimensions)
         (dotimes (index size)
@@ -302,7 +306,9 @@ of arguments, no optional, key, rest etc)."
             (setf (row-major-aref result index)
                   (- a (row-major-aref b index))))
           result))
-      (let* ((result (make-array (array-dimensions b) :element-type t))
+      (let* ((result (make-array (array-dimensions b) :element-type
+				 (emap-common-numeric-type (type-of a)
+							   (array-element-type b))))
              (size (array-total-size result)))
         (dotimes (index size)
           (setf (row-major-aref result index) (- a (row-major-aref b index))))
