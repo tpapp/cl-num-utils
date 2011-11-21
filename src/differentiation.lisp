@@ -22,19 +22,18 @@ elasticities)."))
                h)
             fx)))
 
-;; (defmethod differentiate% ((n (eql 1)) (method (eql :riccati-right)))
-;;   (let))
-
-;; (differentiate #'sin pi)
+;;; !!! todo: write two-sided, left, Richardson approximation, etc
 
 (defun derivative (f &key (n 1) (method :right) h)
-  "Return "
+  "Return a function that calculates the derivative numerically.  See
+DIFFERENTIATE for an explanation of the parameters."
   (lambda (x)
     (differentiate f x :n n :method method :h h)))
 
 (defun elasticity (f &key (n 1) (method :right) h)
-  "Return "
+  "Return a function that calculates the elasticity numerically.  See
+DIFFERENTIATE for an explanation of the parameters."
   (lambda (x)
     (let+ (((&values df fx) 
             (differentiate f x :n n :method method :h h)))
-      (/ df fx))))
+      (* df (/ x fx)))))
