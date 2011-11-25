@@ -2,10 +2,6 @@
 
 (in-package #:cl-num-utils)
 
-(define-condition reached-max-iter (error)
-  ()
-  (:documentation "Reached maximum number of iterations."))
-
 (defun golden-section-combination (a b)
   "Return the convex combination (1-G)*a+G*b, where G is the
 inverse of the golden ratio."
@@ -55,7 +51,7 @@ to the left'', ie will keep picking smaller values."
 	    ;; new bracket is (m1,m2,b)
 	    (shiftf a m1 m2 (golden-section-combination m2 b))
 	    (shiftf f1 f2 (funcall f m2)))))
-    (error 'reached-max-iter)))
+    (error 'reached-maximum-iterations :n max-iter)))
 
 ;; (defun linesearch-backtrack (g g0 gp0 alpha delta  &key
 ;;                              (rel-min 0.1d0) (rel-max 0.5d0) (c 1d-4)

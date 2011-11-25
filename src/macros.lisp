@@ -122,7 +122,7 @@ All variables are declared DOUBLE-FLOAT in the body."
                                         (list binding binding)
                                         binding)))
                               (check-type variable (and symbol (not null)))
-                              `(,variable (as-double-float ,value))))
+                              `(,variable (coerce ,value 'double-float))))
                           bindings)))
     `(let ,bindings
        (declare (type double-float ,@(mapcar #'first bindings)))

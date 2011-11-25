@@ -9,6 +9,10 @@
    silent check-types define-with-multiple-bindings make-keyword+ gensym+
    lazy-let* unlessf setf-nil expanding with-doubles
 
+   ;; conditions
+   
+   reached-maximum-iterations
+
    ;; misc
    
    nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
@@ -121,4 +125,6 @@
    *rootfinding-epsilon* *rootfinding-delta-relative* rootfinding-delta 
    root-bisection
 
-   ))
+   ;; quadrature
+
+   romberg-quadrature))

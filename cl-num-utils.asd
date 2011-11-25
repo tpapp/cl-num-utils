@@ -24,6 +24,7 @@
     :serial t
     :components
     ((:file "macros")
+     (:file "conditions")
      (:file "misc")
      (:file "arithmetic")
      (:file "array")
@@ -38,7 +39,8 @@
      ;; (:file "interaction")
      (:file "optimization")
      (:file "differentiation")
-     (:file "rootfinding"))))
+     (:file "rootfinding")
+     (:file "quadrature"))))
   :depends-on (alexandria iterate let-plus anaphora))
 
 (defsystem :cl-num-utils-tests
@@ -74,6 +76,7 @@
      (:file "data-frame")
      ;; (:file "interactions")
      (:file "differentiation")
-     (:file "rootfinding"))))
+     (:file "rootfinding")
+     (:file "quadrature"))))
   :depends-on
   (iterate metabang-bind anaphora lift alexandria cl-num-utils))
