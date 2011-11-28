@@ -20,8 +20,7 @@ The algorithm uses Richardson extrapolation, the required coefficient is q^k."
   (diagonal nil :type (array double-float (*))))
 
 (defmethod add ((re richardson-extrapolation) h)
-  (let+ (((&structure-r/o richardson-extrapolation- coefficient n
-                          diagonal) re)
+  (let+ (((&structure-r/o richardson-extrapolation- coefficient n diagonal) re)
          (largest-relative-change 0d0)
          (last (coerce h 'double-float)))
     (when (= n (length diagonal))
@@ -45,7 +44,7 @@ The algorithm uses Richardson extrapolation, the required coefficient is q^k."
   (a nil :type double-float)
   (b nil :type double-float)
   (h nil :type double-float)
-  (n 0 :type (integer 0 31))
+  (n 0 :type fixnum)
   (sum 0d0 :type double-float))
 
 (defgeneric refine-quadrature (quadrature)
@@ -145,7 +144,7 @@ criterion, and the maximum number of iterations allowed."
 iteration stops if the relative change is below EPSILON, but only after
 MIN-ITER refinements (to avoid spurious premature convergence).  An error
 occurs when MAX-ITER iterations are reached without convergence."
-  (romberg%% (if open?
-                 (midpoint-quadrature f a b)
-                 (trapezoidal-quadrature f a b))
-             epsilon min-iter max-iter))
+  (romberg-quadrature% (if open?
+                           (midpoint-quadrature f a b)
+                           (trapezoidal-quadrature f a b))
+                       epsilon min-iter max-iter))
