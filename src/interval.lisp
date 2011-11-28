@@ -29,7 +29,7 @@
   "Width of the interval (absolute value)."
   (abs (interval-diff interval)))
 
-(defun interval-midpoint (interval &optional (alpha 0.5))
+(defun interval-midpoint (interval &optional (alpha 1/2))
   "Convex combination of left and right, with alpha (defaults to 0.5)
 weight on right."
   (let+ (((&interval left right) interval))
