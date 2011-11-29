@@ -292,3 +292,10 @@ to the desired length."
 (defun log2 (number)
   "Abbreviation for binary logarithm."
   (log number 2))
+
+(declaim (inline 1c))
+
+(defun 1c (number)
+  "Return 1-number.  The mnemonic is \"1 complement\", 1- is already a CL
+library function."
+  (- 1 number))
