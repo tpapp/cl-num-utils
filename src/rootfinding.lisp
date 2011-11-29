@@ -21,10 +21,10 @@
 (defparameter *rootfinding-delta-relative* (expt double-float-epsilon 0.25)
   "Default relative interval width (DELTA) for rootfinding.")
 
-(defun rootfinding-delta (a b &optional
-                                (delta-relative *rootfinding-delta-relative*))
+(defun rootfinding-delta (interval
+                          &optional (delta-relative *rootfinding-delta-relative*))
   "Default DELTA for rootfinding methods, uses bracket width."
-  (* (abs (- a b)) delta-relative))
+  (* (interval-width interval) delta-relative))
 
 ;;; convenience macro for various univariate rootfinders
 
@@ -79,28 +79,29 @@ Implicitly uses the following variables: f, a, b, tolerance, epsilon."
              (loop
                ,@body)))))))
 
-(defun root-bisection (f a b 
-                       &key (delta (rootfinding-delta a b))
+(defun root-bisection (f bracket
+                       &key (delta (rootfinding-delta bracket))
                             (epsilon *rootfinding-epsilon*))
   "Find the root of f bracketed between a and b using bisection.
 The algorithm stops when either the root is bracketed in an interval of length
 TOLERANCE (relative to the initial |a-b|), or root is found such that
 abs(f(root)) <= epsilon.
 
-Return five values: the root, the function evaluated at the root, and
-a boolean which is true iff abs(f(root)) <= epsilon.  If the third
-value is true, the fourth and fifth values are the endpoints of the
-bracketing interval, otherwise they are undefined."
-  (univariate-rootfinder-loop% ((f a b fa fb)
-                                (f-tested test-bracket delta epsilon))
-    (let* ((m (/ (+ a b) 2))
-           (fm (f-tested m)))
-      (test-bracket fm m)
-      (if (opposite-sign? fa fm)
-          (setf b m
-                fb fm)
-          (setf a m
-                fa fm)))))
+Return five values: the root, the value of the function at the root, and a
+boolean which is true iff abs(f(root)) <= epsilon.  If the third value is
+true, the fourth and fifth values are the endpoints of the bracketing
+interval, otherwise they are undefined."
+  (let+ (((&interval a b) bracket))
+    (univariate-rootfinder-loop% ((f a b fa fb)
+                                  (f-tested test-bracket delta epsilon))
+      (let* ((m (/ (+ a b) 2))
+             (fm (f-tested m)))
+        (test-bracket fm m)
+        (if (opposite-sign? fa fm)
+            (setf b m
+                  fb fm)
+            (setf a m
+                  fa fm))))))
 
 ;; (defun root-ridders (f a b &key
 ;; 		     (tolerance (* (abs (- b a)) #.(expt double-float-epsilon 0.25)))
