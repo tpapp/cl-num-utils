@@ -85,7 +85,7 @@
 
 (defun ivec* (start-or-end &optional (end 0 end?) (by 1) strict-direction?)
   "Selection based on an arithmetic sequence -- see IVEC for the arguments.
-  Used in calls to SUB, allowsnegative or NIL indexes."
+  Used in calls to SUB, allows negative or NIL indexes."
   (let+ (((&values start end) (if end?
                                   (values start-or-end end)
                                   (values 0 start-or-end))))
@@ -145,8 +145,10 @@
                        (sub-resolve-end (cdr range) dimension object)
                        expand?))
   (:method ((incl incl) dimension object &optional expand?)
-    (sub-resolved-cons (sub-resolve-to-fixnum (incl-from incl) dimension object)
-                       (1+ (sub-resolve-to-fixnum (incl-to incl) dimension object))
+    (sub-resolved-cons (sub-resolve-to-fixnum (incl-from incl) dimension
+                                              object)
+                       (1+ (sub-resolve-to-fixnum (incl-to incl)
+                                                  dimension object))
                        expand?))
   (:method ((mask bit-vector) dimension object &optional expand?)
     (declare (ignore expand?))
@@ -163,7 +165,8 @@
     (declare (ignore expand?))
     (let+ (((&structure-r/o delayed-sub- selection
                             sub-selection) selection))
-      (sub (sub-resolve-selection selection dimension object t) sub-selection)))
+      (sub (sub-resolve-selection selection dimension object t)
+           sub-selection)))
   (:method ((selection delayed-rev) dimension object &optional expand?)
     (declare (ignore expand?))
     ;; note: fixnums should signal an error
