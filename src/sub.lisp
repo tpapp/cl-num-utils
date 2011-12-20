@@ -98,16 +98,16 @@
   (:method ((vector vector))
     (reverse vector)))
 
-(defun sub-resolve-to-fixnum (selection dimension object)
+(defun sub-resolve-to-fixnum (selection dimension)
   "Resolve selection, ensuring that the result is a fixnum."
-  (aprog1 (sub-resolve-selection selection dimension object t)
+  (aprog1 (sub-resolve-selection selection dimension t)
     (assert (fixnum? it))))
 
-(defun sub-resolve-end (selection dimension object)
+(defun sub-resolve-end (selection dimension)
   "Resolve an end marker.  Ensure that the result is <= dimension."
   (if (or (null selection) (and (fixnum? selection) (= selection dimension)))
       dimension
-      (sub-resolve-to-fixnum selection dimension object)))
+      (sub-resolve-to-fixnum selection dimension)))
 
 (defun sub-resolved-cons (start end expand?)
   "Return a resolved CONS, expanded if necessary."
@@ -116,68 +116,64 @@
       (ivec start end)
       (cons start end)))
 
-(defgeneric sub-resolve-selection (selection dimension object
-                                   &optional expand?)
+(defgeneric sub-resolve-selection (selection dimension &optional expand?)
   (:documentation "Resolve selection to an object representing indexes to be
-  walked.  OBJECT may be used for additional information (eg resolving symbols
-  to indexes, etc).  FIXNUMs represent a single index that drops dimensions.
-  EXPAND?  forces expansion to either a FIXNUM or a vector of fixnums.
+walked.  FIXNUMs represent a single index that drops dimensions.  EXPAND?
+forces expansion to either a FIXNUM or a vector of fixnums.
 
-  Methods are required to ensure that all indexes are valid, ie fit within
-  dimension.")
+Methods are required to ensure that all indexes are valid, ie fit within
+dimension.")
   ;; Implementation note: currently we resolve to one of the following:
   ;; FIXNUM, SIMPLE-FIXNUM-VECTOR and CONS.  Thus walkers only need to be
   ;; defined for these.
-  (:method ((index fixnum) dimension object &optional expand?)
+  (:method ((index fixnum) dimension &optional expand?)
     (declare (ignore expand?))
     (if (minusp index)
         (aprog1 (+ dimension index)
           (assert (<= 0 it)))
         (aprog1 index
           (assert (< it dimension)))))
-  (:method ((vector vector) dimension object &optional expand?)
+  (:method ((vector vector) dimension &optional expand?)
     (declare (ignore expand?))
     (map 'simple-fixnum-vector
-         (lambda (i) (sub-resolve-to-fixnum i dimension object))
+         (lambda (i) (sub-resolve-to-fixnum i dimension))
          vector))
-  (:method ((range cons) dimension object &optional expand?)
-    (sub-resolved-cons (sub-resolve-to-fixnum (car range) dimension object)
-                       (sub-resolve-end (cdr range) dimension object)
+  (:method ((range cons) dimension &optional expand?)
+    (sub-resolved-cons (sub-resolve-to-fixnum (car range) dimension)
+                       (sub-resolve-end (cdr range) dimension)
                        expand?))
-  (:method ((incl incl) dimension object &optional expand?)
-    (sub-resolved-cons (sub-resolve-to-fixnum (incl-from incl) dimension
-                                              object)
-                       (1+ (sub-resolve-to-fixnum (incl-to incl)
-                                                  dimension object))
+  (:method ((incl incl) dimension &optional expand?)
+    (sub-resolved-cons (sub-resolve-to-fixnum (incl-from incl) dimension)
+                       (1+ (sub-resolve-to-fixnum (incl-to incl) dimension))
                        expand?))
-  (:method ((mask bit-vector) dimension object &optional expand?)
+  (:method ((mask bit-vector) dimension &optional expand?)
     (declare (ignore expand?))
     (assert (= (length mask) dimension))
     (positions mask))
-  (:method ((selection (eql t)) dimension object &optional expand?)
+  (:method ((selection (eql t)) dimension &optional expand?)
     (sub-resolved-cons 0 dimension expand?))
-  (:method ((selection delayed-cat) dimension object &optional expand?)
+  (:method ((selection delayed-cat) dimension &optional expand?)
     (declare (ignore expand?))
     (concat* 'fixnum
-             (mapcar (lambda (s) (sub-resolve-selection s dimension object t))
+             (mapcar (lambda (s) (sub-resolve-selection s dimension t))
                      (delayed-cat-selections selection))))
-  (:method ((selection delayed-sub) dimension object &optional expand?)
+  (:method ((selection delayed-sub) dimension &optional expand?)
     (declare (ignore expand?))
     (let+ (((&structure-r/o delayed-sub- selection
                             sub-selection) selection))
-      (sub (sub-resolve-selection selection dimension object t)
+      (sub (sub-resolve-selection selection dimension t)
            sub-selection)))
-  (:method ((selection delayed-rev) dimension object &optional expand?)
+  (:method ((selection delayed-rev) dimension &optional expand?)
     (declare (ignore expand?))
     ;; note: fixnums should signal an error
     (reverse (sub-resolve-selection (delayed-rev-selection selection)
-                                    dimension object t)))
-  (:method ((selection delayed-ivec) dimension object &optional expand?)
+                                    dimension t)))
+  (:method ((selection delayed-ivec) dimension &optional expand?)
     (declare (ignore expand?))
     (let+ (((&structure-r/o delayed-ivec- start end by strict-direction?)
             selection))
-      (ivec (sub-resolve-to-fixnum start dimension object)
-            (sub-resolve-end end dimension object)
+      (ivec (sub-resolve-to-fixnum start dimension)
+            (sub-resolve-end end dimension)
             by strict-direction?))))
 
 ;;; walking selections
