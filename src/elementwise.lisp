@@ -116,11 +116,15 @@ the given ELEMENT-TYPE."
          (next-functions (mapcar (rcurry #'emap-next dimensions) objects))
          ((&flet next-result ()
             (apply function (mapcar #'funcall next-functions)))))
-    (if dimensions
-        (aprog1 (make-array dimensions :element-type element-type)
-          (dotimes (index (array-total-size it))
-            (setf (row-major-aref it index) (next-result))))
-        (next-result))))
+    (cond
+      ((and dimensions element-type)
+       (aprog1 (make-array dimensions :element-type element-type)
+         (dotimes (index (array-total-size it))
+           (setf (row-major-aref it index) (next-result)))))
+      (dimensions
+       (dotimes (index (reduce #'* dimensions))
+         (next-result)))
+      (t (next-result)))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defmacro define-emap-common-numeric-type 
