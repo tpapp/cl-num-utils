@@ -343,7 +343,7 @@ that particular axis is coming from in ARRAY."
 
 ;;; outer product
 
-(defun outer* (a b &key (function #'*) (element-type t))
+(defun outer* (a b function &optional (element-type t))
   "Generalized outer product of A and B, using FUNCTION.  ELEMENT-TYPE can be
 used to give the element type.  Also see LLA:OUTER."
   (check-types (a b) vector)
@@ -352,13 +352,13 @@ used to give the element type.  Also see LLA:OUTER."
          (result (make-array (list a-length b-length)
                              :element-type element-type))
          (result-index 0))
-    (iter
-      (for a-element :in-vector a)
-      (iter
-        (for b-element :in-vector b)
-        (setf (row-major-aref result result-index)
-              (funcall function a-element b-element))
-        (incf result-index)))
+    (map nil (lambda (a-element)
+               (map nil (lambda (b-element)
+                          (setf (row-major-aref result result-index)
+                                (funcall function a-element b-element))
+                          (incf result-index))
+                    b))
+         a)
     result))
 
 ;;; norms
