@@ -11,29 +11,23 @@
   (let* ((matrix (ia 2 3))
          (sub-matrix #2A((0 2) (3 5)))
          (sub-vector #(1 4))
-         (layout (atomic-dictionary-layout '(a b c)))
-         (df (make-data-frame matrix layout))
+         (df (matrix-to-data-frame matrix #(a b c)))
          ;; (sub-df (make-data-frame sub-matrix (sub keys #(0 2))))
-         (*lift-equality-test* #'equalp))
-    (ensure-same (sub df t (w/keys 'b)) sub-vector)
+         (*lift-equality-test* #'==))
     (ensure-same (sub df t 'b) sub-vector)
-    (ensure-same (sub df t (vector (w/keys 'a) (w/keys 'c))) sub-matrix)
-    (ensure-same (sub df t (vector 'a 'c)) sub-matrix)
+    (ensure-same (sub df t (vector 'a 'c))
+                 (matrix-to-data-frame sub-matrix #(a c)))
     ;; should pass through regular arguments
-    (ensure-same (sub df t t) matrix)
-    (ensure-same (sub df t 1) sub-vector)
-    (ensure-same (sub df t #(0 2)) sub-matrix)
-    (ensure-same (sub df t (cons 0 nil)) matrix)))
+    (ensure-same (sub df t t) df)))
 
 (addtest (data-frame-tests)
   data-frame-setf-tests
   (let* ((matrix (ia 3 4))
-         (layout (atomic-dictionary-layout '(a b c d)))
-         (df (make-data-frame matrix layout :copy? t))
+         (df (matrix-to-data-frame matrix '(a b c d)))
          (sub-vector (ia 3)))
     (setf (sub df t 'c) sub-vector
           (sub matrix t 2) sub-vector)
-    (ensure-same (elements df) matrix)))
+    (ensure-same (as-array df) matrix)))
 
 ;; (addtest (data-frame-tests)
 ;;   data-frame-filter-tests

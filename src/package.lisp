@@ -20,7 +20,7 @@
    common common-length common-dimension *==-tolerance* == ==* format-number
    ignore-error ignore-nil text-progress-bar within? fixnum?
    simple-fixnum-vector define-indirect-accessors keys-and-values thin thin-to
-   log10 log2 1c
+   log10 log2 1c  
 
    ;; arithmetic
 
@@ -33,7 +33,7 @@
    nrow ncol elements square? matrix row-major-loop
    array-element-type-available displace-array make-similar-array filled-array
    rep reshape flatten-array subarrays subarray partition subvector combine
-   map1
+   matrix-to-columns columns-to-matrix map1
 
    ;; map-subarrays
    
@@ -98,15 +98,9 @@
 
    ;; utilities
    
-
-   ;; layout
-   
-   layout-length layout-ref layout-position flatten-using-layout array-layout
-   dictionary-layout atomic-dictionary-layout shifted-vector-layout
-
    ;; data-frame
 
-   data-frame make-data-frame layout w/keys sub-rows
+   data-frame make-data-frame keys matrix-to-data-frame
 
    ;; interaction
    

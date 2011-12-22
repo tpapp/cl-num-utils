@@ -4,6 +4,19 @@
 
 ;;; utility functions
 
+(defun common-array-element-type (arrays)
+  "Return the common upgraded element type of ARRAYS.  Not guaranteed to be
+the narrowest type (depends on the implementation), stops when it reaches T."
+  (reduce (lambda (t1 t2)
+            (let ((common
+                    (cond
+                      ((subtypep t1 t2) t2)
+                      ((subtypep t2 t1) t1)
+                      (t (upgraded-array-element-type `(or ,t1 ,t2))))))
+              (when (eq common t)
+                (return-from common-array-element-type t))))
+          arrays :key #'array-element-type))
+
 (defmacro define-vector-accessors (&optional (n 10))
   (flet ((accessor-name (i)
            (intern (format nil "~:@(~:r~)*" i))))
@@ -220,6 +233,37 @@ that element is not an array, the original ARRAY is returned as it is."
             (setf (subarray displaced index) (row-major-aref array index)))
           result)
         array)))
+
+(defun matrix-to-columns (matrix)
+  "Columns of a matrix as a vector of vectors."
+  (let+ (((nrow ncol) (array-dimensions matrix))
+         (element-type (array-element-type matrix))
+         (columns (make-array ncol)))
+    (dotimes (col-index ncol)
+      (setf (aref columns col-index)
+            (aprog1 (make-array nrow :element-type element-type)
+              (dotimes (row-index nrow)
+                (setf (aref it row-index)
+                      (aref matrix row-index col-index))))))
+    columns))
+
+(defun columns-to-matrix (columns 
+                          &optional (element-type 
+                                     (common-array-element-type columns)))
+  "Convert columns (vectors of equal length) to matrix.  The resulting array's
+ELEMENT-TYPE is deduced automatically, unless given."
+  (let* ((ncol (length columns))
+         (nrow (length (first* columns)))
+         (result (make-array (list nrow ncol) :element-type element-type)))
+    (dotimes (col-index ncol)
+      (let ((column (aref columns col-index)))
+        (unless (zerop col-index)
+          (assert (length= column nrow) ()
+                  "Column ~A has a different length." col-index))
+        (dotimes (row-index nrow)
+          (setf (aref result row-index col-index)
+                (aref column row-index)))))
+    result))
 
 (defgeneric map1 (function object &key element-type &allow-other-keys)
   (:documentation "Map OBJECT elementwise using FUNCTION.  Results in a
