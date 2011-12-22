@@ -4,21 +4,21 @@
 
 (defclass data-frame ()
   ((keys :initarg :keys :reader keys)
-   (vectors :initarg :vectors)
+   (columns :initarg :columns)
    (table :initarg :table)))
 
 (defmethod nrow ((data-frame data-frame))
-  (length (first* (slot-value data-frame 'vectors))))
+  (length (first* (slot-value data-frame 'columns))))
 
 (defmethod ncol ((data-frame data-frame))
-  (length (slot-value data-frame 'vectors)))
+  (length (slot-value data-frame 'columns)))
 
 (defun data-frame-test (data-frame)
   "Return the function used for comparing keys."
   (hash-table-test (slot-value data-frame 'table)))
 
 (defmethod as-array ((data-frame data-frame) &key)
-  (columns-to-matrix (slot-value data-frame 'vectors)))
+  (columns-to-matrix (slot-value data-frame 'columns)))
 
 (defun data-frame-keys-table (keys test)
   "Generate a hash table for looking up keys in data frame, also check that
@@ -35,28 +35,28 @@ there are no duplicate keys."
 
 (defmethod == ((df1 data-frame) (df2 data-frame)
                &optional (tolerance *==-tolerance*))
-  (let+ (((&slots-r/o (v1 vectors) (k1 keys)) df1)
-         ((&slots-r/o (v2 vectors) (k2 keys)) df2)
+  (let+ (((&slots-r/o (v1 columns) (k1 keys)) df1)
+         ((&slots-r/o (v2 columns) (k2 keys)) df2)
          ((&accessors-r/o (t1 data-frame-test)) df1)
          ((&accessors-r/o (t2 data-frame-test)) df2))
     (and (every (==* tolerance) v1 v2)
          (eq t1 t2)
          (every t1 k1 k2))))
 
-(defun make-data-frame% (keys vectors test)
+(defun make-data-frame% (keys columns test)
   (declare (optimize debug))
-  (assert (length= keys vectors))
-  (assert (common vectors :key #'length))
-  (check-types (keys vectors) vector)
+  (assert (length= keys columns))
+  (assert (common columns :key #'length))
+  (check-types (keys columns) vector)
   (make-instance 'data-frame
-                 :vectors vectors
+                 :columns columns
                  :keys keys
                  :table (data-frame-keys-table keys test)))
 
-(defun make-data-frame (key-vector-alist &key (test #'equal))
+(defun make-data-frame (key-column-alist &key (test #'equal))
   "Make a data-frame."
-  (make-data-frame% (map 'vector #'car key-vector-alist)
-                    (map 'vector #'cdr key-vector-alist)
+  (make-data-frame% (map 'vector #'car key-column-alist)
+                    (map 'vector #'cdr key-column-alist)
                     test))
 
 (defun matrix-to-data-frame (matrix keys &key (test #'equal))
@@ -65,7 +65,7 @@ there are no duplicate keys."
 
 (defun data-frame-resolve-keys (data-frame keys)
   "Resolve data frame keys, returning  a format that can be passed to SUB."
-  (let+ (((&slots-r/o vectors table) data-frame)
+  (let+ (((&slots-r/o columns table) data-frame)
          ((&flet resolve% (key)
             (let+ (((&values index present?) (gethash key table)))
               (assert present? () "Key ~A not found." key)
@@ -75,37 +75,37 @@ there are no duplicate keys."
                              (vector (map 'vector #'resolve% keys))
                              ((eql t) t)
                              (t (resolve% keys)))
-                           (length vectors) t)))
+                           (length columns) t)))
 
 (defmethod sub ((data-frame data-frame) &rest selections)
   (let+ (((row-selection col-selection) selections)
-         ((&slots-r/o vectors keys table) data-frame)
+         ((&slots-r/o columns keys table) data-frame)
          (col-selection (data-frame-resolve-keys data-frame col-selection))
          (row-selection (sub-resolve-selection row-selection (nrow data-frame))))
     (cond
       ((and (fixnum? col-selection) (fixnum? row-selection))
-       (aref (aref vectors col-selection) row-selection))
+       (aref (aref columns col-selection) row-selection))
       ((fixnum? col-selection)         ; result is a vector (column)
-       (sub (aref vectors col-selection)
+       (sub (aref columns col-selection)
             row-selection))
       ((fixnum? row-selection)          ; result is a vector (row)
        (map1 (lambda (col) (aref col row-selection))
-             (sub vectors col-selection)))
+             (sub columns col-selection)))
       (t (make-data-frame%
           (sub keys col-selection)
           (map1 (lambda (col) (sub col row-selection))
-                (sub vectors col-selection))
+                (sub columns col-selection))
           (hash-table-test table))))))
 
 (defmethod (setf sub) (value (data-frame data-frame) &rest selections)
   (let+ (((row-selection col-selection) selections)
-         ((&slots-r/o vectors) data-frame)
+         ((&slots-r/o columns) data-frame)
          (col-selection (data-frame-resolve-keys data-frame col-selection))
          )
     (if (fixnum? col-selection)
-        (setf (sub (aref vectors col-selection) row-selection) value)
+        (setf (sub (aref columns col-selection) row-selection) value)
         (map nil (lambda (col)
-                   (setf (sub (aref vectors col) row-selection)
+                   (setf (sub (aref columns col) row-selection)
                          (sub value row-selection col)))
              col-selection))
     value))
