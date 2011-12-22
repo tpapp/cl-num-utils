@@ -127,3 +127,13 @@ All variables are declared DOUBLE-FLOAT in the body."
     `(let ,bindings
        (declare (type double-float ,@(mapcar #'first bindings)))
        ,@body)))
+
+(defmacro gethash* (key hash-table
+                    &optional (datum "Key not found.")
+                    &rest arguments)
+  "Like GETHASH, but checking that KEY is present and raising the given
+error if not."
+  (with-unique-names (value present?)  
+    `(multiple-value-bind (,value ,present?) (gethash ,key ,hash-table)
+       (assert ,present? () ,datum ,@arguments)
+       ,value)))
