@@ -7,6 +7,13 @@
    (columns :initarg :columns)
    (table :initarg :table)))
 
+(defmethod print-object ((data-frame data-frame) stream)
+  (let+ (((&slots-r/o keys columns) data-frame))
+    (print-unreadable-object (data-frame stream :type t)
+      (loop for key across keys
+            for column across columns
+            do (format stream "~&~2T~A: ~A" key column)))))
+
 (defmethod nrow ((data-frame data-frame))
   (length (first* (slot-value data-frame 'columns))))
 
@@ -109,3 +116,32 @@ there are no duplicate keys."
                          (sub value row-selection col)))
              col-selection))
     value))
+
+(defun map-data-frame (data-frame keys function
+                       &optional (result-type 'vector))
+  "Map columns of a data frame that correspond to keys using FUNCTION,
+returning a sequence of the given RESULT-TYPE."
+  (let+ (((&slots-r/o columns table) data-frame))
+    (apply #'map result-type function
+           (map 'list
+                (lambda (key) (aref columns (gethash* key table)))
+                keys))))
+
+(defun extend-data-frame (data-frame key-column-alist)
+  "Add columns to a data frame."
+  (let+ (((&slots-r/o keys columns) data-frame))
+    (make-data-frame% (concatenate 'vector keys 
+                                   (map 'vector #'car key-column-alist))
+                      (concatenate 'vector columns
+                                   (map 'vector #'cdr key-column-alist))
+                      (data-frame-test data-frame))))
+
+(defun map-extend-data-frame (data-frame keys function key
+                            &optional (element-type t))
+  "Add the mapped column to the data frame with KEY."
+  (extend-data-frame
+   data-frame 
+   (list 
+    (cons key 
+          (map-data-frame data-frame keys function
+                          `(simple-array ,element-type (*)))))))

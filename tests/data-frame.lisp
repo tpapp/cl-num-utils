@@ -4,16 +4,14 @@
 
 (deftestsuite data-frame-tests (cl-num-utils-tests)
   ()
-  (:equality-test #'equalp))
+  (:equality-test #'==))
 
 (addtest (data-frame-tests)
   simple-data-frame-tests
   (let* ((matrix (ia 2 3))
          (sub-matrix #2A((0 2) (3 5)))
          (sub-vector #(1 4))
-         (df (matrix-to-data-frame matrix #(a b c)))
-         ;; (sub-df (make-data-frame sub-matrix (sub keys #(0 2))))
-         (*lift-equality-test* #'==))
+         (df (matrix-to-data-frame matrix #(a b c))))
     (ensure-same (sub df t 'b) sub-vector)
     (ensure-same (sub df t (vector 'a 'c))
                  (matrix-to-data-frame sub-matrix #(a c)))
@@ -28,6 +26,17 @@
     (setf (sub df t 'c) sub-vector
           (sub matrix t 2) sub-vector)
     (ensure-same (as-array df) matrix)))
+
+(addtest (data-frame-tests)
+  data-frame-map
+  (let* ((ab '((a . #(3 5 7))
+               (b . #(1 2 3))))
+         (df (make-data-frame ab))
+         (c #(4 7 10))
+         (abc (make-data-frame (append ab (list (cons 'c c))))))
+    (ensure-same (map-data-frame df '(a b) #'+) c)
+    (ensure-same (extend-data-frame df (list (cons 'c c))) abc)
+    (ensure-same (map-extend-data-frame df '(a b) #'+ 'c) abc)))
 
 ;; (addtest (data-frame-tests)
 ;;   data-frame-filter-tests
