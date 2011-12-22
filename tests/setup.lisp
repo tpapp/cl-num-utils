@@ -6,7 +6,7 @@
 
 ;; EXTERNAL
 
-(defun run-cl-num-utils-tests ()
+(defun run ()
   "Run all the tests for CL-NUM-UTILS."
   (run-tests :suite 'cl-num-utils-tests))
 

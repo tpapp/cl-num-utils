@@ -3,8 +3,7 @@
   (:shadowing-import-from cl-num-utils mean variance median)
   (:export
 
-   run-cl-num-utils-tests
 
    array* vector*
 
-   ))
+   run))
