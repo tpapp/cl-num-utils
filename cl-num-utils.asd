@@ -34,7 +34,6 @@
      (:file "interval")
      (:file "sub")
      (:file "elementwise")
-     (:file "layout")
      (:file "data-frame")
      ;; (:file "interaction")
      (:file "optimization")
