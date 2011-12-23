@@ -10,6 +10,8 @@
 (defmethod print-object ((data-frame data-frame) stream)
   (let+ (((&slots-r/o keys columns) data-frame))
     (print-unreadable-object (data-frame stream :type t)
+      (format stream "keys:")
+      (loop for key across keys do (format stream " ~S" key))
       (loop for key across keys
             for column across columns
             do (format stream "~&~2T~A: ~A" key column)))))
