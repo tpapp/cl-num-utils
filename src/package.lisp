@@ -5,26 +5,26 @@
   (:export
 
    ;; macros
-   
+
    silent check-types define-with-multiple-bindings make-keyword+ gensym+
    lazy-let* unlessf setf-nil expanding with-doubles
 
    ;; conditions
-   
+
    reached-maximum-iterations
 
    ;; misc
-   
-   nonnegative? nonpositive? divides? square nif anif bic multf as-integer 
+
+   nonnegative? nonpositive? divides? square nif anif bic multf as-integer
    common-supertype round* maybe-copy-array convex-combination vector-last
    common common-length common-dimension *==-tolerance* == ==* format-number
    ignore-error ignore-nil text-progress-bar within? fixnum?
    simple-fixnum-vector define-indirect-accessors keys-and-values thin thin-to
-   log10 log2 1c  
+   log10 log2 1c
 
    ;; arithmetic
 
-   numseq ivec sum product cumulative-sum cumulative-product same-sign? 
+   numseq ivec sum product cumulative-sum cumulative-product same-sign?
    absolute-square
 
    ;; array
@@ -36,8 +36,8 @@
    matrix-to-columns columns-to-matrix map1
 
    ;; map-subarrays
-   
-   as-array diagonal transpose transpose* valid-permutation? permute 
+
+   as-array diagonal transpose transpose* valid-permutation? permute
    as-row as-column outer* norm1 norm2 normsup
 
    ;; pretty
@@ -48,11 +48,11 @@
 
    bin-index bin-locations bin-location even-bins even-bins-p pretty-bins
    integer-bins integer-bins-p
-   
+
    format-bin-location binary-search
 
    ;; statistics
-   
+
    add pool pool* conforming-accumulator with-accumulator sweep
    define-conforming-accumulator tally sample-ratio mean sse variance sd
    quantile quantiles median sum product tallier sample-ratio-accumulator
@@ -60,17 +60,18 @@
 
    covariance-accumulator covariance correlation covariance-xy correlation-xy
    autocovariance-accumulator autocovariances autocorrelations lags
-   
-   sorting-accumulator at at-object at-subscripts sparse-accumulator-array ref
+
+   at at-object at-subscripts sparse-accumulator-array ref
    limits residual-pair acf-accumulator
 
    histogram-accumulator bins locations-and-tallies location-limits
    *frequency-print-width* scott-rule histogram1
 
-   subranges demean empirical-quantile
+   subranges demean empirical-quantile sorted-reals sort-reals
+   ensure-sorted-reals
 
    ;; interval
-     
+
    interval interval-left interval-right interval &interval &interval-r/o
    interval-diff interval-width interval-midpoint positive-interval?
    negative-interval? weakly-positive-interval? weakly-negative-interval?
@@ -86,7 +87,7 @@
    ;; sub
 
    sub asub sub-incompatible-dimensions sub-invalid-array-index incl cat rev
-   ivec* sub-resolve-index sub-resolve-selection 
+   ivec* sub-resolve-index sub-resolve-selection
 
    positions mask which bit-to-boolean boolean-to-bit bracket
 
@@ -97,28 +98,28 @@
    stack-into stack* stack concat* concat
 
    ;; utilities
-   
+
    ;; data-frame
 
-   data-frame make-data-frame make-data-frame2 add-columns add-columns2 
+   data-frame make-data-frame make-data-frame2 add-columns add-columns2
    add-column copy-data-frame keys matrix-to-data-frame map-data-frame
    map-into-data-frame
 
    ;; interaction
-   
+
    interaction
 
    ;; optimization
-   
+
    reached-max-iter  golden-section-minimize
 
    ;; differentiation
-   
-   differentiate elasticity derivative
-   
-   ;; rootfinding 
 
-   *rootfinding-epsilon* *rootfinding-delta-relative* rootfinding-delta 
+   differentiate elasticity derivative
+
+   ;; rootfinding
+
+   *rootfinding-epsilon* *rootfinding-delta-relative* rootfinding-delta
    root-bisection
 
    ;; quadrature

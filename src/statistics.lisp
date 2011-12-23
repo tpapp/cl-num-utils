@@ -471,36 +471,33 @@ practice, TALLY should be INCF'd before using incf-mean.")
 ;;; This is not the most elegant way of calculating quantiles, but it will do
 ;;; until I implement something nicer.
 
-(defstruct (sorting-accumulator
-             (:constructor sorting-accumulator (&optional (predicate #'<=)))
-             (:include mean-sse-accumulator))
-  "Storage accumulator, simply saves elements.  When asked for ordered, order
-them and return as a vector."
+(defstruct sorted-reals
+  "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
   (ordered-elements #() :type vector)
-  (unordered-elements nil :type list)
-  (predicate #'<=))
+  (unordered-elements nil :type list))
 
-(define-structure-let+ (sorting-accumulator)
-    ordered-elements unordered-elements predicate)
+(define-structure-let+ (sorted-reals)
+                       ordered-elements unordered-elements)
 
-(defmethod add :after ((accumulator sorting-accumulator) object)
-  (push object (sorting-accumulator-unordered-elements accumulator)))
+(defmethod add ((accumulator sorted-reals) object)
+  (push object (sorted-reals-unordered-elements accumulator)))
 
-(defmethod elements ((sorting-accumulator sorting-accumulator))
-  (let+ (((&sorting-accumulator ordered-elements unordered-elements
-                                predicate) sorting-accumulator))
+(defmethod elements ((sorted-reals sorted-reals))
+  (let+ (((&sorted-reals ordered-elements unordered-elements) sorted-reals))
     (when unordered-elements
       (setf ordered-elements (concatenate 'vector ordered-elements
                                           unordered-elements)
             unordered-elements nil
-            ordered-elements (sort ordered-elements predicate)))
+            ordered-elements (sort ordered-elements #'<)))
     ordered-elements))
 
 (defun empirical-quantile (sorted-vector q)
-  "Return the empirical quantiles with a 0.5 correction."
-  (let* ((n (length sorted-vector))
+  "Return the empirical quantile of a vector of real numbers, sorted in
+ascending order (not checked).  Uses a 0.5 correction."
+  (let+ ((n (length sorted-vector))
          (c (/ 1/2 n)))
     (cond
+      ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
       ((<= q c) (aref sorted-vector 0))
       ((<= (- 1 c) q) (aref sorted-vector (1- n)))
       (t (let+ ((r (- (* q n) 1/2))
@@ -512,24 +509,43 @@ them and return as a vector."
                left
                (convex-combination left (value (1+ int)) frac)))))))
 
-(defmethod quantile ((sorting-accumulator sorting-accumulator) q)
-  (let+ (((&accessors-r/o elements) sorting-accumulator))
-    (assert (let+ (((&sorting-accumulator nil nil predicate)
-                    sorting-accumulator))
-              (or (eq predicate #'<=)
-                  (eq predicate #'<)))
-            () "Accumulator has to be sorted by < or <=.")
-    (let+ ((n (length elements))
-           (r (* q (1- n)))
-           ((&values int frac) (floor r))
-           (left (aref elements int)))
-      (assert (<= 0 q 1) () "Quantile ~A is not in [0,1]." q)
-      (if (zerop frac)
-          left
-          (convex-combination left (aref elements (1+ int)) frac)))))
+(defmethod quantile ((accumulator sorted-reals) q)
+  (empirical-quantile (elements accumulator) q))
+
+(defun sorted-reals ()
+  (make-sorted-reals))
 
 (define-conforming-accumulator ((quantile quantiles) (number number))
-  (sorting-accumulator))
+  (sorted-reals))
+
+(defun sort-reals (sequence)
+  "Return a SORTED-REALS structure."
+  (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
+                                             #'<)
+                     :unordered-elements nil))
+
+(defmethod print-object ((acc sorted-reals) stream)
+  (if *print-readably*
+      (call-next-method)
+      (print-unreadable-object (acc stream :type t)
+        (let+ (((&accessors-r/o elements) acc))
+          (if (plusp (length elements))
+              (format stream "min: ~A, q25: ~A, q50: ~A, q75: ~A, max: ~A"
+                      (first* elements)
+                      (quantile acc 0.25)
+                      (quantile acc 0.5)
+                      (quantile acc 0.75)
+                      (sub elements -1))
+              (format stream "no elements"))))))
+
+(defgeneric ensure-sorted-reals (object)
+  (:documentation "Return the contents of OBJECT as a SORTED-REALS.")
+  (:method ((sorted-reals sorted-reals))
+    sorted-reals)
+  (:method ((array array))
+    (sort-reals (flatten-array array)))
+  (:method ((list list))
+    (sort-reals list)))
 
 ;;; sparse accumulator arrays
 

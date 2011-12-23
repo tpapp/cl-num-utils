@@ -4,7 +4,7 @@
 
 (deftestsuite statistics-tests (cl-num-utils-tests)
   ()
-  (:equality-test #'equalp))
+  (:equality-test #'==))
 
 (addtest (statistics-tests)
   test-ratio
@@ -134,7 +134,7 @@
   (let ((sample #(0.0 1.0))
         (quantiles (numseq 0 1 :length 11 :type 'double-float)))
     (ensure-same (map 'vector (curry #'quantile sample) quantiles)
-                 quantiles)))
+                 #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0))))
 
 (addtest (statistics-tests)
   (let+ ((end 5)
