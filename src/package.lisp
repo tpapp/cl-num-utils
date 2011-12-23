@@ -100,8 +100,9 @@
    
    ;; data-frame
 
-   data-frame make-data-frame keys matrix-to-data-frame map-data-frame
-   extend-data-frame map-extend-data-frame
+   data-frame make-data-frame make-data-frame2 add-columns add-columns2 
+   add-column copy-data-frame keys matrix-to-data-frame map-data-frame
+   map-into-data-frame
 
    ;; interaction
    

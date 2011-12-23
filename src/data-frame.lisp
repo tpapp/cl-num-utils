@@ -2,10 +2,21 @@
 
 (in-package #:cl-num-utils)
 
+;;; QUESTION: equal is hardwired, is that general enough?
+;;; QUESTION: should positive integers work as keys de facto, resolving to themselves?
+;;; QUESTION: should data frames with different column orders but same content be ==?
+
 (defclass data-frame ()
-  ((keys :initarg :keys :reader keys)
-   (columns :initarg :columns)
-   (table :initarg :table)))
+  ((keys :reader keys :initform #() :initarg :keys)
+   (columns :initform #() :initarg :columns)
+   (table :initform (make-hash-table :test #'equal) :initarg :table))
+  (:documentation "An ordered collection of vectors, which are also accessible
+with keys (compared with EQUAL).
+
+Implementation notes:
+
+  - a hash table is used to speed up key lookup, but strictly speaking is not
+    part of the interface."))
 
 (defmethod print-object ((data-frame data-frame) stream)
   (let+ (((&slots-r/o keys columns) data-frame))
@@ -22,55 +33,68 @@
 (defmethod ncol ((data-frame data-frame))
   (length (slot-value data-frame 'columns)))
 
-(defun data-frame-test (data-frame)
-  "Return the function used for comparing keys."
-  (hash-table-test (slot-value data-frame 'table)))
-
 (defmethod as-array ((data-frame data-frame) &key)
   (columns-to-matrix (slot-value data-frame 'columns)))
 
-(defun data-frame-keys-table (keys test)
-  "Generate a hash table for looking up keys in data frame, also check that
-there are no duplicate keys."
-  (let ((table (make-hash-table :test test :size (length keys)))
-        (index 0))
+(defun copy-data-frame (data-frame &optional (map-columns #'identity))
+  "Make a copy of DATA-FRAME.  MAP-COLUMNS is used to copy columns."
+  (let+ (((&slots-r/o keys columns table) data-frame))
+    (make-instance 'data-frame
+                   :keys keys
+                   :columns (map 'vector map-columns columns)
+                   :table table)))
+
+(defun add-columns2 (data-frame new-keys new-columns)
+  "Add columns to a data frame, which is modified (and also returned)."
+  (assert (length= new-keys new-columns))
+  (let+ (((&slots keys columns table) data-frame)
+         (index (length keys))
+         (new-table (copy-hash-table table
+                                     :size (+ index (length new-keys))))
+         (length (common new-columns :key #'length)))
+    (assert (and length
+                 (if (plusp index)
+                     (length= (first* columns) length)
+                     t))
+            () "Column length mismatch.") 
     (map nil (lambda (key)
                (let+ (((&values nil present?) (gethash key table)))
                  (assert (not present?) () "Duplicate key ~A." key)
-                 (setf (gethash key table) index)
+                 (setf (gethash key new-table) index)
                  (incf index)))
-         keys)
-    table))
+         new-keys)
+    (setf keys (concatenate 'vector keys new-keys)
+          columns (concatenate 'vector columns new-columns)
+          table new-table))
+  data-frame)
+
+(defun add-columns (data-frame key-column-alist)
+  "Add columns to a data frame, which is modified (and also returned)."
+  (add-columns2 data-frame (map 'vector #'car key-column-alist)
+                (map 'vector #'cdr key-column-alist)))
+
+(defun add-column (data-frame key column)
+  "Add a column to the data frame."
+  (add-columns2 data-frame (list key) (list column)))
 
 (defmethod == ((df1 data-frame) (df2 data-frame)
                &optional (tolerance *==-tolerance*))
   (let+ (((&slots-r/o (v1 columns) (k1 keys)) df1)
-         ((&slots-r/o (v2 columns) (k2 keys)) df2)
-         ((&accessors-r/o (t1 data-frame-test)) df1)
-         ((&accessors-r/o (t2 data-frame-test)) df2))
+         ((&slots-r/o (v2 columns) (k2 keys)) df2))
     (and (every (==* tolerance) v1 v2)
-         (eq t1 t2)
-         (every t1 k1 k2))))
+         (every #'equal k1 k2))))
 
-(defun make-data-frame% (keys columns test)
-  (declare (optimize debug))
-  (assert (length= keys columns))
-  (assert (common columns :key #'length))
-  (check-types (keys columns) vector)
-  (make-instance 'data-frame
-                 :columns columns
-                 :keys keys
-                 :table (data-frame-keys-table keys test)))
-
-(defun make-data-frame (key-column-alist &key (test #'equal))
+(defun make-data-frame (key-column-alist)
   "Make a data-frame."
-  (make-data-frame% (map 'vector #'car key-column-alist)
-                    (map 'vector #'cdr key-column-alist)
-                    test))
+  (add-columns (make-instance 'data-frame) key-column-alist))
 
-(defun matrix-to-data-frame (matrix keys &key (test #'equal))
+(defun make-data-frame2 (keys columns)
+  "Make a data-frame."
+  (add-columns2 (make-instance 'data-frame) keys columns))
+
+(defun matrix-to-data-frame (matrix keys)
   "Convert a matrix to a data frame with the given keys."
-  (make-data-frame% (coerce keys 'vector) (matrix-to-columns matrix) test))
+  (make-data-frame2 (coerce keys 'vector) (matrix-to-columns matrix)))
 
 (defun data-frame-resolve-keys (data-frame keys)
   "Resolve data frame keys, returning  a format that can be passed to SUB."
@@ -88,7 +112,7 @@ there are no duplicate keys."
 
 (defmethod sub ((data-frame data-frame) &rest selections)
   (let+ (((row-selection col-selection) selections)
-         ((&slots-r/o columns keys table) data-frame)
+         ((&slots-r/o columns keys) data-frame)
          (col-selection (data-frame-resolve-keys data-frame col-selection))
          (row-selection (sub-resolve-selection row-selection (nrow data-frame))))
     (cond
@@ -100,11 +124,10 @@ there are no duplicate keys."
       ((fixnum? row-selection)          ; result is a vector (row)
        (map1 (lambda (col) (aref col row-selection))
              (sub columns col-selection)))
-      (t (make-data-frame%
+      (t (make-data-frame2
           (sub keys col-selection)
           (map1 (lambda (col) (sub col row-selection))
-                (sub columns col-selection))
-          (hash-table-test table))))))
+                (sub columns col-selection)))))))
 
 (defmethod (setf sub) (value (data-frame data-frame) &rest selections)
   (let+ (((row-selection col-selection) selections)
@@ -129,21 +152,10 @@ returning a sequence of the given RESULT-TYPE."
                 (lambda (key) (aref columns (gethash* key table)))
                 keys))))
 
-(defun extend-data-frame (data-frame key-column-alist)
-  "Add columns to a data frame."
-  (let+ (((&slots-r/o keys columns) data-frame))
-    (make-data-frame% (concatenate 'vector keys 
-                                   (map 'vector #'car key-column-alist))
-                      (concatenate 'vector columns
-                                   (map 'vector #'cdr key-column-alist))
-                      (data-frame-test data-frame))))
-
-(defun map-extend-data-frame (data-frame keys function key
+(defun map-into-data-frame (data-frame keys function key
                             &optional (element-type t))
-  "Add the mapped column to the data frame with KEY."
-  (extend-data-frame
-   data-frame 
-   (list 
-    (cons key 
-          (map-data-frame data-frame keys function
-                          `(simple-array ,element-type (*)))))))
+  "Use map-data-frame to create a column with KEY."
+  (add-columns2 data-frame
+                (vector key)
+                (vector (map-data-frame data-frame keys function
+                                        `(simple-array ,element-type (*))))))

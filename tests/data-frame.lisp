@@ -35,8 +35,9 @@
          (c #(4 7 10))
          (abc (make-data-frame (append ab (list (cons 'c c))))))
     (ensure-same (map-data-frame df '(a b) #'+) c)
-    (ensure-same (extend-data-frame df (list (cons 'c c))) abc)
-    (ensure-same (map-extend-data-frame df '(a b) #'+ 'c) abc)))
+    (ensure-same (map-into-data-frame (copy-data-frame df) '(a b) #'+ 'c)
+                 abc)
+    (ensure-same (add-column (copy-data-frame df) 'c c) abc)))
 
 ;; (addtest (data-frame-tests)
 ;;   data-frame-filter-tests
