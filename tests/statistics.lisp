@@ -137,6 +137,15 @@
                  #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0))))
 
 (addtest (statistics-tests)
+  quantile-probabilities
+  (let* ((n 10)
+         (sample (sort (filled-array n (lambda () (random (* n 2)))) #'<))
+         (empirical-quantile-probabilities n))
+    (ensure-same (quantiles sample (empirical-quantile-probabilities
+                                    (length sample)))
+                 sample)))
+
+(addtest (statistics-tests)
   (let+ ((end 5)
          (index 0)                      ; to make sure we have 1 of each
          (pairs (filled-array 100

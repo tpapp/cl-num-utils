@@ -509,6 +509,16 @@ ascending order (not checked).  Uses a 0.5 correction."
                left
                (convex-combination left (value (1+ int)) frac)))))))
 
+(defun empirical-quantile-probabilities (n)
+  "Probabilities that correspond to the empirical quantiles of a vector of
+length N.  That is to say,
+
+ (== (quantiles sample (empirical-quantile-probabilities (length sample)))
+     sample)
+
+for any vector SAMPLE."
+  (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
+
 (defmethod quantile ((accumulator sorted-reals) q)
   (empirical-quantile (elements accumulator) q))
 

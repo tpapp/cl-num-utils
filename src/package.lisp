@@ -67,8 +67,8 @@
    histogram-accumulator bins locations-and-tallies location-limits
    *frequency-print-width* scott-rule histogram1
 
-   subranges demean empirical-quantile sorted-reals sort-reals
-   ensure-sorted-reals
+   subranges demean empirical-quantile empirical-quantile-probabilities
+   sorted-reals sort-reals ensure-sorted-reals
 
    ;; interval
 
