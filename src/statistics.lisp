@@ -126,16 +126,15 @@ evaluates to this accumulator.  For use in SWEEP."
 (defgeneric quantile (object q)
   (:documentation "Return an element at quantile Q.  May be an interpolation
   or an approximation, depending on OBJECT and Q.")
-  (:method (object q)
-    (let ((accumulator (sweep 'quantiles object)))
-      (values (quantile accumulator q) accumulator))))
+  (:method ((object sequence) q)
+    (quantile (ensure-sorted-reals object) q )))
 
 (defgeneric quantiles (object qs)
   (:documentation "Multiple quantiles, see QUANTILE.")
+  (:method ((object sequence) qs)
+    (quantiles (ensure-sorted-reals object) qs))
   (:method (object qs)
-    (let ((accumulator (sweep 'quantiles object)))
-      (values (map1 (lambda (q) (quantile accumulator q)) qs)
-              accumulator))))
+    (map1 (lambda (q) (quantile object q)) qs)))
 
 (defgeneric median (object)
   (:documentation "Median of OBJECT.")
@@ -556,6 +555,11 @@ for any vector SAMPLE."
     (sort-reals (flatten-array array)))
   (:method ((list list))
     (sort-reals list)))
+
+(defun ensure-sorted-vector (object)
+  "Return the elements of OBJECT as a vector (or reals) sorted in ascending
+order."
+  (elements (ensure-sorted-reals object)))
 
 ;;; sparse accumulator arrays
 
