@@ -9,7 +9,7 @@
 ;;; (aseq :from :to :length)
 ;;; (aseq :from :by :length)
 
-(defun numseq (from to &key length (by 1 by?) type)
+(defun numseq (from to &key length (by (unless length 1)) type)
   "Return a sequence between FROM and TO, progressing by BY, of the given
 LENGTH.  Only 3 of these a parameters should be given, the missing one (NIL)
 should be inferred automatically.  The sign of BY is adjusted if necessary.
@@ -49,7 +49,7 @@ your implementation may upgrade the element type."
 	      (by (* (signum range) (signum by) by))
               (length (1+ (floor (/ range by)))))
          (seq% from by length)))
-      ((and length (not by?))
+      ((and length (not by))
        (let ((range (- to from)))
          (seq% from (if (zerop range)
                         0
