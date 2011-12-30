@@ -8,26 +8,24 @@
 ;;;; and interval-intersection) return positive intervals by
 ;;;; construction.
 
-(defstruct (interval
-             (:constructor interval (left right)))
-  "An ordered pair of numbers."
-  (left 0 :type real)
-  (right 0 :type real))
+(defstruct interval
+  "A pair of numbers designating an interval on the real line.  Using the
+constructor INTERVAL, LEFT <= RIGHT is enforced."
+  (left 0 :type real :read-only t)
+  (right 0 :type real :read-only t))
 
 (define-structure-let+ (interval) left right)
 
-(declaim (inline interval%))
-(defun interval% (operation interval)
-  "Call OPERATION on LEFT and RIGHT.  For syntactic convenience."
-  (funcall operation (interval-left interval) (interval-right interval)))
+(declaim (inline interval))
 
-(defun interval-diff (interval)
+(defun interval (left right)
+  "Create an INTERVAL."
+  (assert (<= left right) ())
+  (make-interval :left left :right right))
+
+(defun interval-length (interval)
   "Difference between left and right."
   (- (interval-right interval) (interval-left interval)))
-
-(defun interval-width (interval)
-  "Width of the interval (absolute value)."
-  (abs (interval-diff interval)))
 
 (defun interval-midpoint (interval &optional (alpha 1/2))
   "Convex combination of left and right, with alpha (defaults to 0.5)
@@ -35,108 +33,92 @@ weight on right."
   (let+ (((&interval left right) interval))
     (+ (* (- 1 alpha) left) (* alpha right))))
 
-(defun positive-interval? (interval)
-  "True iff the interval is positive, ie left < right."
-  (interval% #'< interval))
+(defun in-interval? (interval number)
+  "Test if NUMBER is in INTERVAL (which can be NIL, designating the empty
+set)."
+  (and interval
+       (let+ (((&interval left right) interval))
+         (<= left number right))))
 
-(defun negative-interval? (interval)
-  "True iff the interval is negative, ie left > right."
-  (interval% #'> interval))
+(defgeneric extend-interval (interval object)
+  (:documentation "Return an interval that includes INTERVAL and OBJECT.  NIL
+stands for the empty set.")
+  (:method ((interval null) (object null))
+    nil)
+  (:method ((interval null) (number real))
+    (interval number number))
+  (:method ((interval interval) (number real))
+    (let+ (((&interval left right) interval))
+      (if (<= left number right)
+          interval
+          (interval (min left number) (max right number)))))
+  (:method (interval (object interval))
+    (let+ (((&interval left right) object))
+      (extend-interval (extend-interval interval left) right)))
+  (:method (interval (list list))
+    (reduce #'extend-interval list :initial-value interval))
+  (:method (interval (array array))
+    (reduce #'extend-interval (flatten-array array) :initial-value interval)))
 
-(defun weakly-positive-interval? (interval)
-  "True iff the interval is positive, ie left <= right."
-  (interval% #'<= interval))
-
-(defun weakly-negative-interval? (interval)
-  "True iff the interval is negative, ie left >= right."
-  (interval% #'>= interval))
-
-(defun zero-interval? (interval)
-  "True iff the left is equal to right."
-  (interval% #'= interval))
-
-(defun flip-interval (interval)
-  "Exchange left and right."
-  (interval (interval-right interval) (interval-left interval)))
-
-(defun interval-abs (interval &optional min?)
-  "Return the maximum of the absolute values of the endpoints, or the minimum
-if MIN?."
-  (let+ (((&interval left right) interval))
-    (funcall (if min? #'min #'max) (abs left) (abs right))))
-
-(defun interval-or-nil (minimum maximum)
-  "When both arguments are non-nil, return an interval, otherwise nil. "
-  (when (and minimum maximum)
-    (interval minimum maximum)))
-
-(defmacro interval-including ((include) &body body)
-  "Return the narrowses interval of objects which were incorporated
-with (INCLUDE OBJECT) within BODY.  If the resulting interval is the empty
-set, return NIL."
-  (with-unique-names (minimum maximum update)
-    `(let+ (,minimum
-            ,maximum
-            ((&flet ,update (min max)
-               (if ,minimum
-                   (setf ,minimum (min ,minimum min)
-                         ,maximum (max ,maximum max))
-                   (setf ,minimum min
-                         ,maximum max))))
-            ((&flet ,include (object)
-               (typecase object
-                 (null)
-                 (real (,update object object))
-                 (interval (let+ (((&interval-r/o left right) object))
-                             (when (> left right) (rotatef left right))
-                             (,update left right)))
-                 (t (let+ (((&interval-r/o left right) (limits object)))
-                      (,update left right)))))))
-       ,@body
-       (interval-or-nil ,minimum ,maximum))))
-
-(defgeneric limits (object)
-  (:documentation "Return the limits of an object as a weakly positive
-  interval.  If there are no elements, return NIL.  NILs are ignored.")
-  (:method ((x real))
-    (interval x x))
-  (:method ((x interval))
-    x)
-  (:method ((list list))
-    (interval-including (include)
-      (loop for element in list do (include element))))
-  (:method ((array array))
-    (interval-including (include)
-      (loop for index below (array-total-size array)
-            do (include (row-major-aref array index))))))
-
-(defun interval-intersection (&rest intervals)
-  "Return intersection of intervals, which is always a (weakly) positive
-interval.  Intervals which are nil are silently ignored, if all intervals are
-nil, nil is returned."
-  ;; flip nonpositive intervals
-  (iter
-    (for interval :in intervals)
-    (let+ (((&interval left right) (if (positive-interval? interval)
-                                       interval
-                                       (flip-interval interval))))
-      (minimizing right :into min-right)
-      (maximizing left :into max-left))
-    (finally
-     (return (interval-or-nil max-left min-right)))))
-
+(defun interval-hull (object)
+  "Return the smallest connected interval that contains (elements in) OBJECT."
+  (extend-interval nil object))
 
 ;;; Interval manipulations
 
 (defstruct (relative (:constructor relative (fraction)))
   "Relative sizes are in terms of width."
-  (fraction nil :type real))
+  ;; MAKE-RELATIVE is not exported
+  (fraction nil :type (real 0) :read-only t))
 
-(defun shrink-interval (interval left
-                        &optional (right left) (check-flip? t))
-  "Shrink interval by given (relative) magnitudes.  When check-flip?, the
-result is checked for endpoints being in a different order than the original.
-Negative LEFT and RIGHT extend the interval."
+(defstruct (spacer (:constructor spacer (&optional weight)))
+  "Spacers divide the leftover portion of an interval."
+  (weight 1 :type (real 0) :read-only t))
+
+(defun split-interval (interval divisions)
+  "Return a vector of subintervals (same length as DIVISIONS), splitting the
+interval using the sequence DIVISIONS, which can be nonnegative real
+numbers (or RELATIVE specifications) and SPACERs which divide the leftover
+proportionally.  If there are no spacers and the divisions don't fill up the
+interval, and error is signalled."
+  (let+ ((length (interval-length interval))
+	 (spacers 0)
+	 (absolute 0)
+         ((&flet absolute (x)
+            (incf absolute x)
+            x))
+	 (divisions
+          (map 'vector
+               (lambda (div)
+                 (etypecase div
+                   (real (absolute div))
+                   (relative (absolute (* length (relative-fraction div))))
+                   (spacer (incf spacers (spacer-weight div))
+                    div)))
+               divisions))
+	 (rest (- length absolute)))
+    (when (minusp rest)
+      (error "Length of divisions exceeds the width of the interval."))
+    (assert (not (and (zerop spacers) (plusp rest))) ()
+            "Divisions don't use up the interval.")
+    (let* ((left (interval-left interval))
+           (spacer-unit (/ rest spacers)))
+      (map 'vector (lambda (div)
+		     (let* ((step (etypecase div
+                                    (number div)
+                                    (spacer (* spacer-unit
+                                               (spacer-weight div)))))
+                            (right (+ left step)))
+		       (prog1 (interval left right)
+			 (setf left right))))
+	   divisions))))
+
+(defun shrink-interval (interval left 
+                        &optional (right left)
+                                  (check-flip? t))
+  "Shrink interval by given magnitudes (which may be REAL or RELATIVE).  When
+check-flip?, the result is checked for endpoints being in a different order
+than the original.  Negative LEFT and RIGHT extend the interval."
   (let+ (((&interval l r) interval)
          (d (- r l))
          ((&flet absolute (ext)
@@ -148,56 +130,3 @@ Negative LEFT and RIGHT extend the interval."
     (when check-flip?
       (assert (= (signum d) (signum (- r2 l2)))))
     (interval l2 r2)))
-
-(defstruct (spacer (:constructor spacer (&optional value)))
-  "Spacers divie the leftover portion of an interval."
-  (value 1 :type (real 0)))
-
-(defun split-interval (interval divisions)
-  "Split the interval using the sequence DIVISIONS, which can be nonnegative
-real numbers (or RELATIVE specifications) and spacers which divide the
-leftover proportionally.  If there are no spacers and the divisions don't fill
-up the interval, a spacer will be added to the end.  Return a vector of
-subintervals.  If DIVISIONS is NIL, (vector INTERVAL) is returned."
-  (unless divisions
-    (return-from split-interval (vector interval))) ; no divisions
-  (let+ ((width (interval-width interval))
-         (positive? (positive-interval? interval))
-	 ;; (direction (cond
-	 ;;              ((positive-interval? interval) 1)
-	 ;;              ((negative-interval? interval) -1)
-	 ;;              (t (error "interval has to be nonzero"))))
-	 (spacers 0)
-	 (absolute 0)
-         ((&flet absolute (x)
-            (assert (<= 0 x) () "Negative division ~A." x)
-            (incf absolute x)
-            x))
-	 (divisions
-           (map 'list (lambda (div)
-                        (etypecase div
-                          (real (absolute div))
-                          (relative (absolute (* width
-                                                 (relative-fraction div))))
-                          (spacer (incf spacers (spacer-value div))
-                           div)))
-                divisions))
-	 (rest (- width absolute)))
-    (when (minusp rest)
-      (error "Length of divisions exceeds the width of the interval."))
-    (when (and (zerop spacers) (plusp rest))
-      (setf spacers 1
-	    divisions (nconc divisions (list (spacer 1)))))
-    (let* ((left (interval-left interval))
-           (spacer-unit (/ rest spacers)))
-      (map 'vector (lambda (div)
-		     (let* ((step (etypecase div
-                                    (number div)
-                                    (spacer (* spacer-unit
-                                               (spacer-value div)))))
-                            (right (+ left (if positive?
-                                               step
-                                               (- step)))))
-		       (prog1 (interval left right)
-			 (setf left right))))
-	   divisions))))

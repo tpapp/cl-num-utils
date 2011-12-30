@@ -72,12 +72,10 @@
 
    ;; interval
 
-   interval interval-left interval-right interval &interval &interval-r/o
-   interval-diff interval-width interval-midpoint positive-interval?
-   negative-interval? weakly-positive-interval? weakly-negative-interval?
-   zero-interval? flip-interval interval-abs interval-or-nil limits
-   interval-intersection relative relative-fraction shrink-interval spacer
-   spacer-value split-interval
+   interval interval-left interval-right &interval &interval-r/o
+   interval-length interval-midpoint in-interval? extend-interval
+   interval-hull relative relative-fraction spacer spacer-weight
+   shrink-interval split-interval
 
    ;; elementwise
 

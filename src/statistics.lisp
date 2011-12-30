@@ -623,13 +623,14 @@ otherwise it isn't."
 ;;; !!! define (add instance (at object subscripts)) compiler macro
 
 (defgeneric ref (object &rest subscripts)
-  (:documentation "Generalization of AREF."))
+  (:documentation "Generalization of AREF.")
+  (:method ((instance sparse-accumulator-array) &rest subscripts)
+    (sparse-accumulator-ref% instance subscripts)))
 
-(defmethod ref ((instance sparse-accumulator-array) &rest subscripts)
-  (sparse-accumulator-ref% instance subscripts))
-
-(defmethod limits ((instance sparse-accumulator-array))
-  (sparse-accumulator-array-limits instance))
+(defgeneric limits (object)
+  (:documentation "Return index limits of object.")
+  (:method ((instance sparse-accumulator-array))
+    (sparse-accumulator-array-limits instance)))
 
 (defmethod as-array ((object sparse-accumulator-array) &key once-only? copy?)
   (assert (not copy?) () "Copying is not implemented.")
@@ -727,8 +728,8 @@ otherwise it isn't."
 
 (defun location-limits (histogram-accumulator)
   (mapcar (lambda (l b)
-            (limits (list (bin-location b (car l))
-                          (bin-location b (cdr l)))))
+            (interval-hull (list (bin-location b (car l))
+                                 (bin-location b (cdr l)))))
           (limits histogram-accumulator)
           (bins histogram-accumulator)))
 

@@ -24,7 +24,7 @@
 (defun rootfinding-delta (interval
                           &optional (delta-relative *rootfinding-delta-relative*))
   "Default DELTA for rootfinding methods, uses bracket width."
-  (* (interval-width interval) delta-relative))
+  (* (interval-length interval) delta-relative))
 
 ;;; convenience macro for various univariate rootfinders
 
@@ -91,7 +91,7 @@ Return five values: the root, the value of the function at the root, and a
 boolean which is true iff abs(f(root)) <= epsilon.  If the third value is
 true, the fourth and fifth values are the endpoints of the bracketing
 interval, otherwise they are undefined."
-  (let+ (((&interval a b) bracket))
+  (let+ (((&interval-r/o a b) bracket))
     (univariate-rootfinder-loop% ((f a b fa fb)
                                   (f-tested test-bracket delta epsilon))
       (let* ((m (/ (+ a b) 2))
