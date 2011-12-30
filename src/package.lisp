@@ -74,8 +74,8 @@
 
    interval interval-left interval-right &interval &interval-r/o
    interval-length interval-midpoint in-interval? extend-interval
-   interval-hull relative relative-fraction spacer spacer-weight
-   shrink-interval split-interval
+   extendf-interval interval-hull relative relative-fraction spacer
+   spacer-weight shrink-interval split-interval
 
    ;; elementwise
 

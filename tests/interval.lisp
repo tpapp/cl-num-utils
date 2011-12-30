@@ -47,3 +47,12 @@
                          (interval 16 20)))
     (ensure-error (split-interval a (list 9)))
     (ensure-error (split-interval a (list 6 7 (spacer))))))
+
+(addtest (interval-tests)
+  test-extendf-interval
+  (let+ ((counter -1)
+         (a (make-array 2 :initial-contents (list nil (interval 1 2)))))
+    (extendf-interval (aref a (incf counter)) 3)
+    (extendf-interval (aref a (incf counter)) 3)
+    (ensure-same a (vector (interval 3 3) (interval 1 3)))
+    (ensure-same counter 1)))

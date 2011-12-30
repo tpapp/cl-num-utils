@@ -60,6 +60,21 @@ stands for the empty set.")
   (:method (interval (array array))
     (reduce #'extend-interval (flatten-array array) :initial-value interval)))
 
+(defmacro extendf-interval (place object &environment environment)
+  "Apply EXTEND-INTERVAL on PLACE using OBJECT."
+  (let+ (((&with-gensyms extended))
+         ((&values dummies vals new setter getter)
+          (get-setf-expansion place environment))
+         ((new . rest) new))
+    (assert (not rest) () "Can't expand this.")
+    `(let* (,@(mapcar #'list dummies vals)
+            (,new ,getter)
+            (,extended (extend-interval ,new ,object)))
+       (if (eq ,extended ,new)
+           ,extended
+           (prog1 (setf ,new ,extended)
+             ,setter)))))
+
 (defun interval-hull (object)
   "Return the smallest connected interval that contains (elements in) OBJECT."
   (extend-interval nil object))
