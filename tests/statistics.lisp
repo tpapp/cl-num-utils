@@ -100,7 +100,7 @@
 (addtest (statistics-tests)
   test-autocovariance
   (let+ ((n 200)
-         (a (filled-array 200 (curry #'random 1d0)))
+         (a (generate-array 200 (curry #'random 1d0)))
          ((&flet lagged (function lag)
             (funcall function (subseq a 0 (- n lag)) (subseq a lag))))
          ((&flet cov (lag) (lagged #'covariance-xy lag)))
@@ -121,7 +121,7 @@
 (addtest (statistics-tests)
   test-pool
   (let* ((n 100)
-         (vector (filled-array (* 2 n) (curry #'random 1d0) 'double-float))
+         (vector (generate-array (* 2 n) (curry #'random 1d0) 'double-float))
          (acc1 (sweep 'sse (subseq vector 0 n)))
          (acc2 (sweep 'sse (subseq vector n)))
          (acc (sweep 'sse vector))
@@ -139,7 +139,7 @@
 (addtest (statistics-tests)
   quantile-probabilities
   (let* ((n 10)
-         (sample (sort (filled-array n (lambda () (random (* n 2)))) #'<))
+         (sample (sort (generate-array n (lambda () (random (* n 2)))) #'<))
          (empirical-quantile-probabilities n))
     (ensure-same (quantiles sample (empirical-quantile-probabilities
                                     (length sample)))
@@ -148,7 +148,7 @@
 (addtest (statistics-tests)
   (let+ ((end 5)
          (index 0)                      ; to make sure we have 1 of each
-         (pairs (filled-array 100
+         (pairs (generate-array 100
                               (lambda ()
                                 (prog1 (at (random 100d0)
                                            (if (< index end)
@@ -180,12 +180,12 @@
 (addtest (statistics-tests)
   subranges
   (let+ (((&flet random-ranges (n &key (max 200) (order? t))
-            (filled-array n (lambda ()
-                              (let ((start (random max))
-                                    (end (random max)))
-                                (when (and order? (> start end))
-                                  (rotatef start end))
-                                (cons start end))))))
+            (generate-array n (lambda ()
+                                (let ((start (random max))
+                                      (end (random max)))
+                                  (when (and order? (> start end))
+                                    (rotatef start end))
+                                  (cons start end))))))
          ((&flet assemble-range (subranges index-list)
             (unless index-list
               (return-from assemble-range nil))
@@ -203,19 +203,19 @@
                (return (cons start end)))))))
     (loop
       repeat 100000 do
-     (let+ ((ranges (random-ranges 10 :order? nil))
-            ((&values subranges index-lists) (subranges ranges)))
-       (iter
-         (for index-list :in-vector index-lists)
-         (for range :in-vector ranges)
-         (for assembled-range := (assemble-range subranges index-list))
-         (for match? := (if assembled-range
-                            (equal range assembled-range)
-                            (>= (car range) (cdr range))))
-         (unless match?
-           (format *error-output* "mismatch: range ~A assembled to ~A"
-                   range assembled-range))
-         (ensure match?))))))
+        (let+ ((ranges (random-ranges 10 :order? nil))
+               ((&values subranges index-lists) (subranges ranges)))
+          (iter
+            (for index-list :in-vector index-lists)
+            (for range :in-vector ranges)
+            (for assembled-range := (assemble-range subranges index-list))
+            (for match? := (if assembled-range
+                               (equal range assembled-range)
+                               (>= (car range) (cdr range))))
+            (unless match?
+              (format *error-output* "mismatch: range ~A assembled to ~A"
+                      range assembled-range))
+            (ensure match?))))))
 
 (addtest (statistics-tests)
   (let ((ranges #((20 . 40) (60 . 120) (100 . 180)))

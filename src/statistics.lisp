@@ -398,7 +398,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
   "Create an autocovariance accumulator with a given number of lags."
   (autocovariance-accumulator% 
    :circular-buffer (make-circular-list lags :initial-element nil)
-   :covariance-accumulators (filled-array lags #'covariance-accumulator)))
+   :covariance-accumulators (generate-array lags #'covariance-accumulator)))
 
 (defgeneric lags (accumulator)
   (:documentation "Return the maximum number of available lags in
@@ -638,10 +638,10 @@ otherwise it isn't."
           object)
          (offset (mapcar #'car limits))
          (dimensions (mapcar (lambda (c) (- (cdr c) (car c))) limits))
-         (array (filled-array dimensions
-                              (if once-only?
-                                  (funcall generator)
-                                  generator))))
+         (array (generate-array dimensions
+                                (if once-only?
+                                    (funcall generator)
+                                    generator))))
     (maphash (lambda (key value)
                (setf (apply #'aref array (mapcar #'- key offset)) value))
              table)

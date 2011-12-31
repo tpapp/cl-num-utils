@@ -94,7 +94,7 @@ similar to array."
                     :initial-element (coerce initial-element element-type))
         (make-array dimensions :element-type element-type))))
 
-(defun filled-array (dimensions function-or-value &optional (element-type t))
+(defun generate-array (dimensions function-or-value &optional (element-type t))
   "Create array with given DIMENSIONS and ELEMENT-TYPE, then fill by calling
 FUNCTION (traversing in row-major order) or using VALUE."
   (if (functionp function-or-value)

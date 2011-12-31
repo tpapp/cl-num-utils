@@ -31,7 +31,7 @@
 
    first* second* third* fourth* fifth* sixth* seventh* eighth* ninth* tenth*
    nrow ncol elements square? matrix row-major-loop
-   array-element-type-available displace-array make-similar-array filled-array
+   array-element-type-available displace-array make-similar-array generate-array
    rep reshape flatten-array subarrays subarray partition subvector combine
    matrix-to-columns columns-to-matrix map1
 

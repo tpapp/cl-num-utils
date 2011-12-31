@@ -46,7 +46,7 @@ BIN-INDEX and BIN-FUNCTION map VALUE to INDEX."
            "Test fixnum binary search by generating N random elements below
 MAX, then finding a random number."
            (let* ((vector (sort
-                           (remove-duplicates (filled-array n (curry #'random max)))
+                           (remove-duplicates (generate-array n (curry #'random max)))
                            #'<=))
                   (value (random max))
                   (index (position value vector)) ; the hard way
