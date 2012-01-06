@@ -171,6 +171,8 @@ product equals size."
         dimensions)))
 
 (defun reshape (dimensions array &key (offset 0) copy?)
+  "Reshape ARRAY using DIMENSIONS, one of which may be T which is calculated
+on demand."
   (let* ((size (array-total-size array))
          (dimensions (fill-in-dimensions dimensions (- size offset))))
     (maybe-copy-array (displace-array array dimensions offset) copy?)))
