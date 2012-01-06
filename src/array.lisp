@@ -76,6 +76,29 @@ ncol) is square."
   "Array of rank 2."
   `(array ,element-type (,nrow ,ncol)))
 
+(declaim (inline seqs-to-matrix* seqs-to-matrix matrix* matrix))
+
+(defun seqs-to-matrix* (element-type sequences)
+  "Create a matrix from sequences with given element type."
+  (make-array (list (length sequences) (length (first sequences)))
+              :element-type element-type :initial-contents sequences))
+
+(defun seqs-to-matrix (sequences)
+  "Create a matrix with element-type T."
+  (seqs-to-matrix* t sequences))
+
+(defun matrix* (element-type &rest sequences)
+  "Create a matrix from sequences with given element type."
+  (seqs-to-matrix* element-type sequences))
+
+(defun matrix (&rest sequences)
+  "Create a matrix with element-type T."
+  (seqs-to-matrix sequences))
+
+(defun vector* (element-type &rest objects)
+  (make-array (length objects) :element-type element-type
+                               :initial-contents objects))
+
 (defun displace-array (array dimensions &optional (offset 0))
   "Shorthand function for displacing an array."
   (make-array dimensions
