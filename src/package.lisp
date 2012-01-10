@@ -84,6 +84,7 @@
    #:array-element-type-available
    #:displace-array
    #:make-similar-array
+   #:uniform-array
    #:generate-array
    #:rep
    #:reshape

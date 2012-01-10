@@ -117,6 +117,11 @@ similar to array."
                     :initial-element (coerce initial-element element-type))
         (make-array dimensions :element-type element-type))))
 
+(declaim (inline uniform-array))
+(defun uniform-array (dimensions value &optional (element-type t))
+  "Array filled with VALUE."
+  (make-array dimensions :element-type element-type :initial-element value))
+
 (defun generate-array (dimensions function-or-value &optional (element-type t))
   "Create array with given DIMENSIONS and ELEMENT-TYPE, then fill by calling
 FUNCTION (traversing in row-major order) or using VALUE."
@@ -124,8 +129,7 @@ FUNCTION (traversing in row-major order) or using VALUE."
       (aprog1 (make-array dimensions :element-type element-type)
         (dotimes (index (array-total-size it))
           (setf (row-major-aref it index) (funcall function-or-value))))
-      (make-array dimensions :element-type element-type
-                             :initial-element function-or-value)))
+      (uniform-array dimensions function-or-value element-type)))
 
 (defmethod rep (vector times &optional (each 1))
   "Return a new sequence, which contains SEQUENCE repeated TIMES times,
