@@ -7,22 +7,8 @@
   (:equality-test #'array=))
 
 (addtest (elementwise-tests)
-  emap-type-tests
-  (let ((*lift-equality-test*
-          (lambda (type1 type2)
-            (type= type1 (upgraded-array-element-type type2)))))
-    (ensure-same (emap-common-numeric-type 'single-float 'double-float)
-                 'double-float)
-    (ensure-same (emap-common-numeric-type '(complex single-float)
-                                           'double-float)
-                 '(complex double-float))
-    (ensure-same (emap-common-numeric-type 'fixnum 'double-float)
-                 'double-float)
-    (ensure-same (emap-common-numeric-type 'fixnum 'integer) 'integer)))
-
-(addtest (elementwise-tests)
   e-operations-tests
-  (let ((*lift-equality-test* #'equalp)
+  (let ((*lift-equality-test* #'array=)
         (a (array* '(2 3) 'double-float
                    1 2 3
                    4 5 6))
@@ -32,36 +18,18 @@
     (ensure-same (e+ a b) (array* '(2 3) 'double-float
                                   3 5 8
                                   11 16 19))
-    (ensure-same (e* a 2) (array* '(2 3) 'double-float
-                                  2 4 6
-                                  8 10 12))
+    (ensure-same (e* a 2s0) (array* '(2 3) 'double-float
+                                    2 4 6
+                                    8 10 12))
     (ensure-same (e+ a 2 b) (e+ (e+ a b) 2))
-    ;; (ensure-error (e/ a 0))             ; division by 0
-    (ensure-error (e+ a  ; dimension incompatibility
+    (ensure-same (e+ a a) (e* a 2))
+    (ensure-error (e/ a 0))             ; division by 0
+    (ensure-error (e+ a                 ; dimension incompatibility
                       (array* '(1 1) 'double-float 2)))
     (ensure-same (e+ a) (e+ a 0))
     (ensure-same (e* a) (e* a 1))
-    (ensure-same (e- a) (e- 0 a))
-    (ensure-same (e/ a) (e/ 1 a))))
-
-(addtest (elementwise-tests)
-  recycled-vector-tests
- (let ((a (array* '(2 3) 'double-float
-                  1 2 3
-                  4 5 6))
-       (v (vector 2 1))
-       (h (vector 7 5 2))
-       (*lift-equality-test* #'==))
-   (ensure-same (e+ a (recycle v :v))
-                (array* '(2 3) 'double-float
-                        3 4 5
-                        5 6 7))
-   (ensure-same (e+ a (recycle h :h))
-                (array* '(2 3) 'double-float
-                        8 7 5 
-                        11 10 8))
-   (ensure-error (e+ a (recycle v :h)))
-   (ensure-error (e+ a (recycle h :v)))))
+    (ensure-same (e- a) (e- 0d0 a))
+    (ensure-same (e/ a) (e/ 1d0 a))))
 
 (addtest (elementwise-tests)
   stack-tests
@@ -70,7 +38,8 @@
                    4 5 6))
         (b (array* '(2 2) t
                    3 5
-                   7 9)))
+                   7 9))
+        (*lift-equality-test* #'equalp))
     (ensure-same (stack 'double-float :h a b)
                  (array* '(2 5) 'double-float
                          1 2 3 3 5
@@ -91,7 +60,7 @@
                  (array* '(2 8) t
                          3 5 1 3 5 9 3 5
                          7 9 2 7 9 9 7 9))
-    (ensure-same (stack nil :h
+    (ensure-same (stack t :h
                         (vector* 'double-float 1 2)
                         (vector* 'double-float 3 4))
                  (array* '(2 2) 'double-float

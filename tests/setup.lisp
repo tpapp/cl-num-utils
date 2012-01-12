@@ -26,3 +26,7 @@ in row-major order.  For testing purposes."
 in row-major order.  For testing purposes."
   (apply #'ia* 0 dimensions))
 
+(defun array= (a b)
+  "Like EQUALP, but also comparing array element type."
+  (and (equalp a b)
+       (equal (array-element-type a) (array-element-type b))))
