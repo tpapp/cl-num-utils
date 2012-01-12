@@ -217,11 +217,6 @@
    #:boolean-to-bit
    #:bracket
    ;; elementwise
-   #:emap-dimensions
-   #:emap-next
-   #:emap
-   #:emap-common-numeric-type
-   #:emap-type-of
    #:e+
    #:e-
    #:e*
