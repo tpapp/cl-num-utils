@@ -230,9 +230,13 @@
    #:e2-
    #:e2*
    #:e2/
+   #:e1-
+   #:e1/
    #:eexpt
+   #:eexp
    #:elog
    #:esqrt
+   #:econjugate
    #:ereduce
    #:emin
    #:emax
@@ -270,4 +274,6 @@
    #:rootfinding-delta
    #:root-bisection
    ;; quadrature
-   #:romberg-quadrature))
+   #:romberg-quadrature
+   #:elementwise-float-contagion
+   #:recycle))
