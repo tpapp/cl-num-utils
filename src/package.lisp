@@ -273,4 +273,5 @@
    ;; NEED TO SORT THESE OUT
    #:elementwise-float-contagion
    #:common-array-element-type
-   #:stack-element-type))
+   #:stack-element-type
+   #:map-columns))

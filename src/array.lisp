@@ -462,3 +462,32 @@ used to give the element type.  Also see LLA:OUTER."
                            (incf ,index)
                            (when (>= ,index ,ncol-var) (terminate))
                            (sub ,matrix-var t ,index)))))))
+
+(defgeneric map-columns (function object &optional element-type)
+  (:documentation "Map columns of object (eg a matrix) using function.
+FUNCTION is called with columns that are extracted as a vector, and the
+returned vectors are assembled into another matrix.  Element types and number
+of rows are established after the first function call, and are checked for
+conformity after that -- when element-type is given, it is used instead.  If
+the function doesn't return a vector, the values are collected in a vector
+instead of a matrix.")
+  (:method (function (matrix array) &optional element-type)
+    (let+ (((nil ncol) (array-dimensions matrix))
+           result
+           result-nrow)
+      (loop
+        for col-index :from 0 :below ncol
+        do (let ((mapped-col (funcall function (sub matrix t col-index))))
+             (when (zerop col-index)
+               (if (vectorp mapped-col)
+                   (setf result-nrow (length mapped-col)
+                         result (make-array (list result-nrow ncol)
+                                            :element-type
+                                            (aif element-type
+                                                 it
+                                                 (array-element-type mapped-col))))
+                   (setf result (make-array ncol))))
+             (if result-nrow
+                 (setf (sub result t col-index) mapped-col)
+                 (setf (aref result col-index) mapped-col))))
+      result)))

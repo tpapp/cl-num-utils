@@ -26,7 +26,7 @@
     (ensure-same (diagonal a1) (vector 0 3))
     (ensure-same (diagonal a2) (vector 0 3))
     (ensure-same (diagonal a3) (vector 0 4))))
-  
+
 (addtest (array-tests)
   (flet ((fill-in-dimensions (dimensions size)
            (clnu::fill-in-dimensions dimensions size)))
@@ -46,7 +46,7 @@
                            (6 7 8)
                            (9 10 11))))
     (ensure-same (reshape '(4 t) a) a-reshaped-rm)
-    ;; (ensure-same (reshape a '(4 t) :column-major) 
+    ;; (ensure-same (reshape a '(4 t) :column-major)
     ;;              #2A((0 5 10)
     ;;                  (4 9 3)
     ;;                  (8 2 7)
@@ -153,7 +153,7 @@
     (let* ((c (make-array '(9 5 7) :element-type 'bit
                                    :initial-element 1))
            (c-sub (subarrays 1 c)))
-      (ensure (every (lambda (x) 
+      (ensure (every (lambda (x)
                        (and (eq (array-element-type x) 'bit)
                             (equal (array-dimensions x) '(5 7))))
                      c-sub)))))
@@ -254,3 +254,11 @@
     (ensure-same (norm2 b) (sqrt 26))
     (ensure-same (normsup a) 3)
     (ensure-same (normsup b) 4)))
+
+(addtest (array-tests)
+  map-columns
+  (ensure-same (map-columns #'sum (ia 3 4))
+               #(12 15 18 21))
+  (ensure-same (map-columns (lambda (col) (vector (sum col) (mean col))) (ia 3 4))
+               #2A((12 15 18 21)
+                   (4 5 6 7))))
