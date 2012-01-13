@@ -4,25 +4,25 @@
 
 ;;; utility functions
 
-(defun common-array-element-type (arrays)
-  "Return the common upgraded element type of ARRAYS.  Not guaranteed to be
-the narrowest type (depends on the implementation), stops when it reaches T."
+(defun common-array-element-type (objects &key (key #'array-element-type))
+  "Return the common upgraded element type of objects (eg arrays with the
+default key).  Not guaranteed to be the narrowest type (depends on the
+implementation), stops when it reaches T."
   (reduce (lambda (t1 t2)
-            (let ((common
-                    (cond
-                      ((subtypep t1 t2) t2)
-                      ((subtypep t2 t1) t1)
-                      (t (upgraded-array-element-type `(or ,t1 ,t2))))))
-              (when (eq common t)
-                (return-from common-array-element-type t))))
-          arrays :key #'array-element-type))
+            (when (eq t1 t)
+              (return-from common-array-element-type t))
+            (cond
+              ((subtypep t1 t2) t2)
+              ((subtypep t2 t1) t1)
+              (t (upgraded-array-element-type `(or ,t1 ,t2)))))
+          objects :key key))
 
 (defmacro define-vector-accessors (&optional (n 10))
   (flet ((accessor-name (i)
            (intern (format nil "~:@(~:r~)*" i))))
     `(progn
        ,@(loop for i from 1 to n
-               collect 
+               collect
                `(defun ,(accessor-name i) (array)
                   (row-major-aref array ,(1- i))))
        (declaim (inline ,@(loop for i from 1 to n
@@ -106,7 +106,7 @@ ncol) is square."
               :displaced-index-offset offset
               :element-type (array-element-type array)))
 
-(defun make-similar-array (array 
+(defun make-similar-array (array
                            &key (dimensions (array-dimensions array))
                                 (initial-element nil initial-element?))
   "Make a simple-array with the given dimensions and element-type
@@ -157,7 +157,7 @@ product equals size."
          missing
          (product 1))
     (mapc (lambda (dimension)
-            (if (missing? dimension) 
+            (if (missing? dimension)
                 (progn
                   (assert (not missing) () "More than one missing dimension.")
                   (setf missing t))
@@ -186,7 +186,7 @@ on demand."
   (let ((vector (displace-array array (array-total-size array))))
     (if copy? (copy-seq vector) vector)))
 
-;;; subarrays 
+;;; subarrays
 
 (defun subarrays (rank array)
   "Return an array of subarrays, split of at RANK.  All subarrays are
@@ -197,7 +197,7 @@ displaced and share structure."
        array)
       ((< 0 rank array-rank)
        (let* ((dimensions (array-dimensions array))
-              (result 
+              (result
                (make-array (subseq dimensions 0 rank)))
               (sub-dimensions (subseq dimensions rank))
               (sub-size (product sub-dimensions)))
@@ -276,8 +276,8 @@ that element is not an array, the original ARRAY is returned as it is."
                       (aref matrix row-index col-index))))))
     columns))
 
-(defun columns-to-matrix (columns 
-                          &optional (element-type 
+(defun columns-to-matrix (columns
+                          &optional (element-type
                                      (common-array-element-type columns)))
   "Convert columns (vectors of equal length) to matrix.  The resulting array's
 ELEMENT-TYPE is deduced automatically, unless given."
@@ -462,4 +462,3 @@ used to give the element type.  Also see LLA:OUTER."
                            (incf ,index)
                            (when (>= ,index ,ncol-var) (terminate))
                            (sub ,matrix-var t ,index)))))))
-

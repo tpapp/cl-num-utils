@@ -58,9 +58,7 @@ operations."
                                (t (return-from elementwise-float-contagion t))))))
         t)))
 
-;;; Interface to EMAP (EMAP-DIMENSIONS also used by STACK, see default method
-;;; for STACK-DIMENSIONS).  These functions need to be defined for objects
-;;; that emap should understand.
+;;; various elementwise operations
 
 (defmacro mapping-array ((ref array &rest other) form)
   (check-type ref symbol)
@@ -173,12 +171,14 @@ operations."
 ;;; stack
 ;;;
 ;;; In order to extend STACK for other objects, define methods for
-;;; STACK-DIMENSIONS (or EMAP-DIMENSIONS) and STACK-INTO.
+;;; STACK-DIMENSIONS, STACK-ELEMENT-TYPE and STACK-INTO.
 
 (defgeneric stack-dimensions (h? object)
   (:documentation "Return (cons unified-dimension other-dimension), where
   unified-dimension can be NIL.  If H?, stacking is horizontal, otherwise
   vertical.")
+  (:method (h? object)
+    (cons nil 1))
   (:method (h? (vector vector))
     (declare (ignore h?))
     (cons (length vector) 1))
@@ -186,9 +186,15 @@ operations."
     (let+ (((nrow ncol) (array-dimensions array)))
       (if h?
           (cons nrow ncol)
-          (cons ncol nrow))))
-  (:method (h? object)
-    (cons nil 1)))
+          (cons ncol nrow)))))
+
+(defgeneric stack-element-type (object)
+  (:method (object)
+    (type-of object))
+  (:method ((array array))
+    (array-element-type array))
+  (:method ((list list))
+    t))
 
 (defgeneric stack-into (object h? result cumulative-index)
   (:documentation "Used by STACK to copy OBJECT to RESULT, starting at
@@ -288,7 +294,10 @@ or :HORIZONTAL (:H)."
          (result (make-array (if h?
                                  (list unified-dimension other-dimension)
                                  (list other-dimension unified-dimension))
-                             :element-type element-type))
+                             :element-type (aif element-type
+                                                it
+                                                (common-array-element-type
+                                                 objects :key #'stack-element-type))))
          (cumulative-index 0))
     (map nil
          (lambda (object dimension)
@@ -311,6 +320,9 @@ Lists are treated as SIMPLE-VECTORS."
                                  (vector v)
                                  (list (coerce v 'simple-vector))))
                        sequences))
+         (element-type (aif element-type
+                            it
+                            (common-array-element-type vectors)))
          (result (make-array (reduce #'+ vectors :key #'length)
                              :element-type element-type))
          (target-index 0))

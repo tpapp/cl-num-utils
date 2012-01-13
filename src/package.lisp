@@ -270,5 +270,7 @@
    #:root-bisection
    ;; quadrature
    #:romberg-quadrature
+   ;; NEED TO SORT THESE OUT
    #:elementwise-float-contagion
-   #:recycle))
+   #:common-array-element-type
+   #:stack-element-type))

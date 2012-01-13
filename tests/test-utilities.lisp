@@ -36,3 +36,20 @@ otherwise a vector with the corresponding upgraded element type."
       (aprog1 (make-array n :element-type type)
         (dotimes (i n)
           (setf (aref it i) (coerce i type))))))
+
+
+;;; utilities
+
+(defun ia* (start &rest dimensions)
+  "Return an array with given dimensions, filled with integers from START,
+in row-major order.  For testing purposes."
+  (aprog1 (make-array dimensions)
+    (iter
+      (for i :from 0 :below (array-total-size it))
+      (for value :from start)
+      (setf (row-major-aref it i) value))))
+
+(defun ia (&rest dimensions)
+  "Return an array with given dimensions, filled with integers from 0,
+in row-major order.  For testing purposes."
+  (apply #'ia* 0 dimensions))
