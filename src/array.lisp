@@ -507,3 +507,20 @@ instead of a matrix.")
         (let ((element (aref vector row-index)))
           (dotimes (col-index ncol)
             (setf (aref it row-index col-index) element)))))))
+
+
+(defun amap (element-type function &rest arrays)
+  "Map arrays elementwise."
+  (assert arrays)
+  (let* ((arrays (mapcar (lambda (a)
+                           (if (arrayp a)
+                               a
+                               (as-array a)))
+                         arrays))
+         (dimensions (array-dimensions (car arrays)))
+         (result (make-array dimensions :element-type element-type)))
+    (assert (every (lambda (a) (equal dimensions (array-dimensions a)))
+                   (cdr arrays)))
+    (apply #'map-into (flatten-array result) function
+           (mapcar #'flatten-array arrays))
+    result))

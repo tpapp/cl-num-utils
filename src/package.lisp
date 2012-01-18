@@ -276,4 +276,5 @@
    #:stack-element-type
    #:map-columns
    #:recycle-column
-   #:recycle-row))
+   #:recycle-row
+   #:amap))
