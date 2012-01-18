@@ -274,4 +274,6 @@
    #:elementwise-float-contagion
    #:common-array-element-type
    #:stack-element-type
-   #:map-columns))
+   #:map-columns
+   #:recycle-column
+   #:recycle-row))

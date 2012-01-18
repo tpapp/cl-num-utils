@@ -491,3 +491,19 @@ instead of a matrix.")
                  (setf (sub result t col-index) mapped-col)
                  (setf (aref result col-index) mapped-col))))
       result)))
+
+(defun recycle-row (vector nrow)
+  "Return a matrix with NROW rows, each identical to vector."
+  (make-array (list nrow (length vector))
+              :element-type (array-element-type vector)
+              :initial-contents (make-array nrow :initial-element vector)))
+
+(defun recycle-column (vector ncol)
+  "Return a matrix with NCOL rows, each identical to vector."
+  (let ((nrow (length vector)))
+    (aprog1 (make-array (list nrow ncol)
+                        :element-type (array-element-type vector))
+      (dotimes (row-index nrow)
+        (let ((element (aref vector row-index)))
+          (dotimes (col-index ncol)
+            (setf (aref it row-index col-index) element)))))))

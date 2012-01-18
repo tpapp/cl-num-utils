@@ -262,3 +262,15 @@
   (ensure-same (map-columns (lambda (col) (vector (sum col) (mean col))) (ia 3 4))
                #2A((12 15 18 21)
                    (4 5 6 7))))
+
+(addtest (array-tests)
+  recycle-row-col
+  (let ((v (vector* 'fixnum 1 2 3))
+        (*lift-equality-test* #'array=))
+    (ensure-same (recycle-row v 4)
+                 (matrix* 'fixnum v v v v))
+    (ensure-same (recycle-column v 4)
+                 (matrix* 'fixnum
+                          '(1 1 1 1)
+                          '(2 2 2 2)
+                          '(3 3 3 3)))))
