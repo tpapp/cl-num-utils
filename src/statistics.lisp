@@ -38,7 +38,7 @@ to a superclass.  When IGNORE-NIL?, NILs are silently ignored."
   (:documentation "Return an accumulator that provides the desired
   STATISTIC and handles objects similar to ELEMENT."))
 
-(defmacro with-accumulator ((accumulator add) &body body)
+(defmacro with-conforming-accumulator ((accumulator add) &body body)
   "Provide a local wrapper for ADD which creates the conforming accumulator if
 ACCUMULATOR is a symbol the first time it is used.  Once done, the form
 evaluates to this accumulator.  For use in SWEEP."
@@ -57,10 +57,10 @@ evaluates to this accumulator.  For use in SWEEP."
   (:documentation "Apply ACCUMULATOR to elements of OBJECT.  When ACCUMULATOR
   is a function, it is used to generate a conforming accumulator.")
   (:method (accumulator (sequence sequence) &key (key #'identity))
-    (with-accumulator (accumulator add)
+    (with-conforming-accumulator (accumulator add)
       (map nil (compose #'add key) sequence)))
   (:method (accumulator (array array) &key (key #'identity))
-    (with-accumulator (accumulator add)
+    (with-conforming-accumulator (accumulator add)
       (map nil (compose #'add key) (flatten-array array)))))
 
 ;;; sweep also resolves some symbols and functions into default accumulators,
@@ -164,7 +164,7 @@ evaluates to this accumulator.  For use in SWEEP."
 
 ;;; sample ratio
 
-(defstruct (sample-ratio-accumulator 
+(defstruct (sample-ratio-accumulator
             (:constructor sample-ratio-accumulator ())
             (:include tallier))
   "Sample ratio accumulator."
@@ -358,7 +358,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
 
 (defun sweep-xy (accumulator x y)
   "Sweep sequences x and y with an accumulator that takes conses."
-  (with-accumulator (accumulator add)
+  (with-conforming-accumulator (accumulator add)
     (map nil (lambda (x y) (add (cons x y))) x y)))
 
 (defun covariance-xy (x y)
@@ -386,7 +386,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
 
 ;;; autocovariance accumulator
 
-(defstruct (autocovariance-accumulator 
+(defstruct (autocovariance-accumulator
              (:constructor autocovariance-accumulator%))
   "Autocovariance accumulator.  Handles missing values (NIL)."
   (circular-buffer nil :type list)
@@ -396,7 +396,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
 
 (defun autocovariance-accumulator (lags)
   "Create an autocovariance accumulator with a given number of lags."
-  (autocovariance-accumulator% 
+  (autocovariance-accumulator%
    :circular-buffer (make-circular-list lags :initial-element nil)
    :covariance-accumulators (generate-array lags #'covariance-accumulator)))
 
@@ -408,7 +408,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
              accumulator))))
 
 (defmethod add ((accumulator autocovariance-accumulator) (x number))
-  (let+ (((&structure autocovariance-accumulator- circular-buffer 
+  (let+ (((&structure autocovariance-accumulator- circular-buffer
                       covariance-accumulators) accumulator))
     ;; update covariances
     (iter
@@ -431,8 +431,8 @@ practice, TALLY should be INCF'd before using incf-mean.")
 (defgeneric autocovariances (object &optional lags)
   (:documentation "Autocovariances.")
   (:method ((accumulator autocovariance-accumulator) &optional lags)
-    (subseq 
-     (map1 #'covariance 
+    (subseq
+     (map1 #'covariance
            (autocovariance-accumulator-covariance-accumulators accumulator))
      0 lags))
   (:method (object &optional lags)
@@ -443,7 +443,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
 (defgeneric autocorrelations (object &optional lags)
   (:documentation "Vector of autocorrelations.")
   (:method ((accumulator autocovariance-accumulator) &optional lags)
-    (subseq 
+    (subseq
      (map1 #'correlation
            (autocovariance-accumulator-covariance-accumulators accumulator))
      0 lags))
@@ -466,7 +466,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
         (format stream "autocorrelations: ~A" (autocorrelations object)))))
 
 ;;; sorting accumulator
-;;; 
+;;;
 ;;; This is not the most elegant way of calculating quantiles, but it will do
 ;;; until I implement something nicer.
 
@@ -650,7 +650,7 @@ otherwise it isn't."
 (defmethod keys-and-values ((object sparse-accumulator-array))
   (keys-and-values (sparse-accumulator-array-table object)))
 
-;;; moments accumulator 
+;;; moments accumulator
 
 ;; (defclass moments-accumulator-array (sparse-accumulator-array )
 ;;   ()
@@ -683,14 +683,14 @@ otherwise it isn't."
 
 
 ;;; Histograms
-;;; 
+;;;
 ;;; data structures for counting the frequencies of multivariate indexes
 ;;; (always of the same rank).  Building block for a histogram, but does not
 ;;; have information on where the indexes came from.  Frequencies can only be
 ;;; added, not set or subtracted.  The total is available, but is not
 ;;; necessarily cached/saved.  Some combinations of subscripts may be invalid
 ;;; or unavailable, in that case an error is raised.
-;;; 
+;;;
 ;;; !! define condition
 ;;; !! write methods for using an array as frequencies
 
@@ -747,7 +747,7 @@ should be a vector of sorted (LABEL . FREQUENCY) conses.  Not exported."
     (for (label . frequency) :in labels-frequencies)
     (maximize (length label) :into label-width)
     (maximize frequency :into maximum-frequency)
-    (finally 
+    (finally
      (let ((step (max (pretty-step maximum-frequency *frequency-print-width*)
                       1)))
        (loop for (label . frequency) in labels-frequencies
@@ -1041,7 +1041,7 @@ partition of [0 ... 999]."
 
 (defun subranges% (ranges)
   "Internal function used by subranges."
-  (let* ((endpoints (coerce (remove-duplicates 
+  (let* ((endpoints (coerce (remove-duplicates
                              (iter
                                (for (start . end) :in-vector ranges)
                                (when (< start end)
@@ -1098,7 +1098,7 @@ Example: (aggregate #(1 2 3 5 7 13) 2 #'mean) => #(1.5d0 4.0d0 10.0d0)."
        (subarrays 1 (reshape (list t n) (coerce sequence 'vector)))))
 
 ;;; references
-;;; 
+;;;
 ;; @inproceedings{bennett2009numerically,
 ;;   title={Numerically stable, single-pass, parallel statistics algorithms},
 ;;   author={Bennett, J. and Grout, R. and P{\'e}bay, P. and Roe, D. and Thompson, D.},

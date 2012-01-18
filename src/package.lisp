@@ -128,7 +128,7 @@
    #:pool
    #:pool*
    #:conforming-accumulator
-   #:with-accumulator
+   #:with-conforming-accumulator
    #:sweep
    #:define-conforming-accumulator
    #:tally
