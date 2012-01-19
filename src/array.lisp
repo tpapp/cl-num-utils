@@ -208,24 +208,46 @@ displaced and share structure."
          result))
       (t (error "Rank ~A outside [0,~A]." rank array-rank)))))
 
+(defun subarray-location (dimensions subscripts)
+  ""
+  (declare (optimize speed (safety 0)))
+  (let+ (rev-dimensions
+         rev-subscripts
+         (tail (do ((dimensions dimensions (cdr dimensions))
+                    (subscripts subscripts (cdr subscripts)))
+                   ((not subscripts) dimensions)
+                 (assert dimensions ()
+                         "More subscripts than dimensions.")
+                 (let ((s (car subscripts))
+                       (d (car dimensions)))
+                   (declare (type fixnum d))
+                   (assert (and (fixnum? s) (< -1 s d)) ()
+                           "Invalid subscript.")
+                   (push s rev-subscripts)
+                   (push d rev-dimensions))))
+         (product (reduce #'* tail))
+         (sum 0))
+    (declare (type fixnum product sum))
+    (mapc (lambda (d s)
+            (declare (type fixnum d s))
+            (incf sum (the fixnum (* product s)))
+            (multf product d))
+          rev-dimensions rev-subscripts)
+    (values sum tail)))
+
 (defun subarray (array &rest subscripts)
   "Given a partial list of subscripts, return the subarray that starts there,
 with all the other subscripts set to 0, dimensions inferred from the original.
 If no subscripts are given, the original array is returned.  Implemented by
 displacing, shares structure unless the second value is true, which indicates
 that a single element was returned (ie subarray was equivalent to aref)."
-  (let* ((rank (array-rank array))
-         (drop (length subscripts)))
-    (assert (<= 0 drop rank))
-    (cond
-      ((zerop drop) array)
-      ((< drop rank)
-       (displace-array array
-                       (subseq (array-dimensions array) drop)
-                       (apply #'array-row-major-index array
-                              (aprog1 (make-list rank :initial-element 0)
-                                (replace it subscripts)))))
-      (t (values (apply #'aref array subscripts) t)))))
+  (if subscripts
+      (let+ (((&values offset dimensions)
+              (subarray-location (array-dimensions array) subscripts)))
+        (if dimensions
+            (displace-array array dimensions offset)
+            (values (apply #'aref array subscripts) t)))
+      array))
 
 (defun (setf subarray) (value array &rest subscripts)
   (let+ (((&values subarray atom?) (apply #'subarray array subscripts)))

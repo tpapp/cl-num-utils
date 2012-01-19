@@ -277,4 +277,5 @@
    #:map-columns
    #:recycle-column
    #:recycle-row
-   #:amap))
+   #:amap
+   #:subarray-location))
