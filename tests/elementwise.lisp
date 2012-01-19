@@ -61,8 +61,8 @@
                          3 5 1 3 5 9 3 5
                          7 9 2 7 9 9 7 9))
     (ensure-same (stack t :h
-                        (vector* 'double-float 1 2)
-                        (vector* 'double-float 3 4))
+                        (vector* 'double-float 1d0 2d0)
+                        (vector* 'double-float 3d0 4d0))
                  (array* '(2 2) 'double-float
                          1 3
                          2 4))
