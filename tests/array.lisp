@@ -159,6 +159,7 @@
                      c-sub)))))
 
 (addtest (array-tests)
+  partition-tests
   (let ((*lift-equality-test* #'equalp)
         (a (ia 3 2))
         (b (ia 3)))
