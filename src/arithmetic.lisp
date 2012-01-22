@@ -3,9 +3,9 @@
 (in-package #:cl-num-utils)
 
 ;;; rewrite this as
-;;; 
+;;;
 ;;; (iseq below) (iseq from below) (iseq from by below)
-;;; 
+;;;
 ;;; (aseq :from :to :length)
 ;;; (aseq :from :by :length)
 
@@ -99,7 +99,7 @@ arithmetic operations.  May not be the narrowest."
   "Return type that sequence can be mapped to using arithmetic operations."
   (etypecase sequence
     (list 'list)
-    (vector `(simple-array 
+    (vector `(simple-array
               ,(similar-element-type (array-element-type sequence)) (*)))))
 
 (defgeneric sum (object &key key)
@@ -119,6 +119,13 @@ arithmetic operations.  May not be the narrowest."
   (:method ((array array))
     (reduce #'* (flatten-array array))))
 
+(defgeneric sum-of-squares (object)
+  (:documentation "Sum of squared elements.")
+  (:method ((sequence sequence))
+    (reduce #'+ sequence :key #'square))
+  (:method ((array array))
+    (reduce #'+ (flatten-array array) :key #'square)))
+
 (defun cumulative-sum (sequence
                        &key (result-type (similar-sequence-type sequence)))
   "Cumulative sum of sequence.  Return a sequence of the same kind and length;
@@ -129,7 +136,7 @@ last element is the total.  The latter is returned as the second value."
                  sequence)
             sum)))
 
-(defun cumulative-product (sequence 
+(defun cumulative-product (sequence
                            &key (result-type
                                  (similar-sequence-type sequence)))
   "Cumulative product of sequence.  Return a sequence of the same kind and
@@ -145,6 +152,11 @@ second value."
   "Test whether all arguments have the same sign (ie all are positive,
 negative, or zero)."
   (reduce #'= arguments :key #'signum))
+
+(declaim (inline square))
+(defun square (number)
+  "Square of number."
+  (expt number 2))
 
 (declaim (inline absolute-square))
 (defun absolute-square (number)

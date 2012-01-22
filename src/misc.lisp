@@ -17,11 +17,6 @@
     (when (zerop rem)
       quot)))
 
-(declaim (inline square))
-(defun square (number)
-  "Return square of NUMBER."
-  (expt number 2))
-
 (defmacro nif (value positive negative &optional zero)
   "Numeric if."
   (once-only (value)
@@ -52,7 +47,7 @@ etc), return it as an integer, otherwise signal an error."
   (declare (inline as-integer))
   (etypecase number
     (integer number)
-    (complex 
+    (complex
        (assert (zerop (imagpart number)) ()
                "~A has non-zero imaginary part." number)
        (as-integer (realpart number)))
@@ -248,7 +243,7 @@ hash-table).")
       result)))
 
 ;;;; Thinning
-;;; 
+;;;
 ;;; Thinning is always by a uniform step interval.
 
 (defun thinned-length% (length thinning &optional (start 0))
@@ -299,4 +294,3 @@ to the desired length."
   "Return 1-number.  The mnemonic is \"1 complement\", 1- is already a CL
 library function."
   (- 1 number))
-
