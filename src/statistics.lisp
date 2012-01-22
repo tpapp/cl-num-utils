@@ -101,22 +101,22 @@ evaluates to this accumulator.  For use in SWEEP."
     (let ((accumulator (sweep 'mean object)))
       (values (mean accumulator) accumulator))))
 
-(defgeneric sse (object &optional center)
-  (:documentation "Return the sum of squared errors (from the given CENTER,
-  which defaults to the MEAN.  Return NIL when there are no elements.")
-  (:method (object &optional center)
-    (let ((accumulator (sweep 'sse object)))
-      (values (sse accumulator center) accumulator))))
+;; (defgeneric sse (object)
+;;   (:documentation "Return the sum of squared errors.  Return NIL when there
+;; are no elements.")
+;;   (:method (object)
+;;     (let ((accumulator (sweep 'sse object)))
+;;       (values (sse accumulator) accumulator))))
 
-(defgeneric variance (object)
-  (:documentation "Return the variance.")
-  (:method (object)
-    (let+ (((&values sse accumulator) (sse object))
-           (n-1 (1- (aif accumulator
-                         (tally it)
-                         (tally object)))))
-      (when (plusp n-1)
-        (/ sse n-1)))))
+;; (defgeneric variance (object)
+;;   (:documentation "Return the variance.")
+;;   (:method (object)
+;;     (let+ (((&values sse accumulator) (sse object))
+;;            (n-1 (1- (aif accumulator
+;;                          (tally it)
+;;                          (tally object)))))
+;;       (when (plusp n-1)
+;;         (/ sse n-1)))))
 
 (defgeneric sd (object)
   (:documentation "Return the standard deviation.")
@@ -270,11 +270,9 @@ practice, TALLY should be INCF'd before using incf-mean.")
     (incf mean (/ difference tally))
     (incf sse (* (- object mean) difference))))
 
-(defmethod sse ((instance mean-sse-accumulator) &optional center)
+(defmethod sse ((instance mean-sse-accumulator))
   (let+ (((&structure mean-sse-accumulator- tally mean sse) instance))
-    (if center
-        (+ sse (* (expt (- mean center) 2) tally))
-        sse)))
+    (values sse mean tally)))
 
 (define-structure-slot-accessor mean mean-sse-accumulator :read-only? t)
 

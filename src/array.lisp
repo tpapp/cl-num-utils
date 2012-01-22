@@ -99,13 +99,6 @@ ncol) is square."
   (make-array (length objects) :element-type element-type
                                :initial-contents objects))
 
-(defun displace-array (array dimensions &optional (offset 0))
-  "Shorthand function for displacing an array."
-  (make-array dimensions
-              :displaced-to array
-              :displaced-index-offset offset
-              :element-type (array-element-type array)))
-
 (defun make-similar-array (array
                            &key (dimensions (array-dimensions array))
                                 (initial-element nil initial-element?))
@@ -181,10 +174,10 @@ on demand."
          (dimensions (fill-in-dimensions dimensions (- size offset))))
     (maybe-copy-array (displace-array array dimensions offset) copy?)))
 
-(defun flatten-array (array &key copy?)
-  "Return ARRAY flattened to a vector.  WillMay share structure unless COPY?."
-  (let ((vector (displace-array array (array-total-size array))))
-    (if copy? (copy-seq vector) vector)))
+;; (defun flatten-array (array &key copy?)
+;;   "Return ARRAY flattened to a vector.  Will share structure unless COPY?."
+;;   (let ((vector (displace-array array (array-total-size array))))
+;;     (if copy? (copy-seq vector) vector)))
 
 ;;; subarrays
 

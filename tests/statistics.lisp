@@ -32,16 +32,16 @@
  (ensure-same (variance (ia 9)) 15/2)
  (ensure-same (variance (ia 20)) 35))
 
-(addtest (statistics-tests)
-  sse-off-center-test
-  (let+ ((a (ia 9))
-         (b (ia* 7 19))
-         ((&flet sse2 (seq center)
-            (sum seq :key (lambda (x) (expt (- x center) 2)))))
-         (*lift-equality-test* #'==))
-    (ensure-same (sse a 1.1) (sse2 a 1.1))
-    (ensure-same (sse b 1.1) (sse2 b 1.1))
-    (ensure-same (sse a pi) (sse2 a pi))))
+;; (addtest (statistics-tests)
+;;   sse-off-center-test
+;;   (let+ ((a (ia 9))
+;;          (b (ia* 7 19))
+;;          ((&flet sse2 (seq center)
+;;             (sum seq :key (lambda (x) (expt (- x center) 2)))))
+;;          (*lift-equality-test* #'==))
+;;     (ensure-same (sse a 1.1) (sse2 a 1.1))
+;;     (ensure-same (sse b 1.1) (sse2 b 1.1))
+;;     (ensure-same (sse a pi) (sse2 a pi))))
 
 (addtest (statistics-tests)
   test-array-mean
@@ -64,7 +64,7 @@
 ;;   (let* ((sw (sum weights))
 ;;          (mean (/ (reduce #'+ (map 'vector #'* sample weights)) sw))
 ;;          (variance (/ (reduce #'+
-;;                               (map 'vector 
+;;                               (map 'vector
 ;;                                    (lambda (s w) (* (expt (- s mean) 2) w))
 ;;                                    sample weights))
 ;;                       (1- sw))))
