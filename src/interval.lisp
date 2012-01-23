@@ -128,7 +128,7 @@ interval, and error is signalled."
 			 (setf left right))))
 	   divisions))))
 
-(defun shrink-interval (interval left 
+(defun shrink-interval (interval left
                         &optional (right left)
                                   (check-flip? t))
   "Shrink interval by given magnitudes (which may be REAL or RELATIVE).  When
