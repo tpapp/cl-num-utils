@@ -183,6 +183,7 @@
    #:ensure-sorted-vector
    ;; interval
    #:interval
+   #:interval-p
    #:interval-left
    #:interval-right
    #:&interval
