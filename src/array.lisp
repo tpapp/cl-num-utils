@@ -202,8 +202,9 @@ displaced and share structure."
       (t (error "Rank ~A outside [0,~A]." rank array-rank)))))
 
 (defun subarray-location (dimensions subscripts)
-  ""
-  (declare (optimize speed (safety 0)))
+  "Return (values OFFSET REMAINING-DIMENSIONS) that can be used to displace a
+row-major subarray starting at SUBSCRIPTS in an array with the given
+DIMENSIONS."
   (let+ (rev-dimensions
          rev-subscripts
          (tail (do ((dimensions dimensions (cdr dimensions))
