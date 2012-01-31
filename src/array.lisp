@@ -479,7 +479,7 @@ used to give the element type.  Also see LLA:OUTER."
                            (when (>= ,index ,ncol-var) (terminate))
                            (sub ,matrix-var t ,index)))))))
 
-(defgeneric map-columns (function object &optional element-type)
+(defgeneric map-columns (function object &key element-type &allow-other-keys)
   (:documentation "Map columns of object (eg a matrix) using function.
 FUNCTION is called with columns that are extracted as a vector, and the
 returned vectors are assembled into another matrix.  Element types and number
@@ -487,7 +487,7 @@ of rows are established after the first function call, and are checked for
 conformity after that -- when element-type is given, it is used instead.  If
 the function doesn't return a vector, the values are collected in a vector
 instead of a matrix.")
-  (:method (function (matrix array) &optional element-type)
+  (:method (function (matrix array) &key element-type)
     (let+ (((nil ncol) (array-dimensions matrix))
            result
            result-nrow)
@@ -507,6 +507,13 @@ instead of a matrix.")
                  (setf (sub result t col-index) mapped-col)
                  (setf (aref result col-index) mapped-col))))
       result)))
+
+(defgeneric map-rows (function object &key element-type &allow-other-keys)
+  (:documentation "Map rows of object (eg a matrix) using FUNCTION.")
+  (:method (function (matrix array) &key (element-type t))
+    (check-type matrix matrix)
+    ;; FIXME: more efficient implementations should be possible
+    (combine (map 'vector function (subarrays 1 matrix)) element-type)))
 
 (defun recycle-row (vector nrow)
   "Return a matrix with NROW rows, each identical to vector."
@@ -540,3 +547,43 @@ instead of a matrix.")
     (apply #'map-into (flatten-array result) function
            (mapcar #'flatten-array arrays))
     result))
+
+(declaim (inline zero-array))
+(defun zero-array (dimensions &optional (element-type t))
+  "An array filled with 0's (coerced to the given ELEMENT-TYPE)."
+  (make-array dimensions :element-type element-type
+                         :initial-element (coerce 0 element-type)))
+
+(defgeneric column-sums (matrix &optional element-type)
+  (:method ((matrix array) &optional element-type)
+    (unlessf element-type (elementwise-float-contagion matrix))
+    (let+ (((nrow ncol) (array-dimensions matrix))
+           (result (zero-array ncol)))
+      (dotimes (row-index nrow)
+        (dotimes (col-index ncol)
+          (incf (aref result col-index) (aref matrix row-index col-index))))
+      result)))
+
+(defgeneric column-means (matrix &optional element-type)
+  (:method ((matrix array) &optional element-type)
+    (unlessf element-type (elementwise-float-contagion matrix))
+    (let ((nrow (array-dimension matrix 0))
+          (result (column-sums matrix element-type)))
+      (map-into result (lambda (x) (/ x nrow)) result))))
+
+(defgeneric row-sums (matrix &optional element-type)
+  (:method ((matrix array) &optional element-type)
+    (unlessf element-type (elementwise-float-contagion matrix))
+    (let+ (((nrow ncol) (array-dimensions matrix))
+           (result (zero-array nrow element-type)))
+      (dotimes (row-index nrow)
+        (dotimes (col-index ncol)
+          (incf (aref result row-index) (aref matrix row-index col-index))))
+      result)))
+
+(defgeneric row-means (matrix &optional element-type)
+  (:method ((matrix array) &optional element-type)
+    (unlessf element-type (elementwise-float-contagion matrix))
+    (let ((ncol (array-dimension matrix 1))
+          (result (row-sums matrix element-type)))
+      (map-into result (lambda (x) (/ x ncol)) result))))

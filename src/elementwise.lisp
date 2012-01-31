@@ -94,6 +94,7 @@ operations."
 (define-e1 exp :function eexp)
 (define-e1 sqrt :function esqrt)
 (define-e1 conjugate :function econjugate)
+(define-e1 square :function esquare)
 
 (defmacro define-e2 (operation
                      &key (function (symbolicate '#:e2 operation))

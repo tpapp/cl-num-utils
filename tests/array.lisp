@@ -275,3 +275,13 @@
                           '(1 1 1 1)
                           '(2 2 2 2)
                           '(3 3 3 3)))))
+
+(addtest (array-tests)
+  row-col-sum-mean
+  (let ((a #2A((1 2 3)
+               (4 5 6)))
+        (*lift-equality-test* #'equalp))
+    (ensure-same (row-sums a) #(6 15))
+    (ensure-same (row-means a) #(2 5))
+    (ensure-same (column-sums a) #(5 7 9))
+    (ensure-same (column-means a) #(5/2 7/2 9/2))))

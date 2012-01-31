@@ -279,4 +279,10 @@
    #:recycle-column
    #:recycle-row
    #:amap
-   #:subarray-location))
+   #:subarray-location
+   #:esquare
+   #:map-rows
+   #:column-sums
+   #:column-means
+   #:row-sums
+   #:row-means))
