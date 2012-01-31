@@ -12,8 +12,8 @@
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Boost Software License - Version 1.0"
   :serial t
-  :components 
-  ((:module 
+  :components
+  ((:module
     "package-init"
     :pathname #P"src/"
     :components
@@ -27,13 +27,13 @@
      (:file "conditions")
      (:file "misc")
      (:file "arithmetic")
+     (:file "elementwise")
      (:file "array")
      (:file "pretty")
      (:file "bins")
      (:file "statistics")
      (:file "interval")
      (:file "sub")
-     (:file "elementwise")
      (:file "data-frame")
      ;; (:file "interaction")
      (:file "optimization")
@@ -48,7 +48,7 @@
   :license "Same as CL-NUM-UTILS -- this is part of the CL-NUM-UTILS library."
   :serial t
   :components
-  ((:module 
+  ((:module
     "package-init"
     :pathname #P"tests/"
     :components
@@ -59,7 +59,7 @@
     :components
     ((:file "setup")
      (:file "test-utilities")))
-   (:module 
+   (:module
     "tests"
     :pathname #P"tests/"
     :components
