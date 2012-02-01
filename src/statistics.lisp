@@ -101,22 +101,45 @@ evaluates to this accumulator.  For use in SWEEP."
     (let ((accumulator (sweep 'mean object)))
       (values (mean accumulator) accumulator))))
 
-;; (defgeneric sse (object)
-;;   (:documentation "Return the sum of squared errors.  Return NIL when there
-;; are no elements.")
-;;   (:method (object)
-;;     (let ((accumulator (sweep 'sse object)))
-;;       (values (sse accumulator) accumulator))))
+(defmacro with-sse-one-pass ((add sse &key (mean (make-gensym '#:mean))
+                                           (count (make-gensym '#:count)))
+                             &body body)
+  "Calculate the sum of squared errors (from the mean) for elements added with
+ADD in BODY.  The result is available within body in the variable SSE.  MEAN
+and COUNT contain the mean and the number of elements.  Uses a
+one-pass (on-line) algorithm, with reasonably good numerical properties."
+  `(let ((,count 0)
+         (,mean 0)
+         (,sse 0))
+     (flet ((,add (value)
+              (let ((difference (- value ,mean)))
+                (incf ,count)
+                (incf ,mean (/ difference ,count))
+                (incf ,sse (* (- value ,mean) difference)))))
+       ,@body)))
 
-;; (defgeneric variance (object)
-;;   (:documentation "Return the variance.")
-;;   (:method (object)
-;;     (let+ (((&values sse accumulator) (sse object))
-;;            (n-1 (1- (aif accumulator
-;;                          (tally it)
-;;                          (tally object)))))
-;;       (when (plusp n-1)
-;;         (/ sse n-1)))))
+(defgeneric sse (sample)
+  (:documentation
+   "Sum of squared errors (from the mean) for SAMPLE.  The mean is returned as
+a the second value, and the count of elements as the third value.")
+  (:method ((object sequence))
+    (with-sse-one-pass (add sse :mean mean :count count)
+      (map nil #'add object)
+      (values sse mean count)))
+  (:method ((object array))
+    (with-sse-one-pass (add sse :mean mean :count count)
+      (declare (type fixnum count))
+      (dotimes (index (array-total-size object))
+        (add (row-major-aref object index)))
+      (values sse mean count))))
+
+(defgeneric variance (object)
+  (:documentation "Variance of OBJECT.  For samples, return the unbiased
+estimator for the variance (normalizing by 1-n).")
+  (:method (object)
+    (multiple-value-bind (sse mean count) (sse object)
+      (declare (ignore mean))
+      (/ sse (1- count)))))
 
 (defgeneric sd (object)
   (:documentation "Return the standard deviation.")

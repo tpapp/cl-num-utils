@@ -1,6 +1,7 @@
 (defpackage :cl-num-utils
   (:nicknames :clnu)
   (:use #:cl #:iterate #:let-plus #:anaphora #:alexandria)
+  (:shadow #:variance #:displace-array)
   (:export
    ;; macros
    #:silent
