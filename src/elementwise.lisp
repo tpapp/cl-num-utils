@@ -3,8 +3,8 @@
 (in-package #:cl-num-utils)
 
 (defun elementwise-float-contagion (&rest objects)
-  "Return the resulting float type when types are combined using arithmetic
-operations."
+  "Return the resulting float type when objects (or their elements) are
+combined using arithmetic operations."
   (declare (optimize speed))
   (let* ((matrix (load-time-value
                   (let ((matrix (make-array `(10 10)
