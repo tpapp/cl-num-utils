@@ -107,6 +107,28 @@ ncol) is square."
   "Create a matrix with element-type T."
   (seqs-to-matrix sequences))
 
+(declaim (inline column-with-type))
+(defun column-with-type (element-type &rest elements)
+  "Make a column matrix from ELEMENTS, with given ELEMENT-TYPE."
+  (make-array (list (length elements) 1) :element-type element-type
+              :initial-contents (mapcar #'list elements)))
+
+(declaim (inline column))
+(defun column (&rest elements)
+  "Make a column matrix from ELEMENTS, with element-type T."
+  (apply #'column-with-type t elements))
+
+(declaim (inline row-with-type))
+(defun row-with-type (element-type &rest elements)
+  "Make a row matrix from ELEMENTS, with given ELEMENT-TYPE."
+  (make-array (list 1 (length elements)) :element-type element-type
+                                         :initial-contents (list elements)))
+
+(declaim (inline row))
+(defun row (&rest elements)
+  "Make a row matrix from ELEMENTS, with element-type T."
+  (apply #'row-with-type t elements))
+
 (defun vector* (element-type &rest objects)
   (make-array (length objects) :element-type element-type
                                :initial-contents objects))

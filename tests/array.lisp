@@ -53,6 +53,25 @@
     ;;                  (1 6 11)))
     ))
 
+(addtest (array-tests)
+  row-and-column
+  (let ((result #2A((1 2 3)))
+        (r1 (row 1 2 3))
+        (r2 (row-with-type 'fixnum 1 2 3))
+        (*lift-equality-test* #'equalp))
+    (ensure-same r1 result)
+    (ensure-same r2 result)
+    (ensure-same (array-element-type r2)
+                 (upgraded-array-element-type 'fixnum)))
+  (let ((result #2A((1) (2) (3)))
+        (c1 (column 1 2 3))
+        (c2 (column-with-type 'fixnum 1 2 3))
+        (*lift-equality-test* #'equalp))
+    (ensure-same c1 result)
+    (ensure-same c2 result)
+    (ensure-same (array-element-type c2)
+                 (upgraded-array-element-type 'fixnum))))
+
 ;; (addtest (array-tests)
 ;;   rows-and-columns
 ;;   (let ((a #2A((1 2)

@@ -286,4 +286,8 @@
    #:column-sums
    #:column-means
    #:row-sums
-   #:row-means))
+   #:row-means
+   #:column-with-type
+   #:column
+   #:row
+   #:row-with-type))
