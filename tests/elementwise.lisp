@@ -7,6 +7,13 @@
   (:equality-test #'array=))
 
 (addtest (elementwise-tests)
+  elementwise-float-contagion
+  (flet ((compare (type &rest objects)
+           (type= (apply #'elementwise-float-contagion objects) type)))
+    (ensure (compare 'double-float 1d0 0))
+    (ensure (compare 'real 0 1))))
+
+(addtest (elementwise-tests)
   e-operations-tests
   (let ((*lift-equality-test* #'array=)
         (a (array* '(2 3) 'double-float

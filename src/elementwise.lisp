@@ -18,16 +18,16 @@ combined using arithmetic operations."
                     matrix))))
     (declare (type (simple-array (integer 0 9) (10 10)) matrix))
     (if objects
-        (aref #(short-float
+        (aref #(real
+                short-float
                 single-float
                 double-float
                 long-float
-                real
+                complex
                 (complex short-float)
                 (complex single-float)
                 (complex double-float)
-                (complex long-float)
-                complex)
+                (complex long-float))
               (reduce (lambda (i1 i2) (aref matrix i1 i2)) objects
                       :key (lambda (object)
                              (cond
