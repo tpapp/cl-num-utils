@@ -17,3 +17,8 @@
     (ensure-same (ivec 6 2 2) #(6 4))
     (ensure-same (ivec -2 -9 3) #(-2 -5 -8))
     (ensure-same (ivec 1 8 2) #(1 3 5 7))))
+
+(addtest (arithmetic-tests)
+  (let ((a #(1 2 3))
+        (*lift-equality-test* #'==))
+   (ensure-same (normalize1 a) #(1/6 1/3 1/2))))

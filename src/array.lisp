@@ -494,6 +494,10 @@ used to give the element type.  Also see LLA:OUTER."
 (defun normsup (a)
   (reduce #'max a :key #'abs))
 
+(defun normalize1 (sequence)
+  "Return sequence normalized so that it sums to 1."
+  (e/ sequence (sum sequence)))
+
 ;;; iterate clause for columns
 
 (defmacro-driver (for var in-columns matrix :with-index index)

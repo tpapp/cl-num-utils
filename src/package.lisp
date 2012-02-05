@@ -290,4 +290,5 @@
    #:column-with-type
    #:column
    #:row
-   #:row-with-type))
+   #:row-with-type
+   #:normalize1))
