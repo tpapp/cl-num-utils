@@ -2,7 +2,7 @@
   (:use #:cl #:alexandria #:iterate #:let-plus #:anaphora #:cl-num-utils
         #:lift)
   (:shadowing-import-from #:cl-num-utils #:mean #:variance #:median
-                          #:displace-array)
+                          #:displace-array #:sum)
   (:export
 
 
