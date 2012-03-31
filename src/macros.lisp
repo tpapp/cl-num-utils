@@ -20,11 +20,11 @@ place, or a list of a place and a type-string."
                            `(check-type ,place ,type ,type-string)))))))
 
 (defmacro define-with-multiple-bindings
-    (macro &key 
+    (macro &key
              (plural (intern (format nil "~aS" macro)))
              (docstring (format nil "Multiple binding version of ~(~a~)." macro)))
   "Define a version of `macro' with multiple arguments, given as a
-list.  Application of `macro' will be nested.  The new name is the 
+list.  Application of `macro' will be nested.  The new name is the
 plural of the old one (generated using format by default)."
   `(defmacro ,plural (bindings &body body)
      ,docstring
@@ -50,7 +50,7 @@ plural of the old one (generated using format by default)."
 ;; (defmacro define-make-symbol% (package &optional
 ;;                                (name (make-symbol-in package '#:make-symbol%)))
 ;;   "Define a MAKE-SYMBOL% that interns in PACKAGE."
-;;   `(defun ,name (&rest args) 
+;;   `(defun ,name (&rest args)
 ;;      ,(format nil "Build a symbol by concatenating each element of ~
 ;;                    ARGS as strings, and intern it in ~A." package)
 ;;      (intern (concatenate-as-strings args) ,package)))
@@ -60,13 +60,13 @@ plural of the old one (generated using format by default)."
   "Building block for LAZY-LET*.  Not exported."
   (with-unique-names (value flag)
     `(let (,value ,flag)
-       (symbol-macrolet ((,variable (if ,flag 
+       (symbol-macrolet ((,variable (if ,flag
                                         ,value
-                                        (setf ,flag t 
+                                        (setf ,flag t
                                               ,value ,init-form))))
          ,@body))))
 
-(define-with-multiple-bindings lazy-let-block 
+(define-with-multiple-bindings lazy-let-block
     :plural lazy-let*
     :docstring "Similar to LET*, except that the values are evaluated on
     demand.")
@@ -90,14 +90,14 @@ plural of the old one (generated using format by default)."
            ,writer-form))))
 
 (defmacro define-structure-slot-accessor
-    (accessor structure 
+    (accessor structure
      &key (conc-name (format nil "~A-" structure))
           (slot-name accessor) lambda-list-rest
           (read-only? nil))
   "Define a method for the generic function ACCESSOR that acts as an accessor
 for a slot in an instance of STRUCTURE.  "
   (let ((lambda-list `((instance ,structure) ,@lambda-list-rest))
-        (slot-accessor (intern (format nil "~A~A" conc-name slot-name))))
+        (slot-accessor (symbolicate conc-name slot-name)))
     `(progn
        (defmethod ,accessor ,lambda-list
          (,slot-accessor instance))
@@ -133,7 +133,7 @@ All variables are declared DOUBLE-FLOAT in the body."
                     &rest arguments)
   "Like GETHASH, but checking that KEY is present and raising the given
 error if not."
-  (with-unique-names (value present?)  
+  (with-unique-names (value present?)
     `(multiple-value-bind (,value ,present?) (gethash ,key ,hash-table)
        (assert ,present? () ,datum ,@arguments)
        ,value)))
