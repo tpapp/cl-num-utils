@@ -1,7 +1,10 @@
 (defpackage :cl-num-utils
   (:nicknames :clnu)
   (:use #:cl #:iterate #:let-plus #:anaphora #:alexandria)
-  (:shadow #:mean #:median #:variance #:displace-array)
+  (:shadow #:mean #:median #:variance   ; also in ALEXANDRIA
+           #:displace-array             ; no longer in ALEXANDRIA TODO remove in 2012 June
+           #:sum                        ; also in ITERATE
+           )
   (:export
    ;; macros
    #:silent
