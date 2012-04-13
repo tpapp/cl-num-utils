@@ -39,7 +39,8 @@
      (:file "optimization")
      (:file "differentiation")
      (:file "rootfinding")
-     (:file "quadrature"))))
+     (:file "quadrature")
+     (:file "chebyshev"))))
   :depends-on (alexandria iterate let-plus anaphora))
 
 (defsystem :cl-num-utils-tests
@@ -75,6 +76,7 @@
      ;; (:file "interactions")
      (:file "differentiation")
      (:file "rootfinding")
-     (:file "quadrature"))))
+     (:file "quadrature")
+     (:file "chebyshev"))))
   :depends-on
   (iterate metabang-bind anaphora lift alexandria cl-num-utils))

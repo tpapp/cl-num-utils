@@ -2,11 +2,8 @@
 
 (in-package #:cl-num-utils)
 
-;;;; An interval is an ordered pair of real numbers.  It is not
-;;;; necessarily decreasing, as there can be negative intervals (eg
-;;;; for reverse plots), but some functions (eg interval-containing
-;;;; and interval-intersection) return positive intervals by
-;;;; construction.
+;;; TODO: rewrite interface
+;;; TODO: open/closed, general accessors LEFT, RIGHT, CLOSED-LEFT? CLOSED-RIGHT?
 
 (defstruct interval
   "A pair of numbers designating an interval on the real line.  Using the
@@ -14,14 +11,28 @@ constructor INTERVAL, LEFT <= RIGHT is enforced."
   (left 0 :type real :read-only t)
   (right 0 :type real :read-only t))
 
+(defstruct plusinf-interval
+  "Interval [left,∞)."
+  (left nil :type real :read-only t))
+
+(defstruct minusinf-interval
+  "Interval (-∞,right]."
+  (right nil :type real :read-only t))
+
 (define-structure-let+ (interval) left right)
 
 (declaim (inline interval))
-
 (defun interval (left right)
   "Create an INTERVAL."
-  (assert (<= left right) ())
-  (make-interval :left left :right right))
+  (cond
+    ((and (typep left 'real) (typep right 'real))
+     (assert (<= left right) ())
+     (make-interval :left left :right right))
+    ((and (typep left 'real) (eq right t))
+     (make-plusinf-interval :left left))
+    ((and (typep right 'real) (eq left nil))
+     (make-minusinf-interval :right right))
+    (t (error "not implemented / under construction"))))
 
 (defun interval-length (interval)
   "Difference between left and right."

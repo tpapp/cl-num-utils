@@ -295,4 +295,11 @@
    #:row
    #:row-with-type
    #:normalize1
-   #:abs-diff))
+   #:abs-diff
+   #:chebyshev-recursion
+   #:chebyshev-root
+   #:chebyshev-roots
+   #:chebyshev-regression
+   #:chebyshev-evaluate
+   #:chebyshev-approximate
+   #:chebyshev-approximate-implementation))
