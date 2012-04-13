@@ -162,3 +162,8 @@ negative, or zero)."
 (defun absolute-square (number)
   "Number multiplied by its complex conjugate."
   (* (conjugate number) number))
+
+(declaim (inline abs-diff))
+(defun abs-diff (a b)
+  "Absolute difference of A and B."
+  (abs (- a b)))

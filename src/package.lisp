@@ -294,4 +294,5 @@
    #:column
    #:row
    #:row-with-type
-   #:normalize1))
+   #:normalize1
+   #:abs-diff))
