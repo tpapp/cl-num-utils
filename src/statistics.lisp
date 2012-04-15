@@ -257,10 +257,9 @@ practice, TALLY should be INCF'd before using incf-mean.")
 
 (define-structure-let+ (array-mean-accumulator) tally mean)
 
-(defun array-mean-accumulator (array)
+(defun array-mean-accumulator (dimensions)
   "Create an array mean accumulator for array."
-  (array-mean-accumulator% (make-array (array-dimensions array)
-                                       :initial-element 0d0)))
+  (array-mean-accumulator% (make-array dimensions :initial-element 0d0)))
 
 (defmethod add ((accumulator array-mean-accumulator) object)
   (let+ (((&array-mean-accumulator tally nil) accumulator)
@@ -275,7 +274,7 @@ practice, TALLY should be INCF'd before using incf-mean.")
 (define-structure-slot-accessor mean array-mean-accumulator :read-only? t)
 
 (define-conforming-accumulator (mean (array array))
-  (array-mean-accumulator array))
+  (array-mean-accumulator (array-dimensions array)))
 
 ;;; mean-sse accumulator
 
