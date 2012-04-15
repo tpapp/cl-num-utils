@@ -41,7 +41,7 @@
      (:file "rootfinding")
      (:file "quadrature")
      (:file "chebyshev"))))
-  :depends-on (alexandria iterate let-plus anaphora))
+  :depends-on (alexandria iterate let-plus anaphora extended-reals))
 
 (defsystem :cl-num-utils-tests
   :description "Unit tests for CL-NUM-UTILS.."
