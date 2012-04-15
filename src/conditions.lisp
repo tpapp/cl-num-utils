@@ -4,3 +4,10 @@
 
 (define-condition reached-maximum-iterations ()
   ((n :initarg :n :documentation "Number of iterations.")))
+
+(define-condition internal-error ()
+  ()
+  (:report "Internal error.  Please report it as a bug.")
+  (:documentation "An error that is not supposed to happen if the code is
+  correct.  May be the result of numerical imprecision.  Please report it as a
+  bug."))
