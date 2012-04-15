@@ -303,4 +303,7 @@
    #:chebyshev-evaluate
    #:chebyshev-approximate
    #:chebyshev-approximate-implementation
-   #:internal-error))
+   #:internal-error
+   #:not-implemented
+   #:left
+   #:right))

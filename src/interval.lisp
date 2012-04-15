@@ -19,20 +19,48 @@ constructor INTERVAL, LEFT <= RIGHT is enforced."
   "Interval (-∞,right]."
   (right nil :type real :read-only t))
 
-(define-structure-let+ (interval) left right)
+(defgeneric left (interval)
+  (:documentation "Left boundary of interval.  Second value indicates whether
+  the interval is closed on that end.")
+  (:method ((interval interval))
+    (values (interval-left interval) t))
+  (:method ((interval plusinf-interval))
+    (values (plusinf-interval-left interval) t))
+  (:method ((interval minusinf-interval))
+    (xr:-inf)))
+
+(defgeneric right (interval)
+  (:documentation "Right boundary of interval.  Second value indicates whether
+  the interval is closed on that end.")
+  (:method ((interval interval))
+    (values (interval-right interval) t))
+  (:method ((interval plusinf-interval))
+    (xr:inf))
+  (:method ((interval minusinf-interval))
+    (values (minusinf-interval-right interval) t)))
+
+(define-let+-expansion (&interval (left right) :value-var value :body-var body)
+  "LET+ expansion for interval endpoints.  If given a list of two values, the
+second value is an indicator for whether the endpoint is closed."
+  (let+ (((left &optional left-closed?) (ensure-list left))
+         ((right &optional right-closed?) (ensure-list right)))
+    `(let+ (((&values ,left ,left-closed?) (left ,value))
+            ((&values ,right ,right-closed?) (right ,value)))
+       ,@body)))
+
+;;; TODO really implement open/closed interval ends
 
 (declaim (inline interval))
 (defun interval (left right)
   "Create an INTERVAL."
-  (cond
-    ((and (typep left 'real) (typep right 'real))
-     (assert (<= left right) ())
-     (make-interval :left left :right right))
-    ((and (typep left 'real) (eq right t))
-     (make-plusinf-interval :left left))
-    ((and (typep right 'real) (eq left nil))
-     (make-minusinf-interval :right right))
-    (t (error "not implemented / under construction"))))
+  (xr:with-template (? left right)
+    (assert (xr:<= left right) ())
+    (cond
+      ((? real real) (make-interval :left left :right right))
+      ((? real xr:inf) (make-plusinf-interval :left left))
+      ((? xr:-inf real) (make-minusinf-interval :right right))
+      ((? xr:-inf xr:inf) (error 'not-implemented))
+      (t (error 'internal-error)))))
 
 (defun interval-length (interval)
   "Difference between left and right."
