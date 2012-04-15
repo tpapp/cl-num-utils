@@ -25,9 +25,11 @@
 (addtest (chebyshev-tests)
   chebyshev-open-inf
   (ensure (<= (test-chebyshev-approximate (lambda (x) (/ x (+ 4 x)))
-                                          (interval 2 t) 15 (interval 2 102))
+                                          (interval 2 (xr:inf)) 15
+                                          (interval 2 102))
               1e-5))
   (ensure (<= (test-chebyshev-approximate (lambda (x) (exp (- x)))
-                                          (interval 0 t) 15 (interval 0 10)
+                                          (interval 0 (xr:inf)) 15
+                                          (interval 0 10)
                                           :n-points 30)
               1e-4)))
