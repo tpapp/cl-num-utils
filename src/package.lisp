@@ -302,4 +302,5 @@
    #:chebyshev-regression
    #:chebyshev-evaluate
    #:chebyshev-approximate
-   #:chebyshev-approximate-implementation))
+   #:chebyshev-approximate-implementation
+   #:internal-error))
