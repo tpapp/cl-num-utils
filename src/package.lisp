@@ -191,7 +191,6 @@
    #:interval-left
    #:interval-right
    #:&interval
-   #:&interval-r/o
    #:interval-length
    #:interval-midpoint
    #:in-interval?
