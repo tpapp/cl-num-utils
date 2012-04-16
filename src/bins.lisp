@@ -35,7 +35,7 @@
     (interval left (+ left width))))
 
 (defun pretty-bins (width n &key (min-step (default-min-step width))
-                         (bias *pretty-bias*) (five-bias *pretty-five-bias*)) 
+                         (bias *pretty-bias*) (five-bias *pretty-five-bias*))
   "Bins with a pretty step size, calculated using PRETTY-STEP (see its
   documentation)."
   (even-bins (pretty-step width n :min-step min-step :bias bias

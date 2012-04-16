@@ -183,7 +183,7 @@ interval, otherwise they are undefined."
 ;;   (assert (< 0 coefficient 1))
 ;;   (lambda (x)
 ;;     (+ (* (- x attractor) coefficient) attractor)))
-      
+
 ;; (defun root-autobracket (f x negative-rule positive-rule
 ;; 			 &key (maximum-iterations 100)
 ;; 			 (rootfinder #'root-ridders)

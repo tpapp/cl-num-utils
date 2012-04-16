@@ -9,7 +9,7 @@
 (defmacro test-romberg (list &rest rest)
   (with-unique-names (function a b value)
     `(let+ (((,function ,a ,b ,value) ,list))
-       (ensure-same (romberg-quadrature ,function ,a ,b 
+       (ensure-same (romberg-quadrature ,function ,a ,b
                                         ,@rest)
                     ,value))))
 
@@ -24,5 +24,5 @@
     (test-romberg q1 :open? t)
     (test-romberg q2)
     (test-romberg q2 :open? t)
-    (test-romberg q3 :epsilon 1d-9) 
+    (test-romberg q3 :epsilon 1d-9)
     (test-romberg q3 :epsilon 1d-9 :open? t)))

@@ -34,6 +34,6 @@ DIFFERENTIATE for an explanation of the parameters."
   "Return a function that calculates the elasticity numerically.  See
 DIFFERENTIATE for an explanation of the parameters."
   (lambda (x)
-    (let+ (((&values df fx) 
+    (let+ (((&values df fx)
             (differentiate f x :n n :method method :h h)))
       (* df (/ x fx)))))

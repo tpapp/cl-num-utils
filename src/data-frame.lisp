@@ -56,7 +56,7 @@ Implementation notes:
                  (if (plusp index)
                      (length= (first* columns) length)
                      t))
-            () "Column length mismatch.") 
+            () "Column length mismatch.")
     (map nil (lambda (key)
                (let+ (((&values nil present?) (gethash key table)))
                  (assert (not present?) () "Duplicate key ~A." key)

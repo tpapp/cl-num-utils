@@ -43,7 +43,7 @@ to the left'', ie will keep picking smaller values."
               (values m1 f1)
               (values m2 f2))))
       (if (<= f1 f2)			; change <= to maximize
-	  (progn 
+	  (progn
 	    ;; new bracket is (a,m1,m2)
 	    (shiftf b m2 m1 (golden-section-combination m1 a))
 	    (shiftf f2 f1 (funcall f m1)))
@@ -100,7 +100,7 @@ to the left'', ie will keep picking smaller values."
 ;;                               ((minusp discriminant) alpha)
 ;;                               ;; positive b: take left root
 ;;                               ((plusp b) (/ (- gp0) (+ b (sqrt discriminant))))
-;;                               ;; negative b: take right root 
+;;                               ;; negative b: take right root
 ;;                               (t (/ (- (sqrt discriminant) b) a 3d0))))))
 ;;                     ;; quadratic approximation
 ;;                     (- (/ (* gp0 (square alpha))
@@ -111,5 +111,3 @@ to the left'', ie will keep picking smaller values."
 ;;                                 alpha-next)
 ;;                            (* alpha rel-max))))))
 ;;     (error 'reached-max-iter)))
-
-

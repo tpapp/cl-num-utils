@@ -66,4 +66,3 @@
 (addtest (sub-tests)
   test-asub
   (ensure-same (asub (ia 10) (mask #'evenp it)) #(0 2 4 6 8)))
-

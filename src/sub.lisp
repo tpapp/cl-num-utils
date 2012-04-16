@@ -9,18 +9,18 @@
   Available standard selections:
 
     fixnum - select that coordinate, drop a dimension.
-  
+
     vector of fixnums - select those coordinates.
-  
+
     (cons start end) - coordinates i such that start <= i < end.
-  
+
     (seq start end &optional by strict-direction?) - arithmetic sequence, the
       sign of BY is adjusted unless STRICT-DIRECTION.
-  
+
     (cat &rest ...) - concatenate selections
-  
+
     (rev ...) - reverse the order of elements
-  
+
     (sub ... sub-selection) - select indexes using selection
 
   In all of the above, negative numbers count back from DIMENSION.  Because of
@@ -177,7 +177,7 @@ dimension.")
             by strict-direction?))))
 
 ;;; walking selections
-;;; 
+;;;
 ;;; Recursive traversal of selections is implemented by closures chained
 ;;; together.  Once the index reaches its last value, the next one is
 ;;; incremented.  The cumulative sum is only partially calculated.
@@ -280,7 +280,7 @@ fixnum selections."
   (map 'vector (lambda (s d) (sub-resolve-selection s d nil))
        selections dimensions))
 
-(defmacro with-indexing ((selections dimensions index next 
+(defmacro with-indexing ((selections dimensions index next
                           &key effective-dimensions)
                          &body body)
   "Establish incrementation and index-calculation functions within BODY.  The

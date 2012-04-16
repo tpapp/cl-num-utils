@@ -39,7 +39,7 @@ The algorithm uses Richardson extrapolation, the required coefficient is q^k."
 
 ;;;; iterative quadrature: generic interface
 
-(defstruct iterative-quadrature 
+(defstruct iterative-quadrature
   (f nil :type (function (double-float) double-float))
   (a nil :type double-float)
   (b nil :type double-float)
@@ -67,13 +67,13 @@ The algorithm uses Richardson extrapolation, the required coefficient is q^k."
   ;; (declare (optimize speed))
   (let+ (((&structure-r/o iterative-quadrature- a b f) quadrature)
          ((&structure iterative-quadrature- n h sum) quadrature))
-    (setf sum 
+    (setf sum
           (if (zerop n)
               (* (+ (funcall f a) (funcall f b)) h 0.5d0)
               (+ (/ sum 2)
                  (let* ((h h))
                    (* h
-                      (loop 
+                      (loop
                         repeat (expt 2 (1- n))
                         for x from (+ a h) by (* 2 h)
                         summing (funcall f x)))))))
@@ -99,7 +99,7 @@ The algorithm uses Richardson extrapolation, the required coefficient is q^k."
   ;; (declare (optimize speed))
   (let+ (((&structure-r/o iterative-quadrature- a b f) quadrature)
          ((&structure iterative-quadrature- n h sum) quadrature))
-    (setf sum 
+    (setf sum
           (if (zerop n)
               (* h (+ (funcall f (/ (+ a b) 2))))
               (+ (/ sum 3)
