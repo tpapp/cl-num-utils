@@ -39,14 +39,15 @@ constructor INTERVAL, LEFT <= RIGHT is enforced."
   (:method ((interval minusinf-interval))
     (values (minusinf-interval-right interval) t)))
 
-(define-let+-expansion (&interval (left right) :value-var value :body-var body)
-  "LET+ expansion for interval endpoints.  If given a list of two values, the
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (define-let+-expansion (&interval (left right) :value-var value :body-var body)
+    "LET+ expansion for interval endpoints.  If given a list of two values, the
 second value is an indicator for whether the endpoint is closed."
-  (let+ (((left &optional left-closed?) (ensure-list left))
-         ((right &optional right-closed?) (ensure-list right)))
-    `(let+ (((&values ,left ,left-closed?) (left ,value))
-            ((&values ,right ,right-closed?) (right ,value)))
-       ,@body)))
+    (let+ (((left &optional left-closed?) (ensure-list left))
+           ((right &optional right-closed?) (ensure-list right)))
+      `(let+ (((&values ,left ,left-closed?) (left ,value))
+              ((&values ,right ,right-closed?) (right ,value)))
+         ,@body))))
 
 ;;; TODO really implement open/closed interval ends
 
