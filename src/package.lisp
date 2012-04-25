@@ -305,4 +305,5 @@
    #:internal-error
    #:not-implemented
    #:left
-   #:right))
+   #:right
+   #:semi-elasticity))

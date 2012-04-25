@@ -30,6 +30,14 @@ DIFFERENTIATE for an explanation of the parameters."
   (lambda (x)
     (differentiate f x :n n :method method :h h)))
 
+(defun semi-elasticity (f &key (n 1) (method :right) h)
+  "Return a function that calculates the semi-elasticity numerically.  See
+DIFFERENTIATE for an explanation of the parameters."
+  (lambda (x)
+    (let+ (((&values df fx)
+            (differentiate f x :n n :method method :h h)))
+      (/ df fx))))
+
 (defun elasticity (f &key (n 1) (method :right) h)
   "Return a function that calculates the elasticity numerically.  See
 DIFFERENTIATE for an explanation of the parameters."
