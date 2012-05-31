@@ -620,3 +620,7 @@ instead of a matrix.")
     (let ((ncol (array-dimension matrix 1))
           (result (row-sums matrix element-type)))
       (map-into result (lambda (x) (/ x ncol)) result))))
+
+(defun generate-sequence (result-type size function)
+  "Like MAKE-SEQUENCE, but using a function to fill the result."
+  (map-into (make-sequence result-type size) function))
