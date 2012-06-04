@@ -101,24 +101,24 @@ points (zeroes of the corresponding Chebyshev polynomial)."
     (+ c (/ z-norm (- 1 z-norm)))))
 
 (defun chebyshev-approximate (f interval n-polynomials
-                              &key (n-points n-polynomials) closed-left? closed-right?)
+                              &key (n-points n-polynomials))
   "Return a closure approximating F on the given INTERVAL (may be infinite on
 either end) using the given number of Chebyshev polynomials."
-  (chebyshev-approximate-implementation f interval n-polynomials n-points
-                                        closed-left? closed-right?))
+  (chebyshev-approximate-implementation f interval n-polynomials n-points))
 
-(defgeneric chebyshev-approximate-implementation (f interval n-polynomials n-points
-                                                  closed-left? closed-right?)
+(defgeneric chebyshev-approximate-implementation (f interval n-polynomials n-points)
   (:documentation "Implementation of CHEBYSHEV-APPROXIMATE.")
-  (:method (f (interval plusinf-interval) n-polynomials n-points
-            closed-left? closed-right?)
-    (let+ ((a (if closed-left?
-                  (chebyshev-root n-points 0)
-                  -1d0))
-           (left (coerce (plusinf-interval-left interval) 'double-float))
+  (:method (f (interval plusinf-interval) n-polynomials n-points)
+    (let+ (((&interval (left open-left?) &ign) interval)
+           (a (if open-left?
+                  -1d0
+                  (chebyshev-root n-points 0)))
+           (left (coerce left 'double-float))
            (coefficients
             (chebyshev-regression (lambda (z)
                                     (funcall f (ab-to-cinf z a 1d0 left)))
                                   n-polynomials n-points)))
       (lambda (x)
-        (chebyshev-evaluate coefficients (cinf-to-ab x a 1d0 left))))))
+        (chebyshev-evaluate coefficients (cinf-to-ab x a 1d0 left)))))
+  ;; (:method (f (interval interval) ))
+  )

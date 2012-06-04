@@ -526,7 +526,7 @@ conformity after that -- when element-type is given, it is used instead.  If
 the function doesn't return a vector, the values are collected in a vector
 instead of a matrix.")
   (:method (function (matrix array) &key element-type)
-    (let+ (((nil ncol) (array-dimensions matrix))
+    (let+ (((&ign ncol) (array-dimensions matrix))
            result
            result-nrow)
       (loop
@@ -625,7 +625,3 @@ instead of a matrix.")
     (let ((ncol (array-dimension matrix 1))
           (result (row-sums matrix element-type)))
       (map-into result (lambda (x) (/ x ncol)) result))))
-
-(defun generate-sequence (result-type size function)
-  "Like MAKE-SEQUENCE, but using a function to fill the result."
-  (map-into (make-sequence result-type size) function))

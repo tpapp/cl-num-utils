@@ -4,11 +4,12 @@
 
 (deftestsuite interval-tests (cl-num-utils-tests)
   ()
-  (:equality-test #'equalp))
+  (:equality-test #'==))
 
 (addtest (interval-tests)
   test-interval
-  (let ((a (interval 1 2)))
+  (let ((a (interval 1 2))
+        (*lift-equality-test* #'==))
     (ensure-same (interval-length a) 1)
     (ensure-same (interval-midpoint a 0.25) 1.25)
     (ensure-same (shrink-interval a 0.25 0.2)

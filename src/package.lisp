@@ -310,4 +310,5 @@
    #:generate-sequence
    #:aseq
    #:splice-when
-   #:vv-transpose))
+   #:vv-transpose
+   #:finite-interval))

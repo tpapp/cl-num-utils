@@ -229,7 +229,7 @@
 (addtest (statistics-tests)
   histogram-test
   (let ((histogram (histogram-accumulator (even-bins 2 -1)))
-        (*lift-equality-test* #'equalp))
+        (*lift-equality-test* #'==))
     (add histogram 0)
     (add histogram 0.5)
     (loop repeat 3 do (add histogram 1.5))

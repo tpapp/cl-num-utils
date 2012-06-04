@@ -5,67 +5,156 @@
 ;;; TODO: rewrite interface
 ;;; TODO: open/closed, general accessors LEFT, RIGHT, CLOSED-LEFT? CLOSED-RIGHT?
 
-(defstruct interval
-  "A pair of numbers designating an interval on the real line.  Using the
-constructor INTERVAL, LEFT <= RIGHT is enforced."
-  (left 0 :type real :read-only t)
-  (right 0 :type real :read-only t))
 
-(defstruct plusinf-interval
-  "Interval [left,∞)."
-  (left nil :type real :read-only t))
-
-(defstruct minusinf-interval
-  "Interval (-∞,right]."
-  (right nil :type real :read-only t))
+;;; basic interval definitions and interface
 
 (defgeneric left (interval)
-  (:documentation "Left boundary of interval.  Second value indicates whether
-  the interval is closed on that end.")
-  (:method ((interval interval))
-    (values (interval-left interval) t))
-  (:method ((interval plusinf-interval))
-    (values (plusinf-interval-left interval) t))
-  (:method ((interval minusinf-interval))
-    (xr:-inf)))
+  (:documentation "Left endpoint of interval."))
+
+(defgeneric open-left? (interval)
+  (:documentation "True iff the left endpoint of the interval is open."))
 
 (defgeneric right (interval)
-  (:documentation "Right boundary of interval.  Second value indicates whether
-  the interval is closed on that end.")
-  (:method ((interval interval))
-    (values (interval-right interval) t))
-  (:method ((interval plusinf-interval))
-    (xr:inf))
-  (:method ((interval minusinf-interval))
-    (values (minusinf-interval-right interval) t)))
+  (:documentation "Right endpoint of interval."))
+
+(defgeneric open-right? (interval)
+  (:documentation "True iff the right endpoint of the interval is open."))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (define-let+-expansion (&interval (left right) :value-var value :body-var body)
-    "LET+ expansion for interval endpoints.  If given a list of two values, the
-second value is an indicator for whether the endpoint is closed."
-    (let+ (((left &optional left-closed?) (ensure-list left))
-           ((right &optional right-closed?) (ensure-list right)))
-      `(let+ (((&values ,left ,left-closed?) (left ,value))
-              ((&values ,right ,right-closed?) (right ,value)))
+    "LET+ expansion for interval endpoints.  If given a list of two values,
+the second value is an indicator for whether the endpoint is open."
+    (let+ (((left &optional (open-left? nil left-open-p)) (ensure-list left))
+           ((right &optional (open-right? nil right-open-p)) (ensure-list right)))
+      `(let+ ((,left (left ,value))
+              ,@(splice-when left-open-p `(,open-left? (open-left? ,value)))
+              (,right (right ,value))
+              ,@(splice-when right-open-p `(,open-right? (open-right? ,value))))
          ,@body))))
 
-;;; TODO really implement open/closed interval ends
+;;; mix-in classes.  used as building blocks, none of these are exported.
+
+(defclass interval/finite-left ()
+  ((left :type real :initarg :left :reader left)
+   (open-left? :type boolean :initarg :open-left? :reader open-left?))
+  (:documentation "Interval with left endpoint."))
+
+(defclass interval/finite-right ()
+  ((right :type real :initarg :right :reader right)
+   (open-right? :type boolean :initarg :open-right? :reader open-right?))
+  (:documentation "Interval with right endpoint."))
+
+(defclass interval/infinite-left ()
+  ()
+  (:documentation "Left endpoint is -∞."))
+
+(defmethod left ((interval interval/infinite-left))
+  (xr:-inf))
+
+(defmethod open-left? ((interval interval/infinite-left))
+  t)
+
+(defclass interval/infinite-right ()
+  ()
+  (:documentation "Right endpoint is ∞."))
+
+(defmethod right ((interval interval/infinite-right))
+  (xr:inf))
+
+(defmethod open-right? ((interval interval/infinite-right))
+  t)
+
+(defgeneric print-left-endpoint (interval stream)
+  (:method ((interval interval/finite-left) stream)
+    (let+ (((&slots-r/o left open-left?) interval))
+      (format stream "~C~A" (if open-left? #\( #\[) left)))
+  (:method ((interval interval/infinite-left) stream)
+    (format stream "(-∞")))
+
+(defgeneric print-right-endpoint (interval stream)
+  (:method ((interval interval/finite-right) stream)
+    (let+ (((&slots-r/o right open-right?) interval))
+      (format stream "~A~C" right (if open-right? #\) #\]))))
+  (:method ((interval interval/infinite-right) stream)
+    (format stream "∞)")))
+
+
+;;; interval types
+
+(defclass interval ()
+  ()
+  (:documentation "Abstract superclass for all intervals."))
+
+(defmethod print-object ((interval interval) stream)
+  (print-unreadable-object (interval stream :type t)
+    (print-left-endpoint interval stream)
+    (format stream ",")
+    (print-right-endpoint interval stream)))
+
+(defclass finite-interval (interval interval/finite-left interval/finite-right)
+  ()
+  (:documentation "Interval with finite endpoints."))
+
+(defmethod initialize-instance :after ((interval finite-interval)
+                                       &key &allow-other-keys)
+  (let+ (((&slots-r/o left right open-left? open-right?) interval))
+    (cond
+      ((> left right) (error "Intervals with LEFT > RIGHT are not allowed."))
+      ((= left right) (assert (not (or open-left? open-right?)) ()
+                              "Zero-length intervals cannot be (half-)open.")))))
+
+(defclass plusinf-interval (interval interval/finite-left interval/infinite-right)
+  ()
+  (:documentation "Interval from LEFT to ∞."))
+
+(defclass minusinf-interval (interval/infinite-left interval/finite-right)
+  ()
+  (:documentation "Interval from -∞ to RIGHT."))
+
+(defclass real-line (interval interval/infinite-left interval/infinite-right)
+  ()
+  (:documentation "Representing the real line (-∞,∞)."))
+
+(defmethod == ((a real-line) (b real-line)
+                &optional (tolerance *==-tolerance*))
+  (declare (ignore tolerance))
+  t)
+
+(defmethod == ((a finite-interval) (b finite-interval)
+               &optional (tolerance *==-tolerance*))
+  (let+ (((&interval (al alo?) (ar aro?)) a)
+         ((&interval (bl blo?) (br bro?)) b))
+    (and (== al bl tolerance)
+         (== ar br tolerance)
+         (eq alo? blo?)
+         (eq aro? bro?))))
+
+
+;;; interval creation interface
 
 (declaim (inline interval))
-(defun interval (left right)
+(defun interval (left right &key open-left? open-right?)
   "Create an INTERVAL."
   (xr:with-template (? left right)
-    (assert (xr:<= left right) ())
     (cond
-      ((? real real) (make-interval :left left :right right))
-      ((? real xr:inf) (make-plusinf-interval :left left))
-      ((? xr:-inf real) (make-minusinf-interval :right right))
-      ((? xr:-inf xr:inf) (error 'not-implemented))
+      ((? real real) (make-instance 'finite-interval :left left :right right
+                                                     :open-left? open-left?
+                                                     :open-right? open-right?))
+      ((? real xr:inf) (make-instance 'plusinf-interval :left left
+                                                        :open-left? open-left?))
+      ((? xr:-inf real) (make-instance 'minusinf-interval :right right
+                                                          :open-right? open-right?))
+      ((? xr:-inf xr:inf) (make-instance 'real-line))
       (t (error 'internal-error)))))
+
+
+;;; interval
+
+;;; FIXME code below dows not handle open/infinite endpoints
 
 (defun interval-length (interval)
   "Difference between left and right."
-  (- (interval-right interval) (interval-left interval)))
+  (- (right interval) (left interval)))
 
 (defun interval-midpoint (interval &optional (alpha 1/2))
   "Convex combination of left and right, with alpha (defaults to 0.5)
@@ -156,7 +245,7 @@ interval, and error is signalled."
       (error "Length of divisions exceeds the width of the interval."))
     (assert (not (and (zerop spacers) (plusp rest))) ()
             "Divisions don't use up the interval.")
-    (let* ((left (interval-left interval))
+    (let* ((left (left interval))
            (spacer-unit (/ rest spacers)))
       (map 'vector (lambda (div)
 		     (let* ((step (etypecase div
@@ -192,6 +281,7 @@ endpoints of the interval.  RESULT-TYPE determines the result type (eg list),
 if not given it is a simple-array of rank 1 and the narrowest numerical
 element type."
   (assert (<= 2 size))
+  (check-type interval finite-interval)
   (let+ (((&interval left right) interval)
          (width (- right left))
          (size-1 (1- size))

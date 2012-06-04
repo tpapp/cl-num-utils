@@ -294,3 +294,7 @@ to the desired length."
   "Return 1-number.  The mnemonic is \"1 complement\", 1- is already a CL
 library function."
   (- 1 number))
+
+(defun generate-sequence (result-type size function)
+  "Like MAKE-SEQUENCE, but using a function to fill the result."
+  (map-into (make-sequence result-type size) function))
