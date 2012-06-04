@@ -86,7 +86,7 @@ points (zeroes of the corresponding Chebyshev polynomial)."
 
 
 
-(declaim (inline ab-to-cinf cinf-to-ab))
+(declaim (inline ab-to-cinf cinf-to-ab ab-to-cd-intercept-slope))
 
 (defun cinf-to-ab (x a b c)
   "Map x in [c,plus-infinity) to z in [a,b] using x -> (x-c)/(1+x-c)+(b-a)+a."
@@ -100,13 +100,21 @@ points (zeroes of the corresponding Chebyshev polynomial)."
     (assert (within? 0 z-norm 1) () "Value outside domain.")
     (+ c (/ z-norm (- 1 z-norm)))))
 
+(defun ab-to-cd-intercept-slope (a b c d)
+  "Return (values INTERCEPT SLOPE) for linear mapping x:-> intercept+slope*x
+from [a,b] to [c,d]."
+  (let ((b-a (- b a)))
+    (values (/ (- (* b c) (* a d)) b-a)
+            (/ (- d c) b-a))))
+
 (defun chebyshev-approximate (f interval n-polynomials
                               &key (n-points n-polynomials))
   "Return a closure approximating F on the given INTERVAL (may be infinite on
 either end) using the given number of Chebyshev polynomials."
   (chebyshev-approximate-implementation f interval n-polynomials n-points))
 
-(defgeneric chebyshev-approximate-implementation (f interval n-polynomials n-points)
+(defgeneric chebyshev-approximate-implementation (f interval n-polynomials
+                                                  n-points)
   (:documentation "Implementation of CHEBYSHEV-APPROXIMATE.")
   (:method (f (interval plusinf-interval) n-polynomials n-points)
     (let+ (((&interval (left open-left?) &ign) interval)
@@ -120,5 +128,20 @@ either end) using the given number of Chebyshev polynomials."
                                   n-polynomials n-points)))
       (lambda (x)
         (chebyshev-evaluate coefficients (cinf-to-ab x a 1d0 left)))))
-  ;; (:method (f (interval interval) ))
-  )
+  (:method (f (interval finite-interval) n-polynomials n-points)
+    (let+ (((&interval (left open-left?) (right open-right?)) interval)
+           ((&assert (< left right)))
+           (a (if open-left?
+                  -1d0
+                  (chebyshev-root n-points 0)))
+           (b (if open-right?
+                  1d0
+                  (chebyshev-root n-points (1- n-points))))
+           ((&values intercept slope) (ab-to-cd-intercept-slope left right a b))
+           (coefficients (chebyshev-regression (lambda (z)
+                                                 (funcall f (/ (- z intercept)
+                                                               slope)))
+                                               n-polynomials n-points)))
+      (d:v intercept slope)
+      (lambda (x)
+        (chebyshev-evaluate coefficients (+ intercept (* slope x)))))))

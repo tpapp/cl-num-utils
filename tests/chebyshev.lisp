@@ -33,3 +33,10 @@
                                           (interval 0 10)
                                           :n-points 30)
               1e-4)))
+
+(addtest (chebyshev-tests)
+  chebyshev-finite-interval
+  (ensure (<= (test-chebyshev-approximate (lambda (x) (/ (1+ (expt x 2))))
+                                          (interval -3d0 2d0) 20
+                                          (interval -1.5d0 1d0))
+              1e-3)))
