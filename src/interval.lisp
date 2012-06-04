@@ -185,3 +185,33 @@ than the original.  Negative LEFT and RIGHT extend the interval."
     (when check-flip?
       (assert (= (signum d) (signum (- r2 l2)))))
     (interval l2 r2)))
+
+(defun aseq (interval size &optional (result-type nil result-type?))
+  "Return an arithmetic sequence of the given size (length) between the
+endpoints of the interval.  RESULT-TYPE determines the result type (eg list),
+if not given it is a simple-array of rank 1 and the narrowest numerical
+element type."
+  (assert (<= 2 size))
+  (let+ (((&interval left right) interval)
+         (width (- right left))
+         (size-1 (1- size))
+         ((&flet element (index)
+            (if (= index size-1)
+                right
+                (+ left (* (/ index size-1) width))))))
+    (generate-sequence (if result-type?
+                           result-type
+                           `(simple-array
+                             ,(aetypecase (element 1)
+                                (fixnum (if (and (typep left 'fixnum)
+                                                 (typep right 'fixnum))
+                                            'fixnum
+                                            (upgraded-array-element-type 'integer)))
+                                (float (type-of it))
+                                (t (upgraded-array-element-type 'rational)))
+                             (*)))
+                       size
+                       (let ((index 0))
+                         (lambda ()
+                           (prog1 (element index)
+                             (incf index)))))))

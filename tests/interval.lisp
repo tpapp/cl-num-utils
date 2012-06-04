@@ -56,3 +56,11 @@
     (extendf-interval (aref a (incf counter)) 3)
     (ensure-same a (vector (interval 3 3) (interval 1 3)))
     (ensure-same counter 1)))
+
+(addtest (interval-tests)
+  test-aseq
+  (let ((*lift-equality-test* #'array=))
+    (ensure-same (aseq (interval 0.0 1.0) 3)
+                 (vector* (type-of 0.5) 0.0 0.5 1.0))
+    (ensure-same (aseq (interval 0 4) 3)
+                 (vector* 'fixnum 0 2 4))))

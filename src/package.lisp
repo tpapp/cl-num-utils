@@ -306,4 +306,8 @@
    #:not-implemented
    #:left
    #:right
-   #:semi-elasticity))
+   #:semi-elasticity
+   #:generate-sequence
+   #:aseq
+   #:splice-when
+   #:vv-transpose))

@@ -321,6 +321,11 @@ that element is not an array, the original ARRAY is returned as it is."
                       (aref matrix row-index col-index))))))
     columns))
 
+(defun vv-transpose (vector-of-vectors)
+  "Transpose a matrix given as a vector of vectors, returning it in the same
+format."
+  (subarrays 1 (transpose (combine vector-of-vectors))))
+
 (defun columns-to-matrix (columns
                           &optional (element-type
                                      (common-array-element-type columns)))

@@ -137,3 +137,11 @@ error if not."
     `(multiple-value-bind (,value ,present?) (gethash ,key ,hash-table)
        (assert ,present? () ,datum ,@arguments)
        ,value)))
+
+(defmacro splice-when (test &body forms)
+  "Similar to when, but wraps the result in list.
+
+Example: `(,foo ,@(splice-when add-bar? bar))"
+  `(when ,test
+     (list
+      (progn ,@forms))))
