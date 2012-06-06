@@ -142,6 +142,5 @@ either end) using the given number of Chebyshev polynomials."
                                                  (funcall f (/ (- z intercept)
                                                                slope)))
                                                n-polynomials n-points)))
-      (d:v intercept slope)
       (lambda (x)
         (chebyshev-evaluate coefficients (+ intercept (* slope x)))))))
