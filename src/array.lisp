@@ -544,7 +544,12 @@ instead of a matrix.")
              (if result-nrow
                  (setf (sub result t col-index) mapped-col)
                  (setf (aref result col-index) mapped-col))))
-      result)))
+      result))
+  (:method (function (vector vector) &key element-type)
+    ;; FIXME ugly hack, forming a vector then extracting an element is not
+    ;; really elegant
+    (map-columns (lambda (c) (funcall function (aref c 0)))
+                 (as-row vector) :element-type element-type)))
 
 (defgeneric map-rows (function object &key element-type &allow-other-keys)
   (:documentation "Map rows of object (eg a matrix) using FUNCTION.")
