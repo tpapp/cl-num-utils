@@ -275,33 +275,41 @@ than the original.  Negative LEFT and RIGHT extend the interval."
       (assert (= (signum d) (signum (- r2 l2)))))
     (interval l2 r2)))
 
-(defun aseq (interval size &optional (result-type nil result-type?))
-  "Return an arithmetic sequence of the given size (length) between the
-endpoints of the interval.  RESULT-TYPE determines the result type (eg list),
-if not given it is a simple-array of rank 1 and the narrowest numerical
-element type."
-  (assert (<= 2 size))
+(defun grid-in (interval size &optional (sequence-type nil sequence-type?))
+    "Return an arithmetic sequence of the given size (length) between the
+endpoints of the interval.  The endpoints of the sequence coincide with the
+respective endpoint of the interval iff it is closed.  RESULT-TYPE determines
+the result type (eg list), if not given it is a simple-array (of rank 1),
+narrowing to the appropriate float type or fixnum if possible."
   (check-type interval finite-interval)
-  (let+ (((&interval left right) interval)
-         (width (- right left))
+  (check-type size (integer 2))
+  (let+ (((&interval (left open-left?) (right open-right?)) interval)
+         ;; correction calculations take care of numeric contagion
+         (left-correction (if open-left? 1/2 0))
+         (right-correction (if open-right? 1/2 0))
          (size-1 (1- size))
-         ((&flet element (index)
-            (if (= index size-1)
-                right
-                (+ left (* (/ index size-1) width))))))
-    (generate-sequence (if result-type?
-                           result-type
-                           `(simple-array
-                             ,(aetypecase (element 1)
-                                (fixnum (if (and (typep left 'fixnum)
-                                                 (typep right 'fixnum))
-                                            'fixnum
-                                            (upgraded-array-element-type 'integer)))
-                                (float (type-of it))
-                                (t (upgraded-array-element-type 'rational)))
-                             (*)))
-                       size
+         (step (/ (- right left)
+                  (+ size-1 left-correction right-correction)))
+         (left (+ left (* step left-correction)))
+         (right (- right (* step right-correction)))
+         ;;
+         (step (/ (- right left) size-1))
+         (element-type (cond
+                         ((and sequence-type? (subtypep sequence-type 'array))
+                          (let+ (((&ign &optional (element-type t) &rest &ign)
+                                  sequence-type))
+                            element-type))
+                         ((floatp step) (type-of step))
+                         ((and (fixnum? left) (fixnum? right) (fixnum? step))
+                          'fixnum)
+                         (t t)))
+         (sequence-type (if sequence-type?
+                            sequence-type
+                            `(simple-array ,element-type (*)))))
+    (generate-sequence sequence-type size
                        (let ((index 0))
                          (lambda ()
-                           (prog1 (element index)
+                           (prog1 (if (= index size-1)
+                                      right
+                                      (+ left (* index step)))
                              (incf index)))))))

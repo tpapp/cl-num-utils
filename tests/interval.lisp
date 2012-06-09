@@ -59,9 +59,9 @@
     (ensure-same counter 1)))
 
 (addtest (interval-tests)
-  test-aseq
+  test-grid-in
   (let ((*lift-equality-test* #'array=))
-    (ensure-same (aseq (interval 0.0 1.0) 3)
+    (ensure-same (grid-in (interval 0.0 1.0) 3)
                  (vector* (type-of 0.5) 0.0 0.5 1.0))
-    (ensure-same (aseq (interval 0 4) 3)
+    (ensure-same (grid-in (interval 0 4) 3)
                  (vector* 'fixnum 0 2 4))))
