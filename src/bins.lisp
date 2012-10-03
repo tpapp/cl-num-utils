@@ -114,11 +114,12 @@
 
 (defun format-bin-location (location)
   "Return location, formatted as a string."
-  (etypecase location
-    (interval (format nil "[~A,~A]"
-                      (format-number (interval-left location))
-                      (format-number (interval-right location))))
-    (real (format-number location))))
+  (let+ (((&interval left right) location))
+    (etypecase location
+      (interval (format nil "[~A,~A]"
+                        (format-number left)
+                        (format-number right)))
+      (real (format-number location)))))
 
 (defun binary-search (sorted i)
   "Binary search for a number I on a sequence (vector preferred) sorted in
