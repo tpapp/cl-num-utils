@@ -33,7 +33,7 @@ Implementation notes:
 (defmethod ncol ((data-frame data-frame))
   (length (slot-value data-frame 'columns)))
 
-(defmethod as-array ((data-frame data-frame) &key)
+(defmethod as-array ((data-frame data-frame) &key &allow-other-keys)
   (columns-to-matrix (slot-value data-frame 'columns)))
 
 (defun copy-data-frame (data-frame &optional (map-columns #'identity))
