@@ -347,10 +347,10 @@ ELEMENT-TYPE is deduced automatically, unless given."
 (defgeneric map1 (function object &key element-type &allow-other-keys)
   (:documentation "Map OBJECT elementwise using FUNCTION.  Results in a
   similar object, with specificed ELEMENT-TYPE where applicable.")
-  (:method (function (array array) &key (element-type t))
+  (:method (function (array array) &key (element-type t) &allow-other-keys)
     (aprog1 (make-array (array-dimensions array) :element-type element-type)
       (map-into (flatten-array it) function (flatten-array array))))
-  (:method (function (list list) &key)
+  (:method (function (list list) &key &allow-other-keys)
     (mapcar function list)))
 
 ;;; subvector
@@ -376,7 +376,7 @@ ELEMENT-TYPE is deduced automatically, unless given."
   which may nevertheless share structure with something.  COPY? can be used to
   avoid that.  Other keyword arguments may make as-array return something
   else (eg an array wrapped in a structure to indicate that it is special).")
-  (:method ((array array) &key copy?)
+  (:method ((array array) &key copy? &allow-other-keys)
     (maybe-copy-array array copy?)))
 
 (defgeneric diagonal (object &key copy?)
@@ -525,7 +525,7 @@ of rows are established after the first function call, and are checked for
 conformity after that -- when element-type is given, it is used instead.  If
 the function doesn't return a vector, the values are collected in a vector
 instead of a matrix.")
-  (:method (function (matrix array) &key element-type)
+  (:method (function (matrix array) &key element-type &allow-other-keys)
     (let+ (((&ign ncol) (array-dimensions matrix))
            result
            result-nrow)
@@ -553,7 +553,7 @@ instead of a matrix.")
 
 (defgeneric map-rows (function object &key element-type &allow-other-keys)
   (:documentation "Map rows of object (eg a matrix) using FUNCTION.")
-  (:method (function (matrix array) &key (element-type t))
+  (:method (function (matrix array) &key (element-type t) &allow-other-keys)
     (check-type matrix matrix)
     ;; FIXME: more efficient implementations should be possible
     (combine (map 'vector function (subarrays 1 matrix)) element-type)))
