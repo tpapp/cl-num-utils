@@ -148,16 +148,18 @@ estimator for the variance (normalizing by 1-n).")
 
 (defgeneric quantile (object q)
   (:documentation "Return an element at quantile Q.  May be an interpolation
-  or an approximation, depending on OBJECT and Q.")
+or an approximation, depending on OBJECT and Q.  Extensions should define
+methods for QUANTILES, not QUANTILE.")
   (:method ((object sequence) q)
-    (quantile (ensure-sorted-reals object) q )))
+    (quantile (ensure-sorted-reals object) q ))
+  (:method (object q)
+    (aref (quantiles object (vector q)) 0)))
 
 (defgeneric quantiles (object qs)
-  (:documentation "Multiple quantiles, see QUANTILE.")
+  (:documentation "Multiple quantiles, see QUANTILE.  Extensions should define
+methods for QUANTILES, not QUANTILE.")
   (:method ((object sequence) qs)
-    (quantiles (ensure-sorted-reals object) qs))
-  (:method (object qs)
-    (map1 (lambda (q) (quantile object q)) qs)))
+    (quantiles (ensure-sorted-reals object) qs)))
 
 (defgeneric median (object)
   (:documentation "Median of OBJECT.")
@@ -538,8 +540,9 @@ length N.  That is to say,
 for any vector SAMPLE."
   (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
 
-(defmethod quantile ((accumulator sorted-reals) q)
-  (empirical-quantile (elements accumulator) q))
+(defmethod quantiles ((accumulator sorted-reals) q)
+  (map 'vector
+       (curry #'empirical-quantile (elements accumulator)) q))
 
 (defun sorted-reals ()
   (make-sorted-reals))
