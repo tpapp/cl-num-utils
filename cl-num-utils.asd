@@ -80,4 +80,4 @@
      (:file "rootfinding")
      (:file "quadrature")
      (:file "chebyshev"))))
-  :depends-on (#:metabang-bind #:lift #:cl-num-utils))
+  :depends-on (#:cl-num-utils #:lift))
