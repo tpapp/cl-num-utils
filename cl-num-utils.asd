@@ -11,6 +11,7 @@
   :version "0.1"
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Boost Software License - Version 1.0"
+  :encoding :utf-8
   :serial t
   :components
   ((:module
@@ -41,12 +42,13 @@
      (:file "rootfinding")
      (:file "quadrature")
      (:file "chebyshev"))))
-  :depends-on (alexandria iterate let-plus anaphora extended-reals))
+  :depends-on (#:anaphora #:alexandria #:extended-reals #:iterate #:let-plus))
 
-(defsystem :cl-num-utils-tests
+(asdf:defsystem :cl-num-utils-tests
   :description "Unit tests for CL-NUM-UTILS.."
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Same as CL-NUM-UTILS -- this is part of the CL-NUM-UTILS library."
+  :encoding :utf-8
   :serial t
   :components
   ((:module
@@ -78,5 +80,4 @@
      (:file "rootfinding")
      (:file "quadrature")
      (:file "chebyshev"))))
-  :depends-on
-  (iterate metabang-bind anaphora lift alexandria cl-num-utils))
+  :depends-on (#:metabang-bind #:lift #:cl-num-utils))
