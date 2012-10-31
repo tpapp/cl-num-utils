@@ -309,6 +309,7 @@
    #:semi-elasticity
    #:generate-sequence
    #:splice-when
+   #:splice-awhen
    #:vv-transpose
    #:finite-interval
    #:grid-in))

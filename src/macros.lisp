@@ -145,3 +145,9 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
   `(when ,test
      (list
       (progn ,@forms))))
+
+(defmacro splice-awhen (test &body forms)
+  "Similar to splice-when, but binds IT to test."
+  `(awhen ,test
+     (list
+      (progn ,@forms))))
