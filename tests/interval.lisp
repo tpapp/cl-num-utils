@@ -65,3 +65,7 @@
                  (vector* (type-of 0.5) 0.0 0.5 1.0))
     (ensure-same (grid-in (interval 0 4) 3)
                  (vector* 'fixnum 0 2 4))))
+
+(addtest (interval-tests)
+  test-plusminus-interval
+  (ensure-same (plusminus-interval 1 0.5) (interval 0.5 1.5)))

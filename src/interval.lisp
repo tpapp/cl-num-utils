@@ -147,6 +147,14 @@ the second value is an indicator for whether the endpoint is open."
       ((? xr:-inf xr:inf) (make-instance 'real-line))
       (t (error 'internal-error)))))
 
+(defun plusminus-interval (center half-width
+                           &key open-left? (open-right? open-left?))
+  "A symmetric interval around CENTER."
+  (assert (plusp half-width))
+  (make-instance 'finite-interval
+                 :left (- center half-width) :open-left? open-left?
+                 :right (+ center half-width) :open-right? open-right?))
+
 
 ;;; interval
 

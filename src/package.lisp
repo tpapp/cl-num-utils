@@ -312,4 +312,5 @@
    #:splice-awhen
    #:vv-transpose
    #:finite-interval
-   #:grid-in))
+   #:grid-in
+   #:plusminus-interval))
