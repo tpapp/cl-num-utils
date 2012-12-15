@@ -107,20 +107,6 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
       (s2 2)
       (t 1))))
 
-(defun naive-two-pass-moments (sample)
-  "Return the mean and the sum deviation from the mean to the 2nd, 3rd and 4th
-powers; as a vector of double floats.  For testing only, subject to numerical
-instabilities."
-  (let+ ((sample (map '(simple-array double-float (*))
-                      (lambda (y) (coerce y 'double-float))
-                      sample))
-         (n (length sample))
-         (mean (/ (reduce #'+ sample) n))
-         ((&flet mk (k)
-            (reduce #'+ sample :key (lambda (y)
-                                      (expt (- y mean) k))))))
-    (vector mean (mk 2) (mk 3) (mk 4))))
-
 (defparameter *central-sample-moments-default-degree* 4)
 
 (defgeneric central-sample-moments (object &optional degree)
@@ -177,20 +163,24 @@ of the unbiased estimator (see VARIANCE).")
 (define-central-sample-moment central-m2 (object 2)
   "Second central moment.  For samples, normalized by the sample size (and
 thus not tbe unbiased estimator, see VARIANCE)."
-  (aif (central-sample-moments-s2 object)
-       it
-       (error 'information-not-collected-in-accumulator)))
+  (let+ (((&structure-r/o central-sample-moments- s2 n) object))
+    (if s2
+        (/ s2 n)
+        (error 'information-not-collected-in-accumulator))))
 
 (define-central-sample-moment central-m3 (object 3)
   "Third central moment."
-  (aif (central-sample-moments-s3 object)
-       it
-       (error 'information-not-collected-in-accumulator)))
+  (let+ (((&structure-r/o central-sample-moments- s3 n) object))
+    (if s3
+        (/ s3 n)
+        (error 'information-not-collected-in-accumulator))))
 
 (define-central-sample-moment central-m4 (object 4)
   "Fourth central moment."
-  (aif (central-sample-moments-s4 object)
-       (error 'information-not-collected-in-accumulator)))
+  (let+ (((&structure-r/o central-sample-moments- s4 n) object))
+    (if s4
+        (/ s4 n)
+        (error 'information-not-collected-in-accumulator))))
 
 (define-central-sample-moment skewness (object 3)
   "Skewness FIXME talk about bias, maybe implement unbiased?"
