@@ -62,6 +62,19 @@ instabilities."
   (ensure-same-moments #(1 2 3 7 9))
   (ensure-same-moments #(101 107 227 119 72)))
 
+(addtest (statistics-tests)
+  (let ((*lift-equality-test* #'==)
+        (v #(62.944711253834164d0 81.15843153081796d0 25.397393118645773d0
+             82.67519197788647d0 26.471834961609876d0 19.50812790113414d0
+             55.69965251750717d0 9.376334465151004d0 91.50142635930303d0
+             92.97771145772332d0 31.522629341026608d0 94.11859332177082d0
+             91.43334482781893d0 97.07515698488776d0 60.05604715628141d0
+             28.377247312878072d0 84.35221790928993d0 83.14710996278352d0
+             58.44153198534443d0 91.89848934771322d0)))
+    (ensure-same (central-sample-moments v 4)
+                 (pool (central-sample-moments (subseq v 0 7) 4)
+                       (central-sample-moments (subseq v 7) 4)))))
+
 ;; (addtest (statistics-tests)
 ;;   sse-off-center-test
 ;;   (let+ ((a (ia 9))

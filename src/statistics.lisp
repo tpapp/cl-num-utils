@@ -93,9 +93,38 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
     (incf n-1))
   y)
 
-(defmethod pool2 ((moments1 central-sample-moments)
-                  (moments2 central-sample-moments))
-  (error "FIXME: implement"))
+(defmethod pool2 ((moments-a central-sample-moments)
+                  (moments-b central-sample-moments))
+  (let+ (((&structure-r/o central-sample-moments- (na n) (m1a m1) (s2a s2)
+                         (s3a s3) (s4a s4)) moments-a)
+         ((&structure-r/o central-sample-moments- (nb n) (m1b m1) (s2b s2)
+                         (s3b s3) (s4b s4)) moments-b)
+         (n (+ na nb))
+         (nab (* na nb))
+         (d (- m1b m1a))
+         (d^2 (expt d 2))
+         (pa (coerce (/ na n) 'double-float))
+         (pb (coerce (/ nb n) 'double-float))
+         (m1 (+ m1a (* pb d)))
+         (s2 (when (and s2a s2b)
+               (+ s2a s2b
+                  (* d^2 (/ nab n)))))
+         (s3 (when (and s2 s3a s3b)
+               (+ s3a s3b
+                  (* (expt d 3) (/ (* nab (- na nb)) (expt n 2)))
+                  (* 3 (- (* pa s2b) (* pb s2a)) d))))
+         (s4 (when (and s3 s4a s4b)
+               (+ s4a s4b
+                  (* (expt d 4)
+                     (/ (* nab (- (+ (expt na 2) (expt nb 2)) nab))
+                        (expt n 3)))
+                  (* 6 d^2
+                     (+ (* (expt pa 2) s2b)
+                        (* (expt pb 2) s2a)))
+                  (* 4 d (- (* pa s3b) (* pb s3a)))))))
+    (make-central-sample-moments :n n :m1 m1 :s2 s2 :s3 s3 :s4 s4)))
+
+(define-structure-== central-sample-moments (n m1 s2 s3 s4))
 
 (defun central-sample-moments-degree (central-sample-moments)
   "Return the degree of CENTRAL-SAMPLE-MOMENTS."
