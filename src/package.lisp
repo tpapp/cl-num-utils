@@ -128,63 +128,66 @@
    #:format-bin-location
    #:binary-search
    ;; statistics
+   #:tally
    #:add
    #:pool
-   #:pool*
-   #:conforming-accumulator
-   #:with-conforming-accumulator
-   #:sweep
-   #:define-conforming-accumulator
-   #:tally
-   #:sample-ratio
+   #:empty-accumulator
+   #:not-enough-elements-in-accumulator
+   #:information-not-collected-in-accumulator
+   #:central-sample-moments
+   #:*central-sample-moments-default-degree*
    #:mean
-   #:sse
    #:variance
    #:sd
-   #:quantile
-   #:quantiles
-   #:median
-   #:sum
-   #:product
-   #:tallier
-   #:sample-ratio-accumulator
-   #:mean-accumulator
-   #:incf-mean
-   #:array-mean-accumulator
-   #:mean-sse-accumulator
-   #:covariance-accumulator
-   #:covariance
-   #:correlation
-   #:covariance-xy
-   #:correlation-xy
-   #:autocovariance-accumulator
-   #:autocovariances
-   #:autocorrelations
-   #:lags
-   #:at
-   #:at-object
-   #:at-subscripts
-   #:sparse-accumulator-array
-   #:ref
-   #:limits
-   #:residual-pair
-   #:acf-accumulator
-   #:histogram-accumulator
-   #:bins
-   #:locations-and-tallies
-   #:location-limits
-   #:*frequency-print-width*
-   #:scott-rule
-   #:histogram1
-   #:subranges
-   #:demean
-   #:aggregate
-   #:empirical-quantile
-   #:empirical-quantile-probabilities
-   #:sorted-reals
-   #:sort-reals
-   #:ensure-sorted-reals
-   #:ensure-sorted-vector
+   #:central-m2
+   #:central-m3
+   #:central-m4
+   #:skewness
+   #:kurtosis
+   ;; #:sample-ratio
+   ;; #:quantile
+   ;; #:quantiles
+   ;; #:median
+   ;; #:sum
+   ;; #:product
+   ;; #:sample-ratio-accumulator
+   ;; #:mean-accumulator
+   ;; #:incf-mean
+   ;; #:array-mean-accumulator
+   ;; #:mean-sse-accumulator
+   ;; #:covariance-accumulator
+   ;; #:covariance
+   ;; #:correlation
+   ;; #:covariance-xy
+   ;; #:correlation-xy
+   ;; #:autocovariance-accumulator
+   ;; #:autocovariances
+   ;; #:autocorrelations
+   ;; #:lags
+   ;; #:at
+   ;; #:at-object
+   ;; #:at-subscripts
+   ;; #:sparse-accumulator-array
+   ;; #:ref
+   ;; #:limits
+   ;; #:residual-pair
+   ;; #:acf-accumulator
+   ;; #:histogram-accumulator
+   ;; #:bins
+   ;; #:locations-and-tallies
+   ;; #:location-limits
+   ;; #:*frequency-print-width*
+   ;; #:scott-rule
+   ;; #:histogram1
+   ;; #:subranges
+   ;; #:demean
+   ;; #:aggregate
+   ;; #:empirical-quantile
+   ;; #:empirical-quantile-probabilities
+   ;; #:sorted-reals
+   ;; #:sort-reals
+   ;; #:ensure-sorted-reals
+   ;; #:ensure-sorted-vector
    ;; interval
    #:interval
    #:interval-p
