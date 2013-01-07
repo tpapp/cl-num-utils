@@ -316,4 +316,6 @@
    #:vv-transpose
    #:finite-interval
    #:grid-in
-   #:plusminus-interval))
+   #:plusminus-interval
+   #:quantile
+   #:quantiles))
