@@ -191,7 +191,7 @@ of the unbiased estimator (see VARIANCE).")
 
 (define-central-sample-moment central-m2 (object 2)
   "Second central moment.  For samples, normalized by the sample size (and
-thus not tbe unbiased estimator, see VARIANCE)."
+thus not the unbiased estimator, see VARIANCE)."
   (let+ (((&structure-r/o central-sample-moments- s2 n) object))
     (if s2
         (/ s2 n)
