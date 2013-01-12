@@ -318,4 +318,5 @@
    #:grid-in
    #:plusminus-interval
    #:quantile
-   #:quantiles))
+   #:quantiles
+   #:ensure-sorted-reals))
