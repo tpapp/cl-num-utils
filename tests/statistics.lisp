@@ -135,10 +135,10 @@ instabilities."
 ;;                     (add a (cons 2 2))
 ;;                     a))
 
-;; (addtest (statistics-tests)
-;;   test-covariance
-;;   (ensure-same (covariance-xy (ia 3) (ia 3)) (variance (ia 3)))
-;;   (ensure-same (covariance-xy #(2 3 5) #(7 11 13)) (float 13/3 1d0)))
+(addtest (statistics-tests)
+  test-covariance
+  (ensure-same (covariance-xy (ia 3) (ia 3)) (variance (ia 3)))
+  (ensure-same (covariance-xy #(2 3 5) #(7 11 13)) (float 13/3 1d0)))
 
 ;; (addtest (statistics-tests)
 ;;   test-autocovariance
