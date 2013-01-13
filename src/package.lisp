@@ -319,4 +319,6 @@
    #:plusminus-interval
    #:quantile
    #:quantiles
-   #:ensure-sorted-reals))
+   #:ensure-sorted-reals
+   #:covariance-xy
+   #:correlation-xy))

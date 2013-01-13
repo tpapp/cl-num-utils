@@ -435,65 +435,71 @@ methods for QUANTILES, not QUANTILE.")
 ;; (define-conforming-accumulator (mean (array array))
 ;;   (array-mean-accumulator (array-dimensions array)))
 
-;; ;;; covariance accumulator
+;;; covariance
 
-;; (defstruct (covariance-accumulator
-;;              (:constructor covariance-accumulator ())
-;;              (:include tallier))
-;;   "Accumulator for covariances."
-;;   (x-mean 0d0)
-;;   (x-sse 0d0)
-;;   (y-mean 0d0)
-;;   (y-sse 0d0)
-;;   (cross-sse 0d0))
+(defstruct sample-covariance
+  "Sample covariance calculated on-line/single-pass.
 
-;; (define-structure-let+ (covariance-accumulator)
-;;     x-mean x-sse y-mean y-sse cross-sse)
+   The elements are referred to as (X,Y) pairs.
 
-;; (defmethod add ((accumulator covariance-accumulator) (xy cons))
-;;   (let+ (((x . y) xy)
-;;          ((&structure covariance-accumulator- tally
-;;                       x-mean y-mean x-sse y-sse cross-sse) accumulator)
-;;          (x-delta (- x x-mean))
-;;          (y-delta (- y y-mean)))
-;;     (incf tally)
-;;     (incf x-mean (/ x-delta tally))
-;;     (incf y-mean (/ y-delta tally))
-;;     (let ((x-post-delta (- x x-mean))
-;;           (y-post-delta (- y y-mean)))
-;;       (incf x-sse (* x-delta x-post-delta))
-;;       (incf y-sse (* y-delta y-post-delta))
-;;       (incf cross-sse (* x-post-delta y-delta)))))
+   N     count of elements
+   X-M1  mean of X
+   X-S2  sum of squared deviations of X from the mean
+   Y-M1  mean of Y
+   Y-S2  sum of squared deviations of Y from the mean
+   XY-S2 sum of the product of X and Y deviations from the mean
 
-;; (defmethod covariance ((accumulator covariance-accumulator))
-;;   (let+ (((&structure covariance-accumulator- tally cross-sse) accumulator)
-;;          (n-1 (1- tally)))
-;;     (when (plusp n-1)
-;;       (/ cross-sse n-1))))
+Allows on-line, numerically stable calculation of moments.  See \cite{bennett2009numerically} and \cite{pebay2008formulas} for the description of the algorithm."
+  (n 0 :type (integer 0))
+  (x-m1 0d0 :type double-float)
+  (x-s2 0d0 :type double-float)
+  (y-m1 0d0 :type double-float)
+  (y-s2 0d0 :type double-float)
+  (xy-s2 0d0 :type double-float))
 
-;; (defmethod correlation ((accumulator covariance-accumulator))
-;;   (let+ (((&structure covariance-accumulator- x-sse y-sse cross-sse
-;;                       tally) accumulator)
-;;          (denominator (sqrt (* x-sse y-sse))))
-;;     (cond
-;;       ((plusp denominator) (/ cross-sse denominator))
-;;       ((plusp tally) 0)
-;;       (t nil))))
+(defmethod add-pair ((accumulator sample-covariance) (x real) (y real))
+  (let+ ((x (coerce x 'double-float))
+         (y (coerce y 'double-float))
+         ((&structure sample-covariance- n x-m1 y-m1 x-s2 y-s2 xy-s2) accumulator)
+         (x-delta (- x x-m1))
+         (y-delta (- y y-m1)))
+    (incf n)
+    (incf x-m1 (/ x-delta n))
+    (incf y-m1 (/ y-delta n))
+    (let ((x-post-delta (- x x-m1))
+          (y-post-delta (- y y-m1)))
+      (incf x-s2 (* x-delta x-post-delta))
+      (incf y-s2 (* y-delta y-post-delta))
+      (incf xy-s2 (* x-post-delta y-delta)))))
 
-;; (defun sweep-xy (accumulator x y)
-;;   "Sweep sequences x and y with an accumulator that takes conses."
-;;   (with-conforming-accumulator (accumulator add)
-;;     (map nil (lambda (x y) (add (cons x y))) x y)))
+(defun covariance (sample-covariance)
+  "Return the covariance from an accumulator."
+  (let+ (((&structure-r/o sample-covariance- n xy-s2) sample-covariance))
+    (when (< 1 n)
+      (/ xy-s2 (1- n)))))
 
-;; (defun covariance-xy (x y)
-;;   "Calculate the covariance of two sequences."
-;;   (let ((acc (sweep-xy (covariance-accumulator) x y)))
-;;     (values (covariance acc) acc)))
+(defun correlation (sample-covariance)
+  "Return the correlation from an accumulator."
+  (let+ (((&structure-r/o sample-covariance- n x-s2 y-s2 xy-s2) sample-covariance)
+         (denominator (sqrt (* x-s2 y-s2))))
+    (cond
+      ((plusp denominator) (/ xy-s2 denominator))
+      ((plusp n) 0)
+      (t nil))))
 
-;; (defun correlation-xy (x y)
-;;   "Calculate the correlation of two sequences."
-;;   (let ((acc (sweep-xy (covariance-accumulator) x y)))
-;;     (values (correlation acc) acc)))
+(defun covariance-xy (x y)
+  "Covariance of reals in two sequences."
+  (assert (length= x y))
+  (let ((accumulator (make-sample-covariance)))
+    (map nil (curry #'add-pair accumulator) x y)
+    (covariance accumulator)))
+
+(defun correlation-xy (x y)
+  "Correlation of reals in two sequences."
+  (assert (length= x y))
+  (let ((accumulator (make-sample-covariance)))
+    (map nil (curry #'add-pair accumulator) x y)
+    (correlation accumulator)))
 
 ;; (defmethod == ((acc1 covariance-accumulator) (acc2 covariance-accumulator)
 ;;                &optional (tolerance *==-tolerance*))
