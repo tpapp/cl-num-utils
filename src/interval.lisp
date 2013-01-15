@@ -321,3 +321,9 @@ narrowing to the appropriate float type or fixnum if possible."
                                       right
                                       (+ left (* index step)))
                              (incf index)))))))
+
+(defgeneric shift-interval (interval offset)
+  (:method ((interval finite-interval) (offset real))
+    (let+ (((&interval (left open-left?) (right open-right?)) interval))
+      (interval (+ left offset) (+ right offset)
+                :open-left? open-left? :open-right? open-right?))))

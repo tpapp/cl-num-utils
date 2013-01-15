@@ -321,4 +321,5 @@
    #:quantiles
    #:ensure-sorted-reals
    #:covariance-xy
-   #:correlation-xy))
+   #:correlation-xy
+   #:shift-interval))
