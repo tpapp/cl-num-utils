@@ -322,4 +322,5 @@
    #:ensure-sorted-reals
    #:covariance-xy
    #:correlation-xy
-   #:shift-interval))
+   #:shift-interval
+   #:ensure-sorted-vector))
