@@ -323,4 +323,6 @@
    #:covariance-xy
    #:correlation-xy
    #:shift-interval
-   #:ensure-sorted-vector))
+   #:ensure-sorted-vector
+   #:x-moments
+   #:y-moments))

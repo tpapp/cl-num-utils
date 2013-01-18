@@ -487,6 +487,16 @@ Allows on-line, numerically stable calculation of moments.  See \cite{bennett200
       ((plusp n) 0)
       (t nil))))
 
+(defun x-moments (sample-covariance)
+  "Return a CENTRAL-SAMPLE-MOMENTS object, containing the moments of X."
+  (let+ (((&structure-r/o sample-covariance- n x-m1 x-s2) sample-covariance))
+    (make-central-sample-moments :n n :m1 x-m1 :s2 x-s2 :s3 nil :s4 nil)))
+
+(defun y-moments (sample-covariance)
+  "Return a CENTRAL-SAMPLE-MOMENTS object, containing the moments of Y."
+  (let+ (((&structure-r/o sample-covariance- n y-m1 y-s2) sample-covariance))
+    (make-central-sample-moments :n n :m1 y-m1 :s2 y-s2 :s3 nil :s4 nil)))
+
 (defun covariance-xy (x y)
   "Covariance of reals in two sequences."
   (assert (length= x y))
