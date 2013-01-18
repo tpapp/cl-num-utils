@@ -497,19 +497,19 @@ Allows on-line, numerically stable calculation of moments.  See \cite{bennett200
   (let+ (((&structure-r/o sample-covariance- n y-m1 y-s2) sample-covariance))
     (make-central-sample-moments :n n :m1 y-m1 :s2 y-s2 :s3 nil :s4 nil)))
 
+(defun sample-covariance (x y)
+  "Sample covariance accumulator of reals in two sequences."
+  (assert (length= x y))
+  (aprog1 (make-sample-covariance)
+    (map nil (curry #'add-pair it) x y)))
+
 (defun covariance-xy (x y)
   "Covariance of reals in two sequences."
-  (assert (length= x y))
-  (let ((accumulator (make-sample-covariance)))
-    (map nil (curry #'add-pair accumulator) x y)
-    (covariance accumulator)))
+  (covariance (sample-covariance x y)))
 
 (defun correlation-xy (x y)
   "Correlation of reals in two sequences."
-  (assert (length= x y))
-  (let ((accumulator (make-sample-covariance)))
-    (map nil (curry #'add-pair accumulator) x y)
-    (correlation accumulator)))
+  (correlation (sample-covariance x y)))
 
 ;; (defmethod == ((acc1 covariance-accumulator) (acc2 covariance-accumulator)
 ;;                &optional (tolerance *==-tolerance*))

@@ -325,4 +325,5 @@
    #:shift-interval
    #:ensure-sorted-vector
    #:x-moments
-   #:y-moments))
+   #:y-moments
+   #:sample-covariance))
