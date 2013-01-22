@@ -326,4 +326,6 @@
    #:ensure-sorted-vector
    #:x-moments
    #:y-moments
-   #:sample-covariance))
+   #:sample-covariance
+   #:covariance
+   #:correlation))
