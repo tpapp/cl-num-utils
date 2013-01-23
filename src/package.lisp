@@ -7,7 +7,6 @@
            )
   (:export
    ;; macros
-   #:silent
    #:check-types
    #:define-with-multiple-bindings
    #:make-keyword+

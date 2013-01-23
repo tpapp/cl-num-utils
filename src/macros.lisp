@@ -2,12 +2,6 @@
 
 (in-package #:cl-num-utils)
 
-(defun silent (&rest arguments)
-  "Make arguments vanish.  Used to avoid large displays/their cost in
-benchmarking."
-  (declare (ignore arguments))
-  (values))
-
 (defmacro check-types ((&rest arguments) type)
   "CHECK-TYPE for multiple places of the same type.  Each argument is either a
 place, or a list of a place and a type-string."
