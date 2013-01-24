@@ -17,15 +17,6 @@
     :docstring "Similar to LET*, except that the values are evaluated on
     demand.")
 
-(defmacro unlessf (place value-form &environment environment)
-  "When PLACE is NIL, evaluate VALUE-FORM and save it there."
-  (multiple-value-bind (vars vals store-vars writer-form reader-form)
-      (get-setf-expansion place environment)
-    `(let* ,(mapcar #'list vars vals)
-       (unless ,reader-form
-         (let ((,(car store-vars) ,value-form))
-           ,writer-form)))))
-
 (defmacro setf-nil (place value-form &environment environment)
   "Assert that PLACE is NIL, then evaluate VALUE-FORM and save it there."
   (multiple-value-bind (vars vals store-vars writer-form reader-form)

@@ -7,7 +7,8 @@
    #:splice-when
    #:splice-awhen
    #:check-types
-   #:define-with-multiple-bindings))
+   #:define-with-multiple-bindings
+   #:unlessf))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -56,3 +57,12 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
                     (,',plural ,(cdr bindings)
 			       ,@body))
          `(progn ,@body))))
+
+(defmacro unlessf (place value-form &environment environment)
+  "When PLACE is NIL, evaluate VALUE-FORM and save it there."
+  (multiple-value-bind (vars vals store-vars writer-form reader-form)
+      (get-setf-expansion place environment)
+    `(let* ,(mapcar #'list vars vals)
+       (unless ,reader-form
+         (let ((,(car store-vars) ,value-form))
+           ,writer-form)))))
