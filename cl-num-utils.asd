@@ -25,7 +25,7 @@
   :license "Same as CL-NUM-UTILS -- this is part of the CL-NUM-UTILS library."
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :depends-on (#:clunit #:cl-num-utils)
-  :pathname #"tests/"
+  :pathname #P"tests/"
   :serial t
   :components
   ((:file "setup")))
