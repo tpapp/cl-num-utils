@@ -1,29 +1,35 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
+(defpackage #:cl-num-utils.statistics
+  (:nicknames #:clnu.statistics)
+  (:use #:cl #:anaphora #:alexandria #:let-plus)
+  (:export
+   #:tally
+   #:add
+   #:pool
+   #:empty-accumulator
+   #:not-enough-elements-in-accumulator
+   #:information-not-collected-in-accumulator
+   #:central-sample-moments
+   #:central-sample-moments-degree
+   #:*central-sample-moments-default-degree*))
 
-(in-package #:cl-num-utils)
-
+(in-package #:cl-num-utils.statistics)
 
-
 ;;; Generic interface for accumulators
 ;;;
 ;;; Accumulators are used for one-pass calculation of moments.
 
-(defgeneric tally (object)
-  (:documentation "The number of elements in OBJECT or an accumulator.")
-  (:method ((sequence sequence))
-    (length sequence))
-  (:method ((array array))
-    (array-total-size array)))
+(defgeneric tally (accumulator)
+  (:documentation "The total weight of elements in ACCUMULATOR."))
 
-(defgeneric add (accumulator object)
-  (:documentation "Add accumulator to object, return OBJECT.  NILs are ignored
-by the accumulator, unless a specialized method decides otherwise.")
-  (:method (accumulator (object null))))
+(defgeneric add (accumulator object &optional weight)
+  (:documentation "Add OBJECT to ACCUMULATOR with WEIGHT (defaults to 1 if not given).  Return OBJECT.  NILs are ignored by the accumulator, unless a specialized method decides otherwise.")
+  (:method (accumulator (object null) &optional weight)
+    (declare (ignore weight))
+    object))
 
 (defgeneric pool2 (accumulator1 accumulator2)
-  (:documentation "Pool two accumulators.  When they are of a different type,
-the resulting accumulator will be downgraded to the level afforded by the
-information available in the accumulators."))
+  (:documentation "Pool two accumulators.  When they are of a different type, the resulting accumulator will be downgraded to the level afforded by the information available in the accumulators."))
 
 (defun pool (&rest accumulators)
   "Pool ACCUMULATORS."
@@ -37,94 +43,94 @@ information available in the accumulators."))
 
 (define-condition information-not-collected-in-accumulator (error)
   ())
-
-;;; FIXME write compiler macro for (pool acc1 acc2) => (pool2 acc1 acc2)
-
 
+(defstruct tally-mixin
+  "Mixin structure that contains a tally.  Not exported.  W is the total weight."
+  (w 0 :type (real 0)))
 
+(defmethod tally ((accumulator tally-mixin))
+  (tally-mixin-w accumulator))
+
 ;;; Central moments
 ;;;
 ;;; Sample central moments (and relates measures, such as skewness and
 ;;; kurtosis) are calculated using a one-pass algorithm, with the results
 ;;; accumulated in a CENTRAL-SAMPLE-MOMENTS object.
 
-(defstruct central-sample-moments
+(defstruct (central-sample-moments (:include tally-mixin))
   "Central sample moments calculated on-line/single-pass.
 
-   N   count of elements
-   M1  mean
-   S2  sum of squared deviations from the mean, not calculated when NIL
-   S3  sum of cubed deviations from the mean, not calculated when NIL
-   S4  sum of 4th power deviations from the mean, not calculated when NIL
+   M   weighted mean
+   S2  weighted sum of squared deviations from the mean, not calculated when NIL
+   S3  weighted sum of cubed deviations from the mean, not calculated when NIL
+   S4  weighted sum of 4th power deviations from the mean, not calculated when NIL
 
 Allows on-line, numerically stable calculation of moments.  See
 \cite{bennett2009numerically} and \cite{pebay2008formulas} for the description
 of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
-  (n 0 :type (integer 0))
-  (m1 0d0 :type double-float)
-  (s2 0d0 :type (or double-float null))
-  (s3 0d0 :type (or double-float null))
-  (s4 0d0 :type (or double-float null)))
+  (m 0d0 :type real)
+  (s2 0d0 :type (or (real 0) null))
+  (s3 0d0 :type (or real null))
+  (s4 0d0 :type (or (real 0) null)))
 
-(defmethod tally ((moments central-sample-moments))
-  (central-sample-moments-n moments))
-
-(defmethod add ((moments central-sample-moments) (y real))
+(defmethod add ((moments central-sample-moments) (y real) &optional (weight 1))
   ;; NOTE: See the docstring of CENTRAL-SAMPLE-MOMENTS for the description of
   ;; the algorithm.
-  (let+ ((y (coerce y 'double-float))
-         ((&structure central-sample-moments- (n-1 n) m1 s2 s3 s4) moments)
-         (d (- y m1))
-         (n (1+ n-1))
-         (d/n (/ d n)))
-    (incf m1 d/n)
-    (when s2
-      (let ((s2-increment (* d/n n-1 d)))
-        (when s3
-          (let ((s3-increment (+ (* -3 s2 d/n)
-                                 (* s2-increment (1- n-1) d/n))))
-            (when s4
-              (let ((d/n^2 (expt d/n 2)))
-                (incf s4 (+ (* -4 s3 d/n)
-                            (* 6 s2 d/n^2)
-                            (* s2-increment (- (expt n 2) (* 3 n-1)) d/n^2)))))
-            (incf s3 s3-increment)))
-        (incf s2 s2-increment)))
-    (incf n-1))
+  (assert (<= 0 weight) () "Algorithm is only stable with nonnegative weights.")
+  (when (plusp weight)
+    (let+ ((y (coerce y 'double-float))
+           ((&structure central-sample-moments- (wa w) m s2 s3 s4) moments)
+           (d (- y m))
+           (w (+ wa weight))
+           (dwa/w (* d (/ wa w))))
+      (incf m dwa/w)
+      (when s2
+        (let ((s2-increment (* dwa/w wa d)))
+          (when s3
+            (let ((s3-increment (+ (* -3 dwa/w s2)
+                                   (* s2-increment (- wa weight) (/ d w)))))
+              ;; (when s4
+              ;;   (let ((d/n^2 (expt d/n 2)))
+              ;;     (incf s4 (+ (* -4 s3 d/n)
+              ;;                 (* 6 s2 d/n^2)
+              ;;                 (* s2-increment (- (expt n 2) (* 3 n-1)) d/n^2)))))
+              (incf s3 s3-increment)))
+          (incf s2 s2-increment)))
+      (setf wa w)))
   y)
 
 (defmethod pool2 ((moments-a central-sample-moments)
                   (moments-b central-sample-moments))
-  (let+ (((&structure-r/o central-sample-moments- (na n) (m1a m1) (s2a s2)
+  (let+ (((&structure-r/o central-sample-moments- (wa w) (ma m) (s2a s2)
                          (s3a s3) (s4a s4)) moments-a)
-         ((&structure-r/o central-sample-moments- (nb n) (m1b m1) (s2b s2)
+         ((&structure-r/o central-sample-moments- (wb w) (mb m) (s2b s2)
                          (s3b s3) (s4b s4)) moments-b)
-         (n (+ na nb))
-         (nab (* na nb))
-         (d (- m1b m1a))
+         (w (+ wa wb))
+         (wab (* wa wb))
+         (d (- mb ma))
          (d^2 (expt d 2))
-         (pa (coerce (/ na n) 'double-float))
-         (pb (coerce (/ nb n) 'double-float))
-         (m1 (+ m1a (* pb d)))
+         (pa (coerce (/ wa w) 'double-float))
+         (pb (coerce (/ wb w) 'double-float))
+         (m (+ ma (* pb d)))
          (s2 (when (and s2a s2b)
                (+ s2a s2b
-                  (* d^2 (/ nab n)))))
+                  (* d^2 (/ wab w)))))
          (s3 (when (and s2 s3a s3b)
                (+ s3a s3b
-                  (* (expt d 3) (/ (* nab (- na nb)) (expt n 2)))
+                  (* (expt d 3) (/ (* wab (- wa wb)) (expt w 2)))
                   (* 3 (- (* pa s2b) (* pb s2a)) d))))
          (s4 (when (and s3 s4a s4b)
                (+ s4a s4b
                   (* (expt d 4)
-                     (/ (* nab (- (+ (expt na 2) (expt nb 2)) nab))
-                        (expt n 3)))
+                     (/ (* wab (- (+ (expt wa 2) (expt wb 2)) wab))
+                        (expt w 3)))
                   (* 6 d^2
                      (+ (* (expt pa 2) s2b)
                         (* (expt pb 2) s2a)))
                   (* 4 d (- (* pa s3b) (* pb s3a)))))))
-    (make-central-sample-moments :n n :m1 m1 :s2 s2 :s3 s3 :s4 s4)))
+    (make-central-sample-moments :w w :m m :s2 s2 :s3 s3 :s4 s4)))
 
-(define-structure-== central-sample-moments (n m1 s2 s3 s4))
+;; (define-structure-== central-sample-moments (n m1 s2 s3 s4))
 
 (defun central-sample-moments-degree (central-sample-moments)
   "Return the degree of CENTRAL-SAMPLE-MOMENTS."
@@ -164,352 +170,352 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
           (parse-body body :documentation t))
          (body (append declarations remaining-forms)))
     `(defgeneric ,function (object)
-       ,@(splice-awhen docstring `(:documentation ,it))
+       ,@(awhen docstring `(:documentation ,it))
        (:method (object)
          (,function (central-sample-moments object ,degree)))
        (:method ((,variable central-sample-moments))
          ,@body))))
 
-(define-central-sample-moment mean (object 1)
-  "The mean of elements in OBJECT."
-  (central-sample-moments-m1 object))
+;; (define-central-sample-moment mean (object 1)
+;;   "The mean of elements in OBJECT."
+;;   (central-sample-moments-m1 object))
 
-(define-central-sample-moment variance (object 2)
-  "Variance of OBJECT.  For samples, the unbiased estimator for the
-variance (normalizing by 1-n)."
-  (let+ (((&structure-r/o central-sample-moments- n s2) object))
-    (cond
-      ((zerop n) (error 'empty-accumulator))
-      ((= n 1) (error 'not-enough-elements-in-accumulator))
-      (t (/ s2 (1- n))))))
+;; (define-central-sample-moment variance (object 2)
+;;   "Variance of OBJECT.  For samples, the unbiased estimator for the
+;; variance (normalizing by 1-n)."
+;;   (let+ (((&structure-r/o central-sample-moments- n s2) object))
+;;     (cond
+;;       ((zerop n) (error 'empty-accumulator))
+;;       ((= n 1) (error 'not-enough-elements-in-accumulator))
+;;       (t (/ s2 (1- n))))))
 
-(defgeneric sd (object)
-  (:documentation "Standard deviation.  For samples, the square root
-of the unbiased estimator (see VARIANCE).")
-  (:method (object)
-    (sqrt (variance object))))
-
-(define-central-sample-moment central-m2 (object 2)
-  "Second central moment.  For samples, normalized by the sample size (and
-thus not the unbiased estimator, see VARIANCE)."
-  (let+ (((&structure-r/o central-sample-moments- s2 n) object))
-    (if s2
-        (/ s2 n)
-        (error 'information-not-collected-in-accumulator))))
-
-(define-central-sample-moment central-m3 (object 3)
-  "Third central moment."
-  (let+ (((&structure-r/o central-sample-moments- s3 n) object))
-    (if s3
-        (/ s3 n)
-        (error 'information-not-collected-in-accumulator))))
-
-(define-central-sample-moment central-m4 (object 4)
-  "Fourth central moment."
-  (let+ (((&structure-r/o central-sample-moments- s4 n) object))
-    (if s4
-        (/ s4 n)
-        (error 'information-not-collected-in-accumulator))))
-
-(define-central-sample-moment skewness (object 3)
-  "Skewness FIXME talk about bias, maybe implement unbiased?"
-  (/ (central-m3 object)
-     (expt (central-m2 object) 3/2)))
-
-(define-central-sample-moment kurtosis (object 4)
-  "Kurtosis FIXME talk about bias, maybe implement unbiased?"
-  (/ (central-m4 object)
-     (expt (central-m2 object) 2)))
-
-
-
-;;; quantiles
-
-(defstruct sorted-reals
-  "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
-  (ordered-elements #() :type vector)
-  (unordered-elements nil :type list))
-
-(define-structure-let+ (sorted-reals)
-                       ordered-elements unordered-elements)
-
-(defmethod add ((accumulator sorted-reals) object)
-  (push object (sorted-reals-unordered-elements accumulator)))
-
-(defmethod elements ((sorted-reals sorted-reals))
-  (let+ (((&sorted-reals ordered-elements unordered-elements) sorted-reals))
-    (when unordered-elements
-      (setf ordered-elements (concatenate 'vector ordered-elements
-                                          unordered-elements)
-            unordered-elements nil
-            ordered-elements (sort ordered-elements #'<)))
-    ordered-elements))
-
-(defun empirical-quantile (sorted-vector q)
-  "Return the empirical quantile of a vector of real numbers, sorted in
-ascending order (not checked).  Uses a 0.5 correction."
-  (let+ ((n (length sorted-vector))
-         (c (/ 1/2 n)))
-    (cond
-      ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
-      ((<= q c) (aref sorted-vector 0))
-      ((<= (- 1 c) q) (aref sorted-vector (1- n)))
-      (t (let+ ((r (- (* q n) 1/2))
-                ((&values int frac) (floor r))
-                ((&flet value (index)
-                   (aref sorted-vector index)))
-                (left (value int)))
-           (if (zerop frac)
-               left
-               (convex-combination left (value (1+ int)) frac)))))))
-
-(defun empirical-quantile-probabilities (n)
-  "Probabilities that correspond to the empirical quantiles of a vector of
-length N.  That is to say,
-
- (== (quantiles sample (empirical-quantile-probabilities (length sample)))
-     sample)
-
-for any vector SAMPLE."
-  (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
-
-(defmethod quantiles ((accumulator sorted-reals) q)
-  (map 'vector
-       (curry #'empirical-quantile (elements accumulator)) q))
-
-(defun sorted-reals ()
-  (make-sorted-reals))
-
-(defun sort-reals (sequence)
-  "Return a SORTED-REALS structure."
-  (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
-                                             #'<)
-                     :unordered-elements nil))
-
-(defmethod print-object ((acc sorted-reals) stream)
-  (if *print-readably*
-      (call-next-method)
-      (print-unreadable-object (acc stream :type t)
-        (let+ (((&accessors-r/o elements) acc))
-          (if (plusp (length elements))
-              (format stream "min: ~A, q25: ~A, q50: ~A, q75: ~A, max: ~A"
-                      (first* elements)
-                      (quantile acc 0.25)
-                      (quantile acc 0.5)
-                      (quantile acc 0.75)
-                      (sub elements -1))
-              (format stream "no elements"))))))
-
-(defgeneric ensure-sorted-reals (object)
-  (:documentation "Return the contents of OBJECT as a SORTED-REALS.")
-  (:method ((sorted-reals sorted-reals))
-    sorted-reals)
-  (:method ((array array))
-    (sort-reals (flatten-array array)))
-  (:method ((list list))
-    (sort-reals list)))
-
-(defun ensure-sorted-vector (object)
-  "Return the elements of OBJECT as a vector (or reals) sorted in ascending
-order."
-  (elements (ensure-sorted-reals object)))
-
-(defgeneric quantile (object q)
-  (:documentation "Return an element at quantile Q.  May be an interpolation
-or an approximation, depending on OBJECT and Q.  Extensions should define
-methods for QUANTILES, not QUANTILE.")
-  (:method ((object sequence) q)
-    (quantile (ensure-sorted-reals object) q ))
-  (:method (object q)
-    (aref (quantiles object (vector q)) 0)))
-
-(defgeneric quantiles (object qs)
-  (:documentation "Multiple quantiles, see QUANTILE.  Extensions should define
-methods for QUANTILES, not QUANTILE.")
-  (:method ((object sequence) qs)
-    (quantiles (ensure-sorted-reals object) qs)))
-
-
-
-;;; NOTE old code below
-
-;;; Generic interface
-
-;; (defgeneric sweep (accumulator object &key key)
-;;   (:documentation "Apply ACCUMULATOR to elements of OBJECT.  When ACCUMULATOR
-;;   is a function, it is used to generate a conforming accumulator.")
-;;   (:method (accumulator (sequence sequence) &key (key #'identity))
-;;     (with-conforming-accumulator (accumulator add)
-;;       (map nil (compose #'add key) sequence)))
-;;   (:method (accumulator (array array) &key (key #'identity))
-;;     (with-conforming-accumulator (accumulator add)
-;;       (map nil (compose #'add key) (flatten-array array)))))
-
-;; (defgeneric sample-ratio (object)
-;;   (:documentation "Return the proportion of non-nil elements.")
+;; (defgeneric sd (object)
+;;   (:documentation "Standard deviation.  For samples, the square root
+;; of the unbiased estimator (see VARIANCE).")
 ;;   (:method (object)
-;;     (let ((accumulator (sweep (sample-ratio-accumulator) object)))
-;;       (values (sample-ratio accumulator) accumulator))))
+;;     (sqrt (variance object))))
+
+;; (define-central-sample-moment central-m2 (object 2)
+;;   "Second central moment.  For samples, normalized by the sample size (and
+;; thus not the unbiased estimator, see VARIANCE)."
+;;   (let+ (((&structure-r/o central-sample-moments- s2 n) object))
+;;     (if s2
+;;         (/ s2 n)
+;;         (error 'information-not-collected-in-accumulator))))
+
+;; (define-central-sample-moment central-m3 (object 3)
+;;   "Third central moment."
+;;   (let+ (((&structure-r/o central-sample-moments- s3 n) object))
+;;     (if s3
+;;         (/ s3 n)
+;;         (error 'information-not-collected-in-accumulator))))
+
+;; (define-central-sample-moment central-m4 (object 4)
+;;   "Fourth central moment."
+;;   (let+ (((&structure-r/o central-sample-moments- s4 n) object))
+;;     (if s4
+;;         (/ s4 n)
+;;         (error 'information-not-collected-in-accumulator))))
+
+;; (define-central-sample-moment skewness (object 3)
+;;   "Skewness FIXME talk about bias, maybe implement unbiased?"
+;;   (/ (central-m3 object)
+;;      (expt (central-m2 object) 3/2)))
+
+;; (define-central-sample-moment kurtosis (object 4)
+;;   "Kurtosis FIXME talk about bias, maybe implement unbiased?"
+;;   (/ (central-m4 object)
+;;      (expt (central-m2 object) 2)))
+
+;; 
+
+;; ;;; quantiles
+
+;; (defstruct sorted-reals
+;;   "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
+;;   (ordered-elements #() :type vector)
+;;   (unordered-elements nil :type list))
+
+;; (define-structure-let+ (sorted-reals)
+;;                        ordered-elements unordered-elements)
+
+;; (defmethod add ((accumulator sorted-reals) object)
+;;   (push object (sorted-reals-unordered-elements accumulator)))
+
+;; (defmethod elements ((sorted-reals sorted-reals))
+;;   (let+ (((&sorted-reals ordered-elements unordered-elements) sorted-reals))
+;;     (when unordered-elements
+;;       (setf ordered-elements (concatenate 'vector ordered-elements
+;;                                           unordered-elements)
+;;             unordered-elements nil
+;;             ordered-elements (sort ordered-elements #'<)))
+;;     ordered-elements))
+
+;; (defun empirical-quantile (sorted-vector q)
+;;   "Return the empirical quantile of a vector of real numbers, sorted in
+;; ascending order (not checked).  Uses a 0.5 correction."
+;;   (let+ ((n (length sorted-vector))
+;;          (c (/ 1/2 n)))
+;;     (cond
+;;       ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
+;;       ((<= q c) (aref sorted-vector 0))
+;;       ((<= (- 1 c) q) (aref sorted-vector (1- n)))
+;;       (t (let+ ((r (- (* q n) 1/2))
+;;                 ((&values int frac) (floor r))
+;;                 ((&flet value (index)
+;;                    (aref sorted-vector index)))
+;;                 (left (value int)))
+;;            (if (zerop frac)
+;;                left
+;;                (convex-combination left (value (1+ int)) frac)))))))
+
+;; (defun empirical-quantile-probabilities (n)
+;;   "Probabilities that correspond to the empirical quantiles of a vector of
+;; length N.  That is to say,
+
+;;  (== (quantiles sample (empirical-quantile-probabilities (length sample)))
+;;      sample)
+
+;; for any vector SAMPLE."
+;;   (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
+
+;; (defmethod quantiles ((accumulator sorted-reals) q)
+;;   (map 'vector
+;;        (curry #'empirical-quantile (elements accumulator)) q))
+
+;; (defun sorted-reals ()
+;;   (make-sorted-reals))
+
+;; (defun sort-reals (sequence)
+;;   "Return a SORTED-REALS structure."
+;;   (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
+;;                                              #'<)
+;;                      :unordered-elements nil))
+
+;; (defmethod print-object ((acc sorted-reals) stream)
+;;   (if *print-readably*
+;;       (call-next-method)
+;;       (print-unreadable-object (acc stream :type t)
+;;         (let+ (((&accessors-r/o elements) acc))
+;;           (if (plusp (length elements))
+;;               (format stream "min: ~A, q25: ~A, q50: ~A, q75: ~A, max: ~A"
+;;                       (first* elements)
+;;                       (quantile acc 0.25)
+;;                       (quantile acc 0.5)
+;;                       (quantile acc 0.75)
+;;                       (sub elements -1))
+;;               (format stream "no elements"))))))
+
+;; (defgeneric ensure-sorted-reals (object)
+;;   (:documentation "Return the contents of OBJECT as a SORTED-REALS.")
+;;   (:method ((sorted-reals sorted-reals))
+;;     sorted-reals)
+;;   (:method ((array array))
+;;     (sort-reals (flatten-array array)))
+;;   (:method ((list list))
+;;     (sort-reals list)))
+
+;; (defun ensure-sorted-vector (object)
+;;   "Return the elements of OBJECT as a vector (or reals) sorted in ascending
+;; order."
+;;   (elements (ensure-sorted-reals object)))
+
+;; (defgeneric quantile (object q)
+;;   (:documentation "Return an element at quantile Q.  May be an interpolation
+;; or an approximation, depending on OBJECT and Q.  Extensions should define
+;; methods for QUANTILES, not QUANTILE.")
+;;   (:method ((object sequence) q)
+;;     (quantile (ensure-sorted-reals object) q ))
+;;   (:method (object q)
+;;     (aref (quantiles object (vector q)) 0)))
+
+;; (defgeneric quantiles (object qs)
+;;   (:documentation "Multiple quantiles, see QUANTILE.  Extensions should define
+;; methods for QUANTILES, not QUANTILE.")
+;;   (:method ((object sequence) qs)
+;;     (quantiles (ensure-sorted-reals object) qs)))
 
 
-;; (defgeneric median (object)
-;;   (:documentation "Median of OBJECT.")
-;;   (:method ((object sequence))
-;;     (alexandria:median object))
-;;   (:method (object)
-;;     (quantile object 0.5)))
 
-;; ;;; Specific accumulators
+;; ;;; NOTE old code below
 
-;; ;;; tallier
+;; ;;; Generic interface
+
+;; ;; (defgeneric sweep (accumulator object &key key)
+;; ;;   (:documentation "Apply ACCUMULATOR to elements of OBJECT.  When ACCUMULATOR
+;; ;;   is a function, it is used to generate a conforming accumulator.")
+;; ;;   (:method (accumulator (sequence sequence) &key (key #'identity))
+;; ;;     (with-conforming-accumulator (accumulator add)
+;; ;;       (map nil (compose #'add key) sequence)))
+;; ;;   (:method (accumulator (array array) &key (key #'identity))
+;; ;;     (with-conforming-accumulator (accumulator add)
+;; ;;       (map nil (compose #'add key) (flatten-array array)))))
+
+;; ;; (defgeneric sample-ratio (object)
+;; ;;   (:documentation "Return the proportion of non-nil elements.")
+;; ;;   (:method (object)
+;; ;;     (let ((accumulator (sweep (sample-ratio-accumulator) object)))
+;; ;;       (values (sample-ratio accumulator) accumulator))))
 
 
-;; (defmethod == ((a tallier) (b tallier) &optional tolerance)
-;;   (declare (ignore tolerance))
-;;   (= (tallier-tally a) (tallier-tally b)))
+;; ;; (defgeneric median (object)
+;; ;;   (:documentation "Median of OBJECT.")
+;; ;;   (:method ((object sequence))
+;; ;;     (alexandria:median object))
+;; ;;   (:method (object)
+;; ;;     (quantile object 0.5)))
 
-;; ;;; sample ratio
+;; ;; ;;; Specific accumulators
 
-;; (defstruct (sample-ratio-accumulator
-;;             (:constructor sample-ratio-accumulator ())
-;;             (:include tallier))
-;;   "Sample ratio accumulator."
-;;   (count 0 :type fixnum))
+;; ;; ;;; tallier
 
-;; (defmethod add ((accumulator sample-ratio-accumulator) object)
-;;   (let+ (((&structure sample-ratio-accumulator- tally count) accumulator))
-;;     (incf tally)
-;;     (when object
-;;       (incf count))))
 
-;; (defmethod sample-ratio ((accumulator sample-ratio-accumulator))
-;;   (let+ (((&structure-r/o sample-ratio-accumulator- tally count) accumulator))
-;;     (/ count tally)))
+;; ;; (defmethod == ((a tallier) (b tallier) &optional tolerance)
+;; ;;   (declare (ignore tolerance))
+;; ;;   (= (tallier-tally a) (tallier-tally b)))
 
-;; ;;; mean accumulator for scalars
+;; ;; ;;; sample ratio
 
-;; ;; (defun pooled-mean (tally1 mean1 tally2 mean2
-;; ;;                     &optional (tally (+ tally1 tally2)))
-;; ;;   "Pooled mean.  For internal use."
-;; ;;   (/ (+ (* tally1 mean1) (* tally2 mean2)) tally))
+;; ;; (defstruct (sample-ratio-accumulator
+;; ;;             (:constructor sample-ratio-accumulator ())
+;; ;;             (:include tallier))
+;; ;;   "Sample ratio accumulator."
+;; ;;   (count 0 :type fixnum))
 
-;; ;; (defmethod pool2 ((acc1 mean-accumulator) (acc2 mean-accumulator))
-;; ;;   (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
-;; ;;          ((&structure mean-accumulator- (tally2 tally) (mean2 mean)) acc2)
-;; ;;          (tally (+ tally1 tally2)))
-;; ;;     (mean-accumulator tally (pooled-mean tally1 mean1 tally2 mean2 tally))))
+;; ;; (defmethod add ((accumulator sample-ratio-accumulator) object)
+;; ;;   (let+ (((&structure sample-ratio-accumulator- tally count) accumulator))
+;; ;;     (incf tally)
+;; ;;     (when object
+;; ;;       (incf count))))
 
-;; ;; (defmethod == ((acc1 mean-accumulator) (acc2 mean-accumulator)
-;; ;;                &optional (tolerance *==-tolerance*))
-;; ;;   (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
-;; ;;          ((&structure mean-accumulator- (tally2 tally) (mean2 mean)) acc2))
-;; ;;     (and (= tally1 tally2)
-;; ;;          (== mean1 mean2 tolerance))))
+;; ;; (defmethod sample-ratio ((accumulator sample-ratio-accumulator))
+;; ;;   (let+ (((&structure-r/o sample-ratio-accumulator- tally count) accumulator))
+;; ;;     (/ count tally)))
 
-;; ;;; mean accumulator for arrays
+;; ;; ;;; mean accumulator for scalars
 
-;; (defstruct (array-mean-accumulator
-;;              (:constructor array-mean-accumulator% (mean)))
-;;   "Array of accumulators."
-;;   (tally 0 :type fixnum)
-;;   (mean nil :type array :read-only t))
+;; ;; ;; (defun pooled-mean (tally1 mean1 tally2 mean2
+;; ;; ;;                     &optional (tally (+ tally1 tally2)))
+;; ;; ;;   "Pooled mean.  For internal use."
+;; ;; ;;   (/ (+ (* tally1 mean1) (* tally2 mean2)) tally))
 
-;; (define-structure-let+ (array-mean-accumulator) tally mean)
+;; ;; ;; (defmethod pool2 ((acc1 mean-accumulator) (acc2 mean-accumulator))
+;; ;; ;;   (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
+;; ;; ;;          ((&structure mean-accumulator- (tally2 tally) (mean2 mean)) acc2)
+;; ;; ;;          (tally (+ tally1 tally2)))
+;; ;; ;;     (mean-accumulator tally (pooled-mean tally1 mean1 tally2 mean2 tally))))
 
-;; (defun array-mean-accumulator (dimensions)
-;;   "Create an array mean accumulator for array."
-;;   (array-mean-accumulator% (make-array dimensions :initial-element 0d0)))
+;; ;; ;; (defmethod == ((acc1 mean-accumulator) (acc2 mean-accumulator)
+;; ;; ;;                &optional (tolerance *==-tolerance*))
+;; ;; ;;   (let+ (((&structure mean-accumulator- (tally1 tally) (mean1 mean)) acc1)
+;; ;; ;;          ((&structure mean-accumulator- (tally2 tally) (mean2 mean)) acc2))
+;; ;; ;;     (and (= tally1 tally2)
+;; ;; ;;          (== mean1 mean2 tolerance))))
 
-;; (defmethod add ((accumulator array-mean-accumulator) object)
-;;   (let+ (((&array-mean-accumulator tally nil) accumulator)
-;;          ((&array-mean-accumulator-r/o nil mean) accumulator)
-;;          (array (aprog1 (as-array object)
-;;                   (assert (common-dimensions it mean))))
-;;          (tally (incf tally)))
-;;     (dotimes (index (array-total-size array))
-;;       (incf-mean (row-major-aref mean index)
-;;                  (row-major-aref array index) tally))))
+;; ;; ;;; mean accumulator for arrays
 
-;; (define-structure-slot-accessor mean array-mean-accumulator :read-only? t)
+;; ;; (defstruct (array-mean-accumulator
+;; ;;              (:constructor array-mean-accumulator% (mean)))
+;; ;;   "Array of accumulators."
+;; ;;   (tally 0 :type fixnum)
+;; ;;   (mean nil :type array :read-only t))
 
-;; (define-conforming-accumulator (mean (array array))
-;;   (array-mean-accumulator (array-dimensions array)))
+;; ;; (define-structure-let+ (array-mean-accumulator) tally mean)
 
-;;; covariance
+;; ;; (defun array-mean-accumulator (dimensions)
+;; ;;   "Create an array mean accumulator for array."
+;; ;;   (array-mean-accumulator% (make-array dimensions :initial-element 0d0)))
 
-(defstruct sample-covariance
-  "Sample covariance calculated on-line/single-pass.
+;; ;; (defmethod add ((accumulator array-mean-accumulator) object)
+;; ;;   (let+ (((&array-mean-accumulator tally nil) accumulator)
+;; ;;          ((&array-mean-accumulator-r/o nil mean) accumulator)
+;; ;;          (array (aprog1 (as-array object)
+;; ;;                   (assert (common-dimensions it mean))))
+;; ;;          (tally (incf tally)))
+;; ;;     (dotimes (index (array-total-size array))
+;; ;;       (incf-mean (row-major-aref mean index)
+;; ;;                  (row-major-aref array index) tally))))
 
-   The elements are referred to as (X,Y) pairs.
+;; ;; (define-structure-slot-accessor mean array-mean-accumulator :read-only? t)
 
-   N     count of elements
-   X-M1  mean of X
-   X-S2  sum of squared deviations of X from the mean
-   Y-M1  mean of Y
-   Y-S2  sum of squared deviations of Y from the mean
-   XY-S2 sum of the product of X and Y deviations from the mean
+;; ;; (define-conforming-accumulator (mean (array array))
+;; ;;   (array-mean-accumulator (array-dimensions array)))
 
-Allows on-line, numerically stable calculation of moments.  See \cite{bennett2009numerically} and \cite{pebay2008formulas} for the description of the algorithm."
-  (n 0 :type (integer 0))
-  (x-m1 0d0 :type double-float)
-  (x-s2 0d0 :type double-float)
-  (y-m1 0d0 :type double-float)
-  (y-s2 0d0 :type double-float)
-  (xy-s2 0d0 :type double-float))
+;; ;;; covariance
 
-(defmethod add-pair ((accumulator sample-covariance) (x real) (y real))
-  (let+ ((x (coerce x 'double-float))
-         (y (coerce y 'double-float))
-         ((&structure sample-covariance- n x-m1 y-m1 x-s2 y-s2 xy-s2) accumulator)
-         (x-delta (- x x-m1))
-         (y-delta (- y y-m1)))
-    (incf n)
-    (incf x-m1 (/ x-delta n))
-    (incf y-m1 (/ y-delta n))
-    (let ((x-post-delta (- x x-m1))
-          (y-post-delta (- y y-m1)))
-      (incf x-s2 (* x-delta x-post-delta))
-      (incf y-s2 (* y-delta y-post-delta))
-      (incf xy-s2 (* x-post-delta y-delta)))))
+;; (defstruct sample-covariance
+;;   "Sample covariance calculated on-line/single-pass.
 
-(defun covariance (sample-covariance)
-  "Return the covariance from an accumulator."
-  (let+ (((&structure-r/o sample-covariance- n xy-s2) sample-covariance))
-    (when (< 1 n)
-      (/ xy-s2 (1- n)))))
+;;    The elements are referred to as (X,Y) pairs.
 
-(defun correlation (sample-covariance)
-  "Return the correlation from an accumulator."
-  (let+ (((&structure-r/o sample-covariance- n x-s2 y-s2 xy-s2) sample-covariance)
-         (denominator (sqrt (* x-s2 y-s2))))
-    (cond
-      ((plusp denominator) (/ xy-s2 denominator))
-      ((plusp n) 0)
-      (t nil))))
+;;    N     count of elements
+;;    X-M1  mean of X
+;;    X-S2  sum of squared deviations of X from the mean
+;;    Y-M1  mean of Y
+;;    Y-S2  sum of squared deviations of Y from the mean
+;;    XY-S2 sum of the product of X and Y deviations from the mean
 
-(defun x-moments (sample-covariance)
-  "Return a CENTRAL-SAMPLE-MOMENTS object, containing the moments of X."
-  (let+ (((&structure-r/o sample-covariance- n x-m1 x-s2) sample-covariance))
-    (make-central-sample-moments :n n :m1 x-m1 :s2 x-s2 :s3 nil :s4 nil)))
+;; Allows on-line, numerically stable calculation of moments.  See \cite{bennett2009numerically} and \cite{pebay2008formulas} for the description of the algorithm."
+;;   (n 0 :type (integer 0))
+;;   (x-m1 0d0 :type double-float)
+;;   (x-s2 0d0 :type double-float)
+;;   (y-m1 0d0 :type double-float)
+;;   (y-s2 0d0 :type double-float)
+;;   (xy-s2 0d0 :type double-float))
 
-(defun y-moments (sample-covariance)
-  "Return a CENTRAL-SAMPLE-MOMENTS object, containing the moments of Y."
-  (let+ (((&structure-r/o sample-covariance- n y-m1 y-s2) sample-covariance))
-    (make-central-sample-moments :n n :m1 y-m1 :s2 y-s2 :s3 nil :s4 nil)))
+;; (defmethod add-pair ((accumulator sample-covariance) (x real) (y real))
+;;   (let+ ((x (coerce x 'double-float))
+;;          (y (coerce y 'double-float))
+;;          ((&structure sample-covariance- n x-m1 y-m1 x-s2 y-s2 xy-s2) accumulator)
+;;          (x-delta (- x x-m1))
+;;          (y-delta (- y y-m1)))
+;;     (incf n)
+;;     (incf x-m1 (/ x-delta n))
+;;     (incf y-m1 (/ y-delta n))
+;;     (let ((x-post-delta (- x x-m1))
+;;           (y-post-delta (- y y-m1)))
+;;       (incf x-s2 (* x-delta x-post-delta))
+;;       (incf y-s2 (* y-delta y-post-delta))
+;;       (incf xy-s2 (* x-post-delta y-delta)))))
 
-(defun sample-covariance (x y)
-  "Sample covariance accumulator of reals in two sequences."
-  (assert (length= x y))
-  (aprog1 (make-sample-covariance)
-    (map nil (curry #'add-pair it) x y)))
+;; (defun covariance (sample-covariance)
+;;   "Return the covariance from an accumulator."
+;;   (let+ (((&structure-r/o sample-covariance- n xy-s2) sample-covariance))
+;;     (when (< 1 n)
+;;       (/ xy-s2 (1- n)))))
 
-(defun covariance-xy (x y)
-  "Covariance of reals in two sequences."
-  (covariance (sample-covariance x y)))
+;; (defun correlation (sample-covariance)
+;;   "Return the correlation from an accumulator."
+;;   (let+ (((&structure-r/o sample-covariance- n x-s2 y-s2 xy-s2) sample-covariance)
+;;          (denominator (sqrt (* x-s2 y-s2))))
+;;     (cond
+;;       ((plusp denominator) (/ xy-s2 denominator))
+;;       ((plusp n) 0)
+;;       (t nil))))
 
-(defun correlation-xy (x y)
-  "Correlation of reals in two sequences."
-  (correlation (sample-covariance x y)))
+;; (defun x-moments (sample-covariance)
+;;   "Return a CENTRAL-SAMPLE-MOMENTS object, containing the moments of X."
+;;   (let+ (((&structure-r/o sample-covariance- n x-m1 x-s2) sample-covariance))
+;;     (make-central-sample-moments :n n :m1 x-m1 :s2 x-s2 :s3 nil :s4 nil)))
+
+;; (defun y-moments (sample-covariance)
+;;   "Return a CENTRAL-SAMPLE-MOMENTS object, containing the moments of Y."
+;;   (let+ (((&structure-r/o sample-covariance- n y-m1 y-s2) sample-covariance))
+;;     (make-central-sample-moments :n n :m1 y-m1 :s2 y-s2 :s3 nil :s4 nil)))
+
+;; (defun sample-covariance (x y)
+;;   "Sample covariance accumulator of reals in two sequences."
+;;   (assert (length= x y))
+;;   (aprog1 (make-sample-covariance)
+;;     (map nil (curry #'add-pair it) x y)))
+
+;; (defun covariance-xy (x y)
+;;   "Covariance of reals in two sequences."
+;;   (covariance (sample-covariance x y)))
+
+;; (defun correlation-xy (x y)
+;;   "Correlation of reals in two sequences."
+;;   (correlation (sample-covariance x y)))
 
 ;; (defmethod == ((acc1 covariance-accumulator) (acc2 covariance-accumulator)
 ;;                &optional (tolerance *==-tolerance*))
