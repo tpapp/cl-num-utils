@@ -1,7 +1,10 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
 
 (cl:defpackage #:cl-num-utils.utilities
-  (:use #:cl #:alexandria #:let-plus)
+  (:use #:cl
+        #:alexandria
+        #:anaphora
+        #:let-plus)
   (:export
    #:gethash*
    #:splice-when
