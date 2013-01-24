@@ -12,72 +12,20 @@
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Boost Software License - Version 1.0"
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
+  :depends-on (#:anaphora #:alexandria #:let-plus)
+  :pathname #P"src/"
   :serial t
   :components
-  ((:module
-    "package-init"
-    :pathname #P"src/"
-    :components
-    ((:file "package")))
-   (:module
-    "utilities"
-    :pathname #P"src/"
-    :serial t
-    :components
-    ((:file "macros")
-     (:file "conditions")
-     (:file "misc")
-     (:file "arithmetic")
-     (:file "elementwise")
-     (:file "array")
-     (:file "interval")
-     (:file "pretty")
-     (:file "bins")
-     (:file "statistics")
-     (:file "sub")
-     (:file "data-frame")
-     ;; (:file "interaction")
-     (:file "optimization")
-     (:file "differentiation")
-     (:file "rootfinding")
-     (:file "quadrature")
-     (:file "chebyshev"))))
-  :depends-on (#:anaphora #:alexandria #:extended-reals #:iterate #:let-plus))
+  ((:file "utilities")
+   (:file "statistics")))
 
 (asdf:defsystem :cl-num-utils-tests
   :description "Unit tests for CL-NUM-UTILS.."
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Same as CL-NUM-UTILS -- this is part of the CL-NUM-UTILS library."
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
+  :depends-on (#:clunit #:cl-num-utils)
+  :pathname #"tests/"
   :serial t
   :components
-  ((:module
-    "package-init"
-    :pathname #P"tests/"
-    :components
-    ((:file "package")))
-   (:module
-    "setup"
-    :pathname #P"tests/"
-    :components
-    ((:file "setup")
-     (:file "test-utilities")))
-   (:module
-    "tests"
-    :pathname #P"tests/"
-    :components
-    ((:file "arithmetic")
-     (:file "array")
-     (:file "bins")
-     (:file "sub")
-     (:file "elementwise")
-     (:file "statistics")
-     (:file "interval")
-     (:file "utilities")
-     (:file "data-frame")
-     ;; (:file "interactions")
-     (:file "differentiation")
-     (:file "rootfinding")
-     (:file "quadrature")
-     (:file "chebyshev"))))
-  :depends-on (#:cl-num-utils #:lift))
+  ((:file "setup")))
