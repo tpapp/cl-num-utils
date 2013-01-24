@@ -2,30 +2,6 @@
 
 (in-package #:cl-num-utils)
 
-(defmacro lazy-let-block ((variable init-form) &body body)
-  "Building block for LAZY-LET*.  Not exported."
-  (with-unique-names (value flag)
-    `(let (,value ,flag)
-       (symbol-macrolet ((,variable (if ,flag
-                                        ,value
-                                        (setf ,flag t
-                                              ,value ,init-form))))
-         ,@body))))
-
-(define-with-multiple-bindings lazy-let-block
-    :plural lazy-let*
-    :docstring "Similar to LET*, except that the values are evaluated on
-    demand.")
-
-(defmacro setf-nil (place value-form &environment environment)
-  "Assert that PLACE is NIL, then evaluate VALUE-FORM and save it there."
-  (multiple-value-bind (vars vals store-vars writer-form reader-form)
-      (get-setf-expansion place environment)
-    `(let* ,(mapcar #'list vars vals)
-       (assert (not ,reader-form) () "~A is already non-nil." ',place)
-       (let ((,(car store-vars) ,value-form))
-           ,writer-form))))
-
 (defmacro define-structure-slot-accessor
     (accessor structure
      &key (conc-name (format nil "~A-" structure))
@@ -41,13 +17,6 @@ for a slot in an instance of STRUCTURE.  "
        ,@(unless read-only?
            `((defmethod (setf ,accessor) ,(cons 'value lambda-list)
                (setf (,slot-accessor instance) value)))))))
-
-(defmacro expanding (&body body)
-  "Expand BODY.  Useful for generating code programmatically."
-  (with-gensyms (local-macro)
-    `(macrolet ((,local-macro ()
-                  ,@body))
-       (,local-macro))))
 
 (defmacro with-doubles (bindings &body body)
   "Coerces value to DOUBLE-FLOAT, and binds it to VAR in (VAR VALUE) bindings.
