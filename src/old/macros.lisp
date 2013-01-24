@@ -2,28 +2,6 @@
 
 (in-package #:cl-num-utils)
 
-(defun concatenate-as-string (things)
-  "Concatenate THINGS, converted to string."
-  (apply #'concatenate 'string (mapcar #'string things)))
-
-(defun make-keyword+ (&rest things)
-  "Build a symbol by concatenating each element of ARGS as strings,
-  and intern it the KEYWORD package."
-  (make-keyword (concatenate-as-string things)))
-
-(defun gensym+ (&rest things)
-  "Gensym with concatenating each element of ARGS as strings."
-  (gensym (concatenate-as-string things)))
-
-;; (defmacro define-make-symbol% (package &optional
-;;                                (name (make-symbol-in package '#:make-symbol%)))
-;;   "Define a MAKE-SYMBOL% that interns in PACKAGE."
-;;   `(defun ,name (&rest args)
-;;      ,(format nil "Build a symbol by concatenating each element of ~
-;;                    ARGS as strings, and intern it in ~A." package)
-;;      (intern (concatenate-as-strings args) ,package)))
-
-
 (defmacro lazy-let-block ((variable init-form) &body body)
   "Building block for LAZY-LET*.  Not exported."
   (with-unique-names (value flag)
