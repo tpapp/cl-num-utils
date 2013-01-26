@@ -14,6 +14,7 @@
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :depends-on (#:anaphora
                #:alexandria
+               #:array-operations
                #:let-plus)
   :pathname #P"src/"
   :serial t
