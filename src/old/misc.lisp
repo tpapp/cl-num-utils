@@ -111,52 +111,6 @@ instead.  The second value is true iff elements are the same."
   "If arrays have the same dimensions, return that, otherwise NIL."
   (common arrays :key #'array-dimensions :test #'equalp))
 
-(defparameter *==-tolerance* 1d-5)
-
-(defgeneric == (a b &optional tolerance)
-  (:documentation "Compare A and B for approximate equality at the level of
-elements (using TOLERANCE), checking that they have the same class, same dimensions,
-etc.  Two numbers A and B are == iff |a-b|/max(1,|a|,|b|) <= tolerance.")
-  (:method (a b &optional (tolerance *==-tolerance*))
-    (declare (ignore tolerance))
-    nil)
-  (:method ((a number) (b number) &optional (tolerance *==-tolerance*))
-    (<= (abs (- a b)) (* (max 1 (abs a) (abs b)) tolerance)))
-  (:method ((a array) (b array) &optional (tolerance *==-tolerance*))
-    (and (equal (array-dimensions a) (array-dimensions b))
-         (iter
-           (for index :below (array-total-size a))
-           (always (== (row-major-aref a index)
-                       (row-major-aref b index)
-                       tolerance)))))
-  (:method ((a cons) (b cons) &optional (tolerance *==-tolerance*))
-    (and (== (car a) (car b) tolerance)
-         (== (cdr a) (cdr b) tolerance)))
-  (:method ((a null) (b null) &optional (tolerance *==-tolerance*))
-    (declare (ignore tolerance))
-    t))
-
-(defun ==* (tolerance)
-  "Curried version of ==."
-  (lambda (a b)
-    (== a b tolerance)))
-
-(defmacro define-==-with-accessors (classes (&rest accessors))
-  "Define a method for ==, specialized to the given classes (a single one is
-used twice), comparing values obtained with accessors."
-  (let+ (((class-a &optional (class-b class-a)) (ensure-list classes))
-         ((&with-gensyms a b tolerance)))
-    `(defmethod == ((,a ,class-a) (,b ,class-b)
-                    &optional (,tolerance *==-tolerance*))
-       (and ,@(loop for accessor in accessors
-                    collect `(== (,accessor ,a) (,accessor ,b) ,tolerance))))))
-
-(defmacro define-structure-== (structure (&rest slots))
-  (check-type structure symbol)
-  `(define-==-with-accessors ,structure
-       ,(loop for slot in slots
-              collect (symbolicate structure "-" slot))))
-
 (defun format-number (number &key (int-digits 3) (exp-digits 1))
   "Format number nicely."
   (if (integerp number)

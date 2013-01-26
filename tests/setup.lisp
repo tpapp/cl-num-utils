@@ -4,7 +4,12 @@
         #:alexandria
         #:anaphora
         #:let-plus
-        #:clunit)
+        #:clunit
+        ;; cl-num-utils subpackages
+        #:cl-num-utils.num=
+        #:cl-num-utils.utilities
+        #:cl-num-utils.statistics)
+  (:shadowing-import-from #:alexandria #:mean :variance #:median)
   (:export
    #:run))
 

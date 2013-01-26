@@ -20,7 +20,8 @@
   :serial t
   :components
   ((:file "utilities")
-   (:file "statistics")))
+   (:file "statistics")
+   (:file "num=")))
 
 (asdf:defsystem :cl-num-utils-tests
   :description "Unit tests for CL-NUM-UTILS.."
