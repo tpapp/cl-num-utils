@@ -1,11 +1,17 @@
-(in-package :cl-num-utils-tests)
+;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
+(cl:defpackage #:cl-num-utils-tests
+  (:use #:cl
+        #:alexandria
+        #:anaphora
+        #:let-plus
+        #:clunit)
+  (:export
+   #:run))
 
-;; TEST SUITES
+(cl:in-package :cl-num-utils-tests)
 
-(deftestsuite cl-num-utils-tests () ())
+(defsuite tests ())
 
-;; EXTERNAL
-
-(defun run ()
-  "Run all the tests for CL-NUM-UTILS."
-  (run-tests :suite 'cl-num-utils-tests))
+(defun run (&optional interactive?)
+  "Run all tests in the test suite."
+  (run-suite 'tests :use-debugger interactive?))
