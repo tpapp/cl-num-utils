@@ -97,12 +97,12 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
            ((&structure central-sample-moments- (wa w) m s2 s3 s4) moments)
            (d (- y m))
            (w (+ wa weight))
-           (dwa/w (* d (/ wa w))))
-      (incf m dwa/w)
+           (d-weighted (* d (/ weight w))))
+      (incf m d-weighted)
       (when s2
-        (let ((s2-increment (* dwa/w wa d)))
+        (let ((s2-increment (* d-weighted wa d)))
           (when s3
-            (let ((s3-increment (+ (* -3 dwa/w s2)
+            (let ((s3-increment (+ (* -3 d-weighted s2)
                                    (* s2-increment (- wa weight) (/ d w)))))
               ;; (when s4
               ;;   (let ((d/n^2 (expt d/n 2)))
