@@ -12,7 +12,9 @@
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Boost Software License - Version 1.0"
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
-  :depends-on (#:anaphora #:alexandria #:let-plus)
+  :depends-on (#:anaphora
+               #:alexandria
+               #:let-plus)
   :pathname #P"src/"
   :serial t
   :components
@@ -24,7 +26,8 @@
   :author "Tamas K Papp <tkpapp@gmail.com>"
   :license "Same as CL-NUM-UTILS -- this is part of the CL-NUM-UTILS library."
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
-  :depends-on (#:clunit #:cl-num-utils)
+  :depends-on (#:cl-num-utils
+               #:clunit)
   :pathname #P"tests/"
   :serial t
   :components
