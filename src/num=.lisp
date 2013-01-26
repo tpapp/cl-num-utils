@@ -6,6 +6,7 @@
         #:anaphora
         #:let-plus)
   (:export
+   #:num-delta
    #:*num=-tolerance*
    #:num=
    #:num=-function
@@ -15,6 +16,11 @@
 (in-package #:cl-num-utils.num=)
 
 (defparameter *num=-tolerance* 1d-5 "Default tolerance for NUM=.")
+
+(defun num-delta (a b)
+  "|a-b|/max(1,|a|,|b|).  Useful for comparing numbers."
+  (/ (abs (- a b))
+     (max 1 (abs a) (abs b))))
 
 (defgeneric num= (a b &optional tolerance)
   (:documentation "Compare A and B for approximate equality, checking corresponding elements when applicable (using TOLERANCE).
