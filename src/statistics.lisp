@@ -1,7 +1,14 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
-(defpackage #:cl-num-utils.statistics
-  (:nicknames #:clnu.statistics)
-  (:use #:cl #:anaphora #:alexandria #:let-plus)
+(cl:defpackage #:cl-num-utils.statistics
+  (:nicknames #:clnu.stats)
+  (:use #:cl
+        #:anaphora
+        #:alexandria
+        #:cl-num-utils.utilities
+        #:let-plus)
+  (:shadow #:mean
+           #:variance
+           #:median)
   (:export
    #:tally
    #:add
@@ -11,7 +18,15 @@
    #:information-not-collected-in-accumulator
    #:central-sample-moments
    #:central-sample-moments-degree
-   #:*central-sample-moments-default-degree*))
+   #:*central-sample-moments-default-degree*
+   #:mean
+   #:variance
+   #:sd
+   #:central-m2
+   #:central-m3
+   #:central-m4
+   #:skewness
+   #:kurtosis))
 
 (in-package #:cl-num-utils.statistics)
 
@@ -170,66 +185,61 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
           (parse-body body :documentation t))
          (body (append declarations remaining-forms)))
     `(defgeneric ,function (object)
-       ,@(awhen docstring `(:documentation ,it))
+       ,@(splice-awhen docstring `(:documentation ,it))
        (:method (object)
          (,function (central-sample-moments object ,degree)))
        (:method ((,variable central-sample-moments))
          ,@body))))
 
-;; (define-central-sample-moment mean (object 1)
-;;   "The mean of elements in OBJECT."
-;;   (central-sample-moments-m1 object))
+(define-central-sample-moment mean (object 1)
+  "The mean of elements in OBJECT."
+  (central-sample-moments-m object))
 
-;; (define-central-sample-moment variance (object 2)
-;;   "Variance of OBJECT.  For samples, the unbiased estimator for the
-;; variance (normalizing by 1-n)."
-;;   (let+ (((&structure-r/o central-sample-moments- n s2) object))
-;;     (cond
-;;       ((zerop n) (error 'empty-accumulator))
-;;       ((= n 1) (error 'not-enough-elements-in-accumulator))
-;;       (t (/ s2 (1- n))))))
+(define-central-sample-moment variance (object 2)
+  "Variance of OBJECT.  For samples, normalized by the weight-1 (and thus unbiased if certain assumptions hold, eg weights that count frequencies)."
+  (let+ (((&structure-r/o central-sample-moments- w s2) object))
+    (assert s2 () 'information-not-collected-in-accumulator)
+    (assert (plusp w) () 'empty-accumulator)
+    (assert (< 1 w) () 'not-enough-elements-in-accumulator)
+    (/ s2 (1- w))))
 
-;; (defgeneric sd (object)
-;;   (:documentation "Standard deviation.  For samples, the square root
-;; of the unbiased estimator (see VARIANCE).")
-;;   (:method (object)
-;;     (sqrt (variance object))))
+(defgeneric sd (object)
+  (:documentation "Standard deviation.  For samples, the square root of the unbiased estimator (see VARIANCE).")
+  (:method (object)
+    (sqrt (variance object))))
 
-;; (define-central-sample-moment central-m2 (object 2)
-;;   "Second central moment.  For samples, normalized by the sample size (and
-;; thus not the unbiased estimator, see VARIANCE)."
-;;   (let+ (((&structure-r/o central-sample-moments- s2 n) object))
-;;     (if s2
-;;         (/ s2 n)
-;;         (error 'information-not-collected-in-accumulator))))
+(define-central-sample-moment central-m2 (object 2)
+  "Second central moment.  For samples, normalized by the total weight (and thus not the unbiased estimator, see VARIANCE)."
+  (let+ (((&structure-r/o central-sample-moments- w s2) object))
+    (assert s2 () 'information-not-collected-in-accumulator)
+    (assert (plusp w) () 'empty-accumulator)
+    (/ s2 w)))
 
-;; (define-central-sample-moment central-m3 (object 3)
-;;   "Third central moment."
-;;   (let+ (((&structure-r/o central-sample-moments- s3 n) object))
-;;     (if s3
-;;         (/ s3 n)
-;;         (error 'information-not-collected-in-accumulator))))
+(define-central-sample-moment central-m3 (object 3)
+  "Third central moment."
+  (let+ (((&structure-r/o central-sample-moments- w s3) object))
+    (assert s3 () 'information-not-collected-in-accumulator)
+    (assert (plusp w) () 'empty-accumulator)
+    (/ s3 w)))
 
-;; (define-central-sample-moment central-m4 (object 4)
-;;   "Fourth central moment."
-;;   (let+ (((&structure-r/o central-sample-moments- s4 n) object))
-;;     (if s4
-;;         (/ s4 n)
-;;         (error 'information-not-collected-in-accumulator))))
+(define-central-sample-moment central-m4 (object 4)
+  "Fourth central moment."
+  (let+ (((&structure-r/o central-sample-moments- w s4) object))
+    (assert s4 () 'information-not-collected-in-accumulator)
+    (assert (plusp w) () 'empty-accumulator)
+    (/ s4 w)))
 
-;; (define-central-sample-moment skewness (object 3)
-;;   "Skewness FIXME talk about bias, maybe implement unbiased?"
-;;   (/ (central-m3 object)
-;;      (expt (central-m2 object) 3/2)))
+(define-central-sample-moment skewness (object 3)
+  "Skewness FIXME talk about bias, maybe implement unbiased?"
+  (/ (central-m3 object)
+     (expt (central-m2 object) 3/2)))
 
-;; (define-central-sample-moment kurtosis (object 4)
-;;   "Kurtosis FIXME talk about bias, maybe implement unbiased?"
-;;   (/ (central-m4 object)
-;;      (expt (central-m2 object) 2)))
-
-;; 
-
-;; ;;; quantiles
+(define-central-sample-moment kurtosis (object 4)
+  "Kurtosis FIXME talk about bias, maybe implement unbiased?"
+  (/ (central-m4 object)
+     (expt (central-m2 object) 2)))
+
+;;; quantiles
 
 ;; (defstruct sorted-reals
 ;;   "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
