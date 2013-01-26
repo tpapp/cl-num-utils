@@ -9,7 +9,7 @@
         #:cl-num-utils.num=
         #:cl-num-utils.utilities
         #:cl-num-utils.statistics)
-  (:shadowing-import-from #:alexandria #:mean :variance #:median)
+  (:shadowing-import-from #:cl-num-utils.statistics #:mean :variance #:median)
   (:export
    #:run))
 
