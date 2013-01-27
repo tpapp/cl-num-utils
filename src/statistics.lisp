@@ -4,6 +4,8 @@
   (:use #:cl
         #:anaphora
         #:alexandria
+        #:cl-num-utils.arithmetic
+        #:cl-num-utils.num=
         #:cl-num-utils.utilities
         #:let-plus)
   (:shadow #:mean
@@ -87,6 +89,8 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
   (s2 0d0 :type (or (real 0) null))
   (s3 0d0 :type (or real null))
   (s4 0d0 :type (or (real 0) null)))
+
+(define-structure-num= central-sample-moments w m s2 s3 s4)
 
 (defmethod add ((moments central-sample-moments) (y real) &optional (weight 1))
   ;; NOTE: See the docstring of CENTRAL-SAMPLE-MOMENTS for the description of
@@ -242,109 +246,111 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
 
 ;;; quantiles
 
-;; (defstruct sorted-reals
-;;   "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
-;;   (ordered-elements #() :type vector)
-;;   (unordered-elements nil :type list))
+(defstruct sorted-reals
+  "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
+  (ordered-elements #() :type vector)
+  (unordered-elements nil :type list))
 
-;; (define-structure-let+ (sorted-reals)
-;;                        ordered-elements unordered-elements)
+(define-structure-let+ (sorted-reals)
+                       ordered-elements unordered-elements)
 
-;; (defmethod add ((accumulator sorted-reals) object)
-;;   (push object (sorted-reals-unordered-elements accumulator)))
+(defmethod add ((accumulator sorted-reals) object &optional (weight 1 weight?))
+  (declare (ignore weight))
+  (assert (not weight?) () "Weighted quantiles are not implemented yet.")
+  (push object (sorted-reals-unordered-elements accumulator)))
 
-;; (defmethod elements ((sorted-reals sorted-reals))
-;;   (let+ (((&sorted-reals ordered-elements unordered-elements) sorted-reals))
-;;     (when unordered-elements
-;;       (setf ordered-elements (concatenate 'vector ordered-elements
-;;                                           unordered-elements)
-;;             unordered-elements nil
-;;             ordered-elements (sort ordered-elements #'<)))
-;;     ordered-elements))
+(defmethod elements ((sorted-reals sorted-reals))
+  (let+ (((&sorted-reals ordered-elements unordered-elements) sorted-reals))
+    (when unordered-elements
+      (setf ordered-elements (concatenate 'vector ordered-elements
+                                          unordered-elements)
+            unordered-elements nil
+            ordered-elements (sort ordered-elements #'<)))
+    ordered-elements))
 
-;; (defun empirical-quantile (sorted-vector q)
-;;   "Return the empirical quantile of a vector of real numbers, sorted in
-;; ascending order (not checked).  Uses a 0.5 correction."
-;;   (let+ ((n (length sorted-vector))
-;;          (c (/ 1/2 n)))
-;;     (cond
-;;       ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
-;;       ((<= q c) (aref sorted-vector 0))
-;;       ((<= (- 1 c) q) (aref sorted-vector (1- n)))
-;;       (t (let+ ((r (- (* q n) 1/2))
-;;                 ((&values int frac) (floor r))
-;;                 ((&flet value (index)
-;;                    (aref sorted-vector index)))
-;;                 (left (value int)))
-;;            (if (zerop frac)
-;;                left
-;;                (convex-combination left (value (1+ int)) frac)))))))
+(defun empirical-quantile (sorted-vector q)
+  "Return the empirical quantile of a vector of real numbers, sorted in
+ascending order (not checked).  Uses a 0.5 correction."
+  (let+ ((n (length sorted-vector))
+         (c (/ 1/2 n)))
+    (cond
+      ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
+      ((<= q c) (aref sorted-vector 0))
+      ((<= (- 1 c) q) (aref sorted-vector (1- n)))
+      (t (let+ ((r (- (* q n) 1/2))
+                ((&values int frac) (floor r))
+                ((&flet value (index)
+                   (aref sorted-vector index)))
+                (left (value int)))
+           (if (zerop frac)
+               left
+               (lerp left (value (1+ int)) frac)))))))
 
-;; (defun empirical-quantile-probabilities (n)
-;;   "Probabilities that correspond to the empirical quantiles of a vector of
-;; length N.  That is to say,
+(defun empirical-quantile-probabilities (n)
+  "Probabilities that correspond to the empirical quantiles of a vector of
+length N.  That is to say,
 
-;;  (== (quantiles sample (empirical-quantile-probabilities (length sample)))
-;;      sample)
+ (== (quantiles sample (empirical-quantile-probabilities (length sample)))
+     sample)
 
-;; for any vector SAMPLE."
-;;   (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
+for any vector SAMPLE."
+  (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
 
-;; (defmethod quantiles ((accumulator sorted-reals) q)
-;;   (map 'vector
-;;        (curry #'empirical-quantile (elements accumulator)) q))
+(defmethod quantiles ((accumulator sorted-reals) q)
+  (map 'vector
+       (curry #'empirical-quantile (elements accumulator)) q))
 
-;; (defun sorted-reals ()
-;;   (make-sorted-reals))
+(defun sorted-reals ()
+  (make-sorted-reals))
 
-;; (defun sort-reals (sequence)
-;;   "Return a SORTED-REALS structure."
-;;   (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
-;;                                              #'<)
-;;                      :unordered-elements nil))
+(defun sort-reals (sequence)
+  "Return a SORTED-REALS structure."
+  (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
+                                             #'<)
+                     :unordered-elements nil))
 
-;; (defmethod print-object ((acc sorted-reals) stream)
-;;   (if *print-readably*
-;;       (call-next-method)
-;;       (print-unreadable-object (acc stream :type t)
-;;         (let+ (((&accessors-r/o elements) acc))
-;;           (if (plusp (length elements))
-;;               (format stream "min: ~A, q25: ~A, q50: ~A, q75: ~A, max: ~A"
-;;                       (first* elements)
-;;                       (quantile acc 0.25)
-;;                       (quantile acc 0.5)
-;;                       (quantile acc 0.75)
-;;                       (sub elements -1))
-;;               (format stream "no elements"))))))
+(defmethod print-object ((acc sorted-reals) stream)
+  (if *print-readably*
+      (call-next-method)
+      (print-unreadable-object (acc stream :type t)
+        (let+ (((&accessors-r/o elements) acc))
+          (if (plusp (length elements))
+              (format stream "min: ~A, q25: ~A, q50: ~A, q75: ~A, max: ~A"
+                      (aref elements 0)
+                      (quantile acc 0.25)
+                      (quantile acc 0.5)
+                      (quantile acc 0.75)
+                      (aref elements (1- (length elements))))
+              (format stream "no elements"))))))
 
-;; (defgeneric ensure-sorted-reals (object)
-;;   (:documentation "Return the contents of OBJECT as a SORTED-REALS.")
-;;   (:method ((sorted-reals sorted-reals))
-;;     sorted-reals)
-;;   (:method ((array array))
-;;     (sort-reals (flatten-array array)))
-;;   (:method ((list list))
-;;     (sort-reals list)))
+(defgeneric ensure-sorted-reals (object)
+  (:documentation "Return the contents of OBJECT as a SORTED-REALS.")
+  (:method ((sorted-reals sorted-reals))
+    sorted-reals)
+  (:method ((array array))
+    (sort-reals (ao:flatten array)))
+  (:method ((list list))
+    (sort-reals list)))
 
-;; (defun ensure-sorted-vector (object)
-;;   "Return the elements of OBJECT as a vector (or reals) sorted in ascending
-;; order."
-;;   (elements (ensure-sorted-reals object)))
+(defun ensure-sorted-vector (object)
+  "Return the elements of OBJECT as a vector (or reals) sorted in ascending
+order."
+  (elements (ensure-sorted-reals object)))
 
-;; (defgeneric quantile (object q)
-;;   (:documentation "Return an element at quantile Q.  May be an interpolation
-;; or an approximation, depending on OBJECT and Q.  Extensions should define
-;; methods for QUANTILES, not QUANTILE.")
-;;   (:method ((object sequence) q)
-;;     (quantile (ensure-sorted-reals object) q ))
-;;   (:method (object q)
-;;     (aref (quantiles object (vector q)) 0)))
+(defgeneric quantile (object q)
+  (:documentation "Return an element at quantile Q.  May be an interpolation
+or an approximation, depending on OBJECT and Q.  Extensions should define
+methods for QUANTILES, not QUANTILE.")
+  (:method ((object sequence) q)
+    (quantile (ensure-sorted-reals object) q ))
+  (:method (object q)
+    (aref (quantiles object (vector q)) 0)))
 
-;; (defgeneric quantiles (object qs)
-;;   (:documentation "Multiple quantiles, see QUANTILE.  Extensions should define
-;; methods for QUANTILES, not QUANTILE.")
-;;   (:method ((object sequence) qs)
-;;     (quantiles (ensure-sorted-reals object) qs)))
+(defgeneric quantiles (object qs)
+  (:documentation "Multiple quantiles, see QUANTILE.  Extensions should define
+methods for QUANTILES, not QUANTILE.")
+  (:method ((object sequence) qs)
+    (quantiles (ensure-sorted-reals object) qs)))
 
 
 
