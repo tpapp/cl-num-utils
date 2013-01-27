@@ -1,12 +1,12 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (delete-package '#:cl-num-utils)
+  (unless (find-package '#:cl-num-utils)
+    (defpackage #:cl-num-utils
+      (:nicknames #:clnu)
+      (:use #:cl))))
 
-  (defpackage #:cl-num-utils
-    (:nicknames #:clnu)
-    (:use #:cl))
-
+(eval-when (:compile-toplevel :load-toplevel :execute)
   (in-package #:cl-num-utils)
 
   (flet ((reexport (package)
