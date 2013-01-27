@@ -352,6 +352,13 @@ methods for QUANTILES, not QUANTILE.")
   (:method ((object sequence) qs)
     (quantiles (ensure-sorted-reals object) qs)))
 
+(defgeneric median (object)
+  (:documentation "Median of OBJECT.")
+  (:method ((object sequence))
+    (alexandria:median object))
+  (:method (object)
+    (quantile object 0.5)))
+
 
 
 ;; ;;; NOTE old code below
@@ -374,13 +381,6 @@ methods for QUANTILES, not QUANTILE.")
 ;; ;;     (let ((accumulator (sweep (sample-ratio-accumulator) object)))
 ;; ;;       (values (sample-ratio accumulator) accumulator))))
 
-
-;; ;; (defgeneric median (object)
-;; ;;   (:documentation "Median of OBJECT.")
-;; ;;   (:method ((object sequence))
-;; ;;     (alexandria:median object))
-;; ;;   (:method (object)
-;; ;;     (quantile object 0.5)))
 
 ;; ;; ;;; Specific accumulators
 
