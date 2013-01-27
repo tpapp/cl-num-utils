@@ -1,12 +1,14 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
 
-(defpackage #:cl-num-utils
-  (:nicknames #:clnu)
-  (:use #:cl))
-
-(in-package #:cl-num-utils)
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
+  (delete-package '#:cl-num-utils)
+
+  (defpackage #:cl-num-utils
+    (:nicknames #:clnu)
+    (:use #:cl))
+
+  (in-package #:cl-num-utils)
+
   (flet ((reexport (package)
            "Reexport all external symbols of package."
            (let ((package (find-package package)))
