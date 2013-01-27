@@ -35,7 +35,9 @@
    #:empirical-quantile
    #:empirical-quantile-probabilities
    #:quantile
-   #:quantiles))
+   #:quantiles
+   #:ensure-sorted-reals
+   #:ensure-sorted-vector))
 
 (in-package #:cl-num-utils.statistics)
 
@@ -274,12 +276,6 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
             ordered-elements (sort ordered-elements #'<)))
     ordered-elements))
 
-(defun sort-reals (sequence)
-  "Return a SORTED-REALS structure."
-  (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
-                                             #'<)
-                     :unordered-elements nil))
-
 (defmethod print-object ((acc sorted-reals) stream)
   (if *print-readably*
       (call-next-method)
@@ -293,6 +289,12 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
                       (quantile acc 0.75)
                       (aref elements (1- (length elements))))
               (format stream "no elements"))))))
+
+(defun sort-reals (sequence)
+  "Return a SORTED-REALS structure."
+  (make-sorted-reals :ordered-elements (sort (copy-sequence 'vector sequence)
+                                             #'<)
+                     :unordered-elements nil))
 
 (defgeneric ensure-sorted-reals (object)
   (:documentation "Return the contents of OBJECT as a SORTED-REALS.")

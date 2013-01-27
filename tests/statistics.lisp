@@ -200,21 +200,21 @@ Slow, but useful for testing as it does not suffer from approximation error."
 ;;          (*lift-equality-test* #'==))
 ;;     (assert-equality  acc acc-pooled)))
 
-;; (addtest (statistics-tests)
-;;   quantiles
-;;   (let ((sample #(0.0 1.0))
-;;         (quantiles (numseq 0 1 :length 11 :type 'double-float)))
-;;     (assert-equality  (map 'vector (curry #'quantile sample) quantiles)
-;;                  #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0))))
+(deftest quantiles (statistics-tests)
+  (let ((sample #(0.0 1.0))
+        (quantiles (numseq 0 1 :length 11 :type 'double-float)))
+    (assert-equalp #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0)
+        (map 'vector (curry #'quantile sample) quantiles))))
 
-;; (addtest (statistics-tests)
-;;   quantile-probabilities
-;;   (let* ((n 10)
-;;          (sample (sort (generate-array n (lambda () (random (* n 2)))) #'<))
-;;          (empirical-quantile-probabilities n))
-;;     (assert-equality  (quantiles sample (empirical-quantile-probabilities
-;;                                     (length sample)))
-;;                  sample)))
+(ensure-sorted-reals #(0.0 1.0))
+
+(deftest quantile-probabilities (statistics-tests)
+  (let* ((n 10)
+         (sample (sort (ao:generate (lambda () (random (* n 2))) n) #'<))
+         (empirical-quantile-probabilities n))
+    (assert-equalp sample
+        (quantiles sample (empirical-quantile-probabilities
+                                       (length sample))))))
 
 ;; (addtest (statistics-tests)
 ;;   (let+ ((end 5)
