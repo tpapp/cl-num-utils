@@ -28,7 +28,14 @@
    #:central-m3
    #:central-m4
    #:skewness
-   #:kurtosis))
+   #:kurtosis
+   #:median
+   #:sorted-reals
+   #:sorted-reals-elements
+   #:empirical-quantile
+   #:empirical-quantile-probabilities
+   #:quantile
+   #:quantiles))
 
 (in-package #:cl-num-utils.statistics)
 
@@ -244,8 +251,7 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
   (/ (central-m4 object)
      (expt (central-m2 object) 2)))
 
-;;; quantiles
-
+;;; sorted reals, used for implementing quantiles
 (defstruct sorted-reals
   "Accumulator which sorts elements.  ELEMENTS return the sorted elements."
   (ordered-elements #() :type vector)
@@ -259,7 +265,7 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
   (assert (not weight?) () "Weighted quantiles are not implemented yet.")
   (push object (sorted-reals-unordered-elements accumulator)))
 
-(defmethod elements ((sorted-reals sorted-reals))
+(defun sorted-reals-elements (sorted-reals)
   (let+ (((&sorted-reals ordered-elements unordered-elements) sorted-reals))
     (when unordered-elements
       (setf ordered-elements (concatenate 'vector ordered-elements
@@ -267,41 +273,6 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
             unordered-elements nil
             ordered-elements (sort ordered-elements #'<)))
     ordered-elements))
-
-(defun empirical-quantile (sorted-vector q)
-  "Return the empirical quantile of a vector of real numbers, sorted in
-ascending order (not checked).  Uses a 0.5 correction."
-  (let+ ((n (length sorted-vector))
-         (c (/ 1/2 n)))
-    (cond
-      ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
-      ((<= q c) (aref sorted-vector 0))
-      ((<= (- 1 c) q) (aref sorted-vector (1- n)))
-      (t (let+ ((r (- (* q n) 1/2))
-                ((&values int frac) (floor r))
-                ((&flet value (index)
-                   (aref sorted-vector index)))
-                (left (value int)))
-           (if (zerop frac)
-               left
-               (lerp left (value (1+ int)) frac)))))))
-
-(defun empirical-quantile-probabilities (n)
-  "Probabilities that correspond to the empirical quantiles of a vector of
-length N.  That is to say,
-
- (== (quantiles sample (empirical-quantile-probabilities (length sample)))
-     sample)
-
-for any vector SAMPLE."
-  (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
-
-(defmethod quantiles ((accumulator sorted-reals) q)
-  (map 'vector
-       (curry #'empirical-quantile (elements accumulator)) q))
-
-(defun sorted-reals ()
-  (make-sorted-reals))
 
 (defun sort-reals (sequence)
   "Return a SORTED-REALS structure."
@@ -313,7 +284,7 @@ for any vector SAMPLE."
   (if *print-readably*
       (call-next-method)
       (print-unreadable-object (acc stream :type t)
-        (let+ (((&accessors-r/o elements) acc))
+        (let+ (((&accessors-r/o (elements sorted-reals-elements)) acc))
           (if (plusp (length elements))
               (format stream "min: ~A, q25: ~A, q50: ~A, q75: ~A, max: ~A"
                       (aref elements 0)
@@ -333,24 +304,49 @@ for any vector SAMPLE."
     (sort-reals list)))
 
 (defun ensure-sorted-vector (object)
-  "Return the elements of OBJECT as a vector (or reals) sorted in ascending
-order."
-  (elements (ensure-sorted-reals object)))
+  "Return the elements of OBJECT as a vector (or reals) sorted in ascending order."
+  (sorted-reals-elements (ensure-sorted-reals object)))
 
 (defgeneric quantile (object q)
-  (:documentation "Return an element at quantile Q.  May be an interpolation
-or an approximation, depending on OBJECT and Q.  Extensions should define
-methods for QUANTILES, not QUANTILE.")
+  (:documentation "Return an element at quantile Q.  May be an interpolation or an approximation, depending on OBJECT and Q.  NOTE: Extensions should define methods for QUANTILES, not QUANTILE.")
   (:method ((object sequence) q)
     (quantile (ensure-sorted-reals object) q ))
   (:method (object q)
     (aref (quantiles object (vector q)) 0)))
 
+(defun empirical-quantile (sorted-vector q)
+  "Return the empirical quantile of a vector of real numbers, sorted in ascending order (not checked).  Uses a 0.5 correction."
+  (let+ ((n (length sorted-vector))
+         (c (/ 1/2 n)))
+    (cond
+      ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
+      ((<= q c) (aref sorted-vector 0))
+      ((<= (- 1 c) q) (aref sorted-vector (1- n)))
+      (t (let+ ((r (- (* q n) 1/2))
+                ((&values int frac) (floor r))
+                ((&flet value (index)
+                   (aref sorted-vector index)))
+                (left (value int)))
+           (if (zerop frac)
+               left
+               (lerp left (value (1+ int)) frac)))))))
+
+(defun empirical-quantile-probabilities (n)
+  "Probabilities that correspond to the empirical quantiles of a vector of length N.  That is to say,
+
+ (== (quantiles sample (empirical-quantile-probabilities (length sample)))
+     sample)
+
+for any vector SAMPLE."
+  (numseq (/ (* 2 n)) nil :length n :by (/ n) :type 'rational))
+
 (defgeneric quantiles (object qs)
-  (:documentation "Multiple quantiles, see QUANTILE.  Extensions should define
-methods for QUANTILES, not QUANTILE.")
+  (:documentation "Multiple quantiles (see QUANTILE).  NOTE: Extensions should define methods for QUANTILES, not QUANTILE.")
   (:method ((object sequence) qs)
-    (quantiles (ensure-sorted-reals object) qs)))
+    (quantiles (ensure-sorted-reals object) qs))
+  (:method ((accumulator sorted-reals) q)
+    (map 'vector
+         (curry #'empirical-quantile (sorted-reals-elements accumulator)) q)))
 
 (defgeneric median (object)
   (:documentation "Median of OBJECT.")
@@ -358,8 +354,6 @@ methods for QUANTILES, not QUANTILE.")
     (alexandria:median object))
   (:method (object)
     (quantile object 0.5)))
-
-
 
 ;; ;;; NOTE old code below
 
