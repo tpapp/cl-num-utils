@@ -14,6 +14,7 @@
    #:log10
    #:log2
    #:1c
+   #:divides?
    #:numseq
    #:ivec
    #:sum
@@ -62,6 +63,12 @@
 library function."
   (- 1 number))
 
+(defun divides? (number divisor)
+  "Test if DIVISOR divides NUMBER without remainder, and if so, return the
+  quotient.  Works generally, but makes most sense for rationals."
+  (let+ (((&values quot rem) (floor number divisor)))
+    (when (zerop rem)
+      quot)))
 
 ;;; arithmetic sequences
 
