@@ -1,10 +1,41 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
 
-(in-package #:cl-num-utils)
+(defpackage #:cl-num-utils.interval
+  (:use #:cl
+        #:alexandria
+        #:anaphora
+        #:cl-num-utils.num=
+        #:cl-num-utils.utilities
+        #:let-plus)
+  (:export
+   #:left
+   #:open-left?
+   #:right
+   #:open-right?
+   #:&interval
+   #:interval
+   #:finite-interval
+   #:plusinf-interval
+   #:minusinf-interval
+   #:real-line
+   #:plusminus-interval
+   #:interval-length
+   #:interval-midpoint
+   #:in-interval?
+   #:extend-interval
+   #:extendf-interval
+   #:interval-hull
+   #:relative
+   #:spacer
+   #:split-interval
+   #:shrink-interval
+   #:grid-in
+   #:shift-interval))
+
+(in-package #:cl-num-utils.interval)
 
 ;;; TODO: rewrite interface
 ;;; TODO: open/closed, general accessors LEFT, RIGHT, CLOSED-LEFT? CLOSED-RIGHT?
-
 
 ;;; basic interval definitions and interface
 
@@ -49,7 +80,7 @@ the second value is an indicator for whether the endpoint is open."
   (:documentation "Left endpoint is -∞."))
 
 (defmethod left ((interval interval/infinite-left))
-  (xr:-inf))
+  (xreal:-inf))
 
 (defmethod open-left? ((interval interval/infinite-left))
   t)
@@ -59,7 +90,7 @@ the second value is an indicator for whether the endpoint is open."
   (:documentation "Right endpoint is ∞."))
 
 (defmethod right ((interval interval/infinite-right))
-  (xr:inf))
+  (xreal:inf))
 
 (defmethod open-right? ((interval interval/infinite-right))
   t)
@@ -115,17 +146,17 @@ the second value is an indicator for whether the endpoint is open."
   ()
   (:documentation "Representing the real line (-∞,∞)."))
 
-(defmethod == ((a real-line) (b real-line)
-                &optional (tolerance *==-tolerance*))
+(defmethod num= ((a real-line) (b real-line)
+                &optional (tolerance *num=-tolerance*))
   (declare (ignore tolerance))
   t)
 
-(defmethod == ((a finite-interval) (b finite-interval)
-               &optional (tolerance *==-tolerance*))
+(defmethod num= ((a finite-interval) (b finite-interval)
+               &optional (tolerance *num=-tolerance*))
   (let+ (((&interval (al alo?) (ar aro?)) a)
          ((&interval (bl blo?) (br bro?)) b))
-    (and (== al bl tolerance)
-         (== ar br tolerance)
+    (and (num= al bl tolerance)
+         (num= ar br tolerance)
          (eq alo? blo?)
          (eq aro? bro?))))
 
@@ -135,16 +166,16 @@ the second value is an indicator for whether the endpoint is open."
 (declaim (inline interval))
 (defun interval (left right &key open-left? open-right?)
   "Create an INTERVAL."
-  (xr:with-template (? left right)
+  (xreal:with-template (? left right)
     (cond
       ((? real real) (make-instance 'finite-interval :left left :right right
                                                      :open-left? open-left?
                                                      :open-right? open-right?))
-      ((? real xr:inf) (make-instance 'plusinf-interval :left left
+      ((? real xreal:inf) (make-instance 'plusinf-interval :left left
                                                         :open-left? open-left?))
-      ((? xr:-inf real) (make-instance 'minusinf-interval :right right
+      ((? xreal:-inf real) (make-instance 'minusinf-interval :right right
                                                           :open-right? open-right?))
-      ((? xr:-inf xr:inf) (make-instance 'real-line))
+      ((? xreal:-inf xreal:inf) (make-instance 'real-line))
       (t (error 'internal-error)))))
 
 (defun plusminus-interval (center half-width
@@ -195,7 +226,7 @@ stands for the empty set.")
   (:method (interval (list list))
     (reduce #'extend-interval list :initial-value interval))
   (:method (interval (array array))
-    (reduce #'extend-interval (flatten-array array) :initial-value interval)))
+    (reduce #'extend-interval (ao:flatten array) :initial-value interval)))
 
 (defmacro extendf-interval (place object &environment environment)
   "Apply EXTEND-INTERVAL on PLACE using OBJECT."

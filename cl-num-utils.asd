@@ -21,6 +21,8 @@
   :components
   ((:file "utilities")
    (:file "arithmetic")
+   (:file "extended-real")
+   (:file "interval")
    (:file "statistics")
    (:file "num=")))
 
