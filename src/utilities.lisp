@@ -11,7 +11,12 @@
    #:splice-awhen
    #:check-types
    #:define-with-multiple-bindings
-   #:unlessf))
+   #:unlessf
+   #:within?
+   #:fixnum?
+   #:simple-fixnum-vector
+   #:as-simple-fixnum-vector
+   #:simple-double-float-vector))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -69,3 +74,27 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
        (unless ,reader-form
          (let ((,(car store-vars) ,value-form))
            ,writer-form)))))
+
+(declaim (inline within?))
+(defun within? (left value right)
+  "Return non-nil iff value is in [left,right)."
+  (and (<= left value) (< value right)))
+
+(declaim (inline fixnum?))
+(defun fixnum? (object)
+  "Check of type of OBJECT is fixnum."
+  (typep object 'fixnum))
+
+(deftype simple-fixnum-vector ()
+  "Simple vector or fixnum elements."
+  '(simple-array fixnum (*)))
+
+(defun as-simple-fixnum-vector (sequence &optional copy?)
+  "Convert SEQUENCE to a SIMPLE-FIXNUM-VECTOR.  When COPY?, make sure that the they don't share structure."
+  (if (and (typep sequence 'simple-fixnum-vector) copy?)
+      (copy-seq sequence)
+      (coerce sequence 'simple-fixnum-vector)))
+
+(deftype simple-double-float-vector (&optional (length '*))
+  "Simple vector of double-float elements."
+  `(simple-array double-float (,length)))

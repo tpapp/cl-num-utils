@@ -170,26 +170,6 @@ When STREAM is NIL, nothing is displayed."
       (when (and (= index n) after)
         (format stream after)))))
 
-(declaim (inline within?))
-(defun within? (left value right)
-  "Return non-nil iff value is in [left,right)."
-  (and (<= left value) (< value right)))
-
-(declaim (inline fixnum?))
-(defun fixnum? (object)
-  "Check of type of OBJECT is fixnum."
-  (typep object 'fixnum))
-
-(deftype simple-fixnum-vector ()
-  '(simple-array fixnum (*)))
-
-(defun as-simple-fixnum-vector (sequence &optional copy?)
-  "Convert SEQUENCE to a SIMPLE-FIXNUM-VECTOR.  When COPY?, make sure that the
-they don't share structure."
-  (if (and (typep sequence 'simple-fixnum-vector) copy?)
-      (copy-seq sequence)
-      (coerce sequence 'simple-fixnum-vector)))
-
 (defmacro define-indirect-accessors (specializer slot-accessor
                                      &rest accessors)
   "Define accessor methods for specializer going though a slot."
