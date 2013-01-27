@@ -20,6 +20,7 @@
   :serial t
   :components
   ((:file "utilities")
+   (:file "arithmetic")
    (:file "statistics")
    (:file "num=")))
 
