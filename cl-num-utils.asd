@@ -20,11 +20,11 @@
   :serial t
   :components
   ((:file "utilities")
+   (:file "num=")
    (:file "arithmetic")
    (:file "extended-real")
    (:file "interval")
    (:file "statistics")
-   (:file "num=")
    (:file "chebyshev")
    (:file "common-package")))
 
