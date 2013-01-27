@@ -41,7 +41,7 @@ points (zeroes of the corresponding Chebyshev polynomial)."
   (assert (<= n-polynomials n-points) ()
           "Can't identify ~A coefficients with only ~A points."
           n-polynomials n-points)
-  (locally (declare (optimize speed)
+  (locally (declare ; (optimize speed)
                     (type positive-fixnum n-polynomials n-points))
     (let+ ((z (the simple-double-float-vector (chebyshev-roots n-points)))
            (f-at-z (map 'simple-double-float-vector
