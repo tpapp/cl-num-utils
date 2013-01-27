@@ -16,7 +16,8 @@
    #:fixnum?
    #:simple-fixnum-vector
    #:as-simple-fixnum-vector
-   #:simple-double-float-vector))
+   #:simple-double-float-vector
+   #:generate-sequence))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -98,3 +99,7 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
 (deftype simple-double-float-vector (&optional (length '*))
   "Simple vector of double-float elements."
   `(simple-array double-float (,length)))
+
+(defun generate-sequence (result-type size function)
+  "Like MAKE-SEQUENCE, but using a function to fill the result."
+  (map-into (make-sequence result-type size) function))

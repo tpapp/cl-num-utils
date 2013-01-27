@@ -225,26 +225,3 @@ to the desired length."
                           (- (thinned-length% vector-length above) length))
                        below
                        above))))))
-
-;;;; Aliases for commonly used log bases.
-
-(declaim (inline log10 log2))
-
-(defun log10 (number)
-  "Abbreviation for decimal logarithm."
-  (log number 10))
-
-(defun log2 (number)
-  "Abbreviation for binary logarithm."
-  (log number 2))
-
-(declaim (inline 1c))
-
-(defun 1c (number)
-  "Return 1-number.  The mnemonic is \"1 complement\", 1- is already a CL
-library function."
-  (- 1 number))
-
-(defun generate-sequence (result-type size function)
-  "Like MAKE-SEQUENCE, but using a function to fill the result."
-  (map-into (make-sequence result-type size) function))

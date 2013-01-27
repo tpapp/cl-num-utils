@@ -11,6 +11,9 @@
    #:square
    #:absolute-square
    #:abs-diff
+   #:log10
+   #:log2
+   #:1c
    #:numseq
    #:ivec
    #:sum
@@ -40,6 +43,25 @@
 (defun abs-diff (a b)
   "Absolute difference of A and B."
   (abs (- a b)))
+
+;;;; Aliases for commonly used log bases.
+(declaim (inline log10 log2))
+
+(defun log10 (number)
+  "Abbreviation for decimal logarithm."
+  (log number 10))
+
+(defun log2 (number)
+  "Abbreviation for binary logarithm."
+  (log number 2))
+
+(declaim (inline 1c))
+
+(defun 1c (number)
+  "Return 1-number.  The mnemonic is \"1 complement\", 1- is already a CL
+library function."
+  (- 1 number))
+
 
 ;;; arithmetic sequences
 
