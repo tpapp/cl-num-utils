@@ -1,9 +1,19 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
+(defpackage #:cl-num-utils.chebyshev
+  (:use #:cl
+        #:alexandria
+        #:anaphora
+        #:cl-num-utils.interval
+        #:cl-num-utils.utilities
+        #:let-plus)
+  (:export
+   #:chebyshev-root
+   #:chebyshev-roots
+   #:chebyshev-regression
+   #:chebyshev-evaluate
+   #:chebyshev-approximate))
 
-(in-package #:cl-num-utils)
-
-(deftype double-float-vector (&optional (length '*))
-  `(simple-array double-float (,length)))
+(in-package #:cl-num-utils.chebyshev)
 
 (declaim (inline chebyshev-recursion))
 (defun chebyshev-recursion (x value previous-value)
@@ -33,8 +43,8 @@ points (zeroes of the corresponding Chebyshev polynomial)."
           n-polynomials n-points)
   (locally (declare (optimize speed)
                     (type positive-fixnum n-polynomials n-points))
-    (let+ ((z (the double-float-vector (chebyshev-roots n-points)))
-           (f-at-z (map 'double-float-vector
+    (let+ ((z (the simple-double-float-vector (chebyshev-roots n-points)))
+           (f-at-z (map 'simple-double-float-vector
                         (lambda (z) (coerce (funcall f z) 'double-float)) z))
            (coefficients (make-array n-points :element-type 'double-float))
            (values z)
@@ -44,7 +54,7 @@ points (zeroes of the corresponding Chebyshev polynomial)."
                        for f across f-at-z
                        summing (* f v))
                  (/ n-points 2)))))
-      (declare (type double-float-vector
+      (declare (type simple-double-float-vector
                      z f-at-z values previous-values))
       (loop for j from 0 below n-polynomials
             do (setf (aref coefficients j)
@@ -54,13 +64,13 @@ points (zeroes of the corresponding Chebyshev polynomial)."
                            (cond
                              ((= j 1) (weighted-sum z))
                              ((= j 2) (setf values
-                                            (map 'double-float-vector
+                                            (map 'simple-double-float-vector
                                                  (lambda (z)
                                                    (chebyshev-recursion z z 1d0))
                                                  z)))
                              ((= j 3)
                               (setf previous-values values
-                                    values (map 'double-float-vector
+                                    values (map 'simple-double-float-vector
                                                 #'chebyshev-recursion
                                                 z previous-values z)))
                              (t (map-into previous-values

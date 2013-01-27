@@ -24,7 +24,8 @@
    (:file "extended-real")
    (:file "interval")
    (:file "statistics")
-   (:file "num=")))
+   (:file "num=")
+   (:file "chebyshev")))
 
 (asdf:defsystem :cl-num-utils-tests
   :description "Unit tests for CL-NUM-UTILS.."
