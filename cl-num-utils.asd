@@ -25,7 +25,8 @@
    (:file "interval")
    (:file "statistics")
    (:file "num=")
-   (:file "chebyshev")))
+   (:file "chebyshev")
+   (:file "common-package")))
 
 (asdf:defsystem :cl-num-utils-tests
   :description "Unit tests for CL-NUM-UTILS.."
