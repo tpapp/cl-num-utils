@@ -38,4 +38,9 @@
   :pathname #P"tests/"
   :serial t
   :components
-  ((:file "setup")))
+  ((:file "setup")
+   (:file "chebyshev")
+   (:file "extended-real")
+   (:file "interval")
+   (:file "num=")
+   (:file "statistics")))
