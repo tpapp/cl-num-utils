@@ -176,7 +176,9 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
 
 (defgeneric central-sample-moments (object &key degree weights)
   (:documentation "Return a CENTRAL-SAMPLE-MOMENTS object that allows the
-calculation of the central sample moments of OBJECT up to the given DEGREE.")
+calculation of the central sample moments of OBJECT up to the given DEGREE.
+
+When WEIGHTS are given, they need to be a sequence of matching length.")
   (:method ((object null)
             &key (degree *central-sample-moments-default-degree*)
                  weights)
@@ -208,15 +210,13 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
   (let+ (((&values remaining-forms declarations docstring)
           (parse-body body :documentation t))
          (body (append declarations remaining-forms)))
-    `(progn
-       (defgeneric ,function (object)
-         ,@(splice-awhen docstring `(:documentation ,it))
-         (:method (object)
-           (,function (central-sample-moments object :degree ,degree)))
-         (:method ((,variable central-sample-moments))
-           ,@body))
-       (defun ,(symbolicate '#:weighted- function) (sequence weights)
-         (,function (central-sample-moments sequence :weights weights :degree ,degree))))))
+    `(defgeneric ,function (object &key weights)
+       ,@(splice-awhen docstring `(:documentation ,it))
+       (:method (object &key weights)
+         (,function (central-sample-moments object :degree ,degree :weights weights)))
+       (:method ((,variable central-sample-moments) &key weights)
+         (assert (not weights) () "You can't re-weight an accumulator.")
+         ,@body))))
 
 (define-central-sample-moment mean (object 1)
   "The mean of elements in OBJECT."

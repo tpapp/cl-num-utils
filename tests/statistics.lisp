@@ -39,7 +39,7 @@ Slow, but useful for testing as it does not suffer from approximation error."
   (let+ ((v (random-floats n mean element-type))
          ((&values m-p m2-p m3-p m4-p) (precise-central-moments v))
          ((&accessors-r/o mean central-m2 central-m3 central-m4)
-          (central-sample-moments v 4))
+          (central-sample-moments v :degree 4))
          (*num=-tolerance* 1e-8))
     (assert-equality #'num= mean m-p)
     (assert-equality #'num= central-m2 m2-p)
@@ -56,9 +56,9 @@ Slow, but useful for testing as it does not suffer from approximation error."
   (let* ((v (random-floats (* 2 n) mean element-type))
          (v1 (subseq v 0 n))
          (v2 (subseq v n nil))
-         (m (central-sample-moments v 4))
-         (m1 (central-sample-moments v1 4))
-         (m2 (central-sample-moments v2 4))
+         (m (central-sample-moments v :degree 4))
+         (m1 (central-sample-moments v1 :degree 4))
+         (m2 (central-sample-moments v2 :degree 4))
          (m12 (pool m1 m2))
          (*num=-tolerance* 1e-8))
     (assert-equality #'num= (mean m) (mean m12))))
@@ -99,9 +99,9 @@ Slow, but useful for testing as it does not suffer from approximation error."
              91.43334482781893d0 97.07515698488776d0 60.05604715628141d0
              28.377247312878072d0 84.35221790928993d0 83.14710996278352d0
              58.44153198534443d0 91.89848934771322d0)))
-    (assert-equality #'num=  (central-sample-moments v 4)
-        (pool (central-sample-moments (subseq v 0 7) 4)
-              (central-sample-moments (subseq v 7) 4)))))
+    (assert-equality #'num=  (central-sample-moments v :degree 4)
+        (pool (central-sample-moments (subseq v 0 7) :degree 4)
+              (central-sample-moments (subseq v 7) :degree 4)))))
 
 ;; (addtest (statistics-tests)
 ;;   sse-off-center-test
