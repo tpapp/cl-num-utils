@@ -20,6 +20,22 @@ Slow, but useful for testing as it does not suffer from approximation error."
                n))))
     (values mean (central-m 2) (central-m 3) (central-m 4))))
 
+(defun precise-weighted-central-moments (sequence weights)
+  "First 4 weighted central moments, calculated using rationals, returned as four values, normalized by the length of the sequence.
+
+Slow, but useful for testing as it does not suffer from approximation error."
+  (assert (length= sequence weights))
+  (let+ ((vector (map 'vector #'rational sequence))
+         (weights (map 'vector #'rational weights))
+         (w (reduce #'+ weights))
+         (mean (/ (reduce #'+ (map 'vector #'* vector weights)) w))
+         ((&flet central-m (degree)
+            (/ (reduce #'+ (map 'vector (lambda (v w)
+                                          (* w (expt (- v mean) degree)))
+                                vector weights))
+               w))))
+    (values mean (central-m 2) (central-m 3) (central-m 4))))
+
 ;;; randomized tests
 
 (defun random-floats (n mean &optional (element-type 'double-float))
@@ -34,6 +50,13 @@ Slow, but useful for testing as it does not suffer from approximation error."
                             (+ mean (* 3 v)))))
                     n)))
 
+(defun random-weights (n range &optional (element-type 'double-float))
+  "Random weights between (exp 1) and (exp (1+ range)), with given element-type."
+  (aops:generate* element-type (let ((range (coerce range element-type)))
+                                 (lambda ()
+                                   (exp (1+ (random range)))))
+                  n))
+
 (defun test-moments (n mean &optional (element-type 'double-float))
   "Test that moments calculated precisely and with accumulators are equal."
   (let+ ((v (random-floats n mean element-type))
@@ -46,11 +69,30 @@ Slow, but useful for testing as it does not suffer from approximation error."
     (assert-equality #'num= central-m3 m3-p)
     (assert-equality #'num= central-m4 m4-p)))
 
+(defun test-weighted-moments (n mean &key (weight-range 4) (element-type 'double-float))
+  "Test that moments calculated precisely and with accumulators are equal."
+  (let+ ((v (random-floats n mean element-type))
+         (w (random-weights n weight-range element-type))
+         ((&values m-p m2-p m3-p m4-p) (precise-weighted-central-moments v w))
+         ((&accessors-r/o mean central-m2 central-m3 central-m4)
+          (central-sample-moments v :degree 4 :weights w))
+         (*num=-tolerance* 1e-8))
+    (assert-equality #'num= mean m-p)
+    (assert-equality #'num= central-m2 m2-p)
+    (assert-equality #'num= central-m3 m3-p)
+    (assert-equality #'num= central-m4 m4-p)))
+
 (deftest central-moments-test1 (statistics-tests)
   (test-moments 1000 0)
   (test-moments 1000 10)
   (test-moments 1000 100)
   (test-moments 1000 1000000))
+
+(deftest central-moments-test2 (statistics-tests)
+  (test-weighted-moments 10 0)
+  (test-weighted-moments 1000 10)
+  (test-weighted-moments 1000 100)
+  (test-weighted-moments 1000 1000000))
 
 (defun test-pooled-moments (n mean &optional (element-type 'double-float))
   (let* ((v (random-floats (* 2 n) mean element-type))
