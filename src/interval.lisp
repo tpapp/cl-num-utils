@@ -226,7 +226,7 @@ stands for the empty set.")
   (:method (interval (list list))
     (reduce #'extend-interval list :initial-value interval))
   (:method (interval (array array))
-    (reduce #'extend-interval (ao:flatten array) :initial-value interval)))
+    (reduce #'extend-interval (aops:flatten array) :initial-value interval)))
 
 (defmacro extendf-interval (place object &environment environment)
   "Apply EXTEND-INTERVAL on PLACE using OBJECT."

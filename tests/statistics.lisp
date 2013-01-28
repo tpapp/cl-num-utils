@@ -26,13 +26,13 @@ Slow, but useful for testing as it does not suffer from approximation error."
   "Return a N-element vector of random floats (with given ELEMENT-TYPE).  A uniform random number from either [-1,0] or [0,3] (with equal probability) is added to MEAN, which ensures nonzero third and fourth central moments.  Higher abolute value of MEAN makes the calculation of higher central moments more ill-conditioned when using floats."
   (let ((mean (coerce mean element-type))
         (one (coerce 1 element-type)))
-    (ao:generate* element-type
-                  (lambda ()
-                    (let ((v (random one)))
-                      (if (zerop (random 2))
-                          (- mean v)
-                          (+ mean (* 3 v)))))
-                  n)))
+    (aops:generate* element-type
+                    (lambda ()
+                      (let ((v (random one)))
+                        (if (zerop (random 2))
+                            (- mean v)
+                            (+ mean (* 3 v)))))
+                    n)))
 
 (defun test-moments (n mean &optional (element-type 'double-float))
   "Test that moments calculated precisely and with accumulators are equal."
@@ -210,7 +210,7 @@ Slow, but useful for testing as it does not suffer from approximation error."
 
 (deftest quantile-probabilities (statistics-tests)
   (let* ((n 10)
-         (sample (sort (ao:generate (lambda () (random (* n 2))) n) #'<))
+         (sample (sort (aops:generate (lambda () (random (* n 2))) n) #'<))
          (empirical-quantile-probabilities n))
     (assert-equalp sample
         (quantiles sample (empirical-quantile-probabilities

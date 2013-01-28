@@ -301,7 +301,7 @@ calculation of the central sample moments of OBJECT up to the given DEGREE.")
   (:method ((sorted-reals sorted-reals))
     sorted-reals)
   (:method ((array array))
-    (sort-reals (ao:flatten array)))
+    (sort-reals (aops:flatten array)))
   (:method ((list list))
     (sort-reals list)))
 

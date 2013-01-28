@@ -153,14 +153,14 @@ When BY is given it determines the increment, adjusted to match the direction un
   (:method ((sequence sequence) &key (key #'identity))
     (reduce #'+ sequence :key key))
   (:method ((array array) &key (key #'identity))
-    (reduce #'+ (ao:flatten array) :key key)))
+    (reduce #'+ (aops:flatten array) :key key)))
 
 (defgeneric product (object)
   (:documentation "Product of elements in object.")
   (:method ((sequence sequence))
     (reduce #'* sequence))
   (:method ((array array))
-    (reduce #'* (ao:flatten array))))
+    (reduce #'* (aops:flatten array))))
 
 ;;; cumulative sum and product
 
