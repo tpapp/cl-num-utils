@@ -171,8 +171,9 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
       (s2 2)
       (t 1))))
 
-(defparameter *central-sample-moments-default-degree* 4)
-
+(defparameter *central-sample-moments-default-degree* 4
+  "Default degree for (weighted) central sample moments.")
+
 (defgeneric central-sample-moments (object &optional degree)
   (:documentation "Return a CENTRAL-SAMPLE-MOMENTS object that allows the
 calculation of the central sample moments of OBJECT up to the given DEGREE.")
