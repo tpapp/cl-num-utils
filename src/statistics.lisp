@@ -121,7 +121,7 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
                    (s3-increment (- (* x2 (- wa weight)) x1)))
               (when s4
                 (incf s4 (+ (* -4 s3 d-weighted)
-                            (* 2 x1 d/w)
+                            (* 2 x1 d-weighted)
                             (* x2 d/w (+ (expt weight 2) (* wa (- wa weight)))))))
               (incf s3 s3-increment)))
           (incf s2 s2-increment)))
