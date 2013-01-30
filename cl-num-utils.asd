@@ -26,6 +26,7 @@
    (:file "interval")
    (:file "statistics")
    (:file "chebyshev")
+   (:file "elementwise")
    (:file "common-package")))
 
 (asdf:defsystem :cl-num-utils-tests
