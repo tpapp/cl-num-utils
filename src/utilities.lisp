@@ -17,7 +17,8 @@
    #:simple-fixnum-vector
    #:as-simple-fixnum-vector
    #:simple-double-float-vector
-   #:generate-sequence))
+   #:generate-sequence
+   #:expanding))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -103,3 +104,10 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
 (defun generate-sequence (result-type size function)
   "Like MAKE-SEQUENCE, but using a function to fill the result."
   (map-into (make-sequence result-type size) function))
+
+(defmacro expanding (&body body)
+  "Expand BODY. Useful for generating code programmatically."
+  (with-gensyms (local-macro)
+    `(macrolet ((,local-macro ()
+                  ,@body))
+       (,local-macro))))
