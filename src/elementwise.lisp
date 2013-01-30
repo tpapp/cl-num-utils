@@ -7,6 +7,7 @@
         #:cl-num-utils.utilities
         #:let-plus)
   (:export
+   #:elementwise-float-contagion
    #:e+
    #:e-
    #:e*
