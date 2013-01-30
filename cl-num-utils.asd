@@ -41,6 +41,7 @@
   :components
   ((:file "setup")
    (:file "chebyshev")
+   (:file "elementwise")
    (:file "extended-real")
    (:file "interval")
    (:file "num=")

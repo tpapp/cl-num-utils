@@ -8,6 +8,7 @@
         ;; cl-num-utils subpackages
         #:cl-num-utils.arithmetic
         #:cl-num-utils.chebyshev
+        #:cl-num-utils.elementwise
         #:cl-num-utils.interval
         #:cl-num-utils.num=
         #:cl-num-utils.utilities
