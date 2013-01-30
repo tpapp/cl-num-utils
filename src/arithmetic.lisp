@@ -15,6 +15,7 @@
    #:log2
    #:1c
    #:divides?
+   #:as-integer
    #:numseq
    #:ivec
    #:sum
@@ -69,6 +70,19 @@ library function."
   (let+ (((&values quot rem) (floor number divisor)))
     (when (zerop rem)
       quot)))
+
+(defun as-integer (number)
+  "If NUMBER represents an integer (as an integer, complex, or float, etc), return it as an integer, otherwise signal an error.  Floats are converted with RATIONALIZE."
+  (declare (inline as-integer))
+  (etypecase number
+    (integer number)
+    (complex
+     (assert (zerop (imagpart number)) ()
+             "~A has non-zero imaginary part." number)
+     (as-integer (realpart number)))
+    (t (aprog1 (rationalize number)
+         (assert (integerp it) () "~A has non-zero fractional part." number)))))
+
 
 ;;; arithmetic sequences
 
