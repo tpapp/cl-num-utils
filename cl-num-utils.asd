@@ -25,6 +25,8 @@
    (:file "extended-real")
    (:file "interval")
    (:file "print-matrix")
+   (:file "matrix")
+   (:file "matrix-shorthand")
    (:file "elementwise")
    (:file "statistics")
    (:file "chebyshev")
