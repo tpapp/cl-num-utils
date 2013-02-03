@@ -25,9 +25,9 @@
    (:file "extended-real")
    (:file "interval")
    (:file "print-matrix")
+   (:file "elementwise")
    (:file "statistics")
    (:file "chebyshev")
-   (:file "elementwise")
    (:file "common-package")))
 
 (asdf:defsystem #:cl-num-utils-tests
