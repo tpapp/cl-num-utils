@@ -3,6 +3,8 @@
   (:use #:cl
         #:alexandria
         #:anaphora
+        #:cl-num-utils.elementwise
+        #:cl-num-utils.num=
         #:cl-num-utils.print-matrix
         #:cl-num-utils.utilities
         #:let-plus)
@@ -169,3 +171,92 @@ Implements _both_ real symmetric and complex Hermitian matrices --- as technical
             do (setf (aref elements row col)
                      (conjugate (aref elements col row))))))
 
+(defmacro define-elementwise-with-constant
+    (type
+     &key (functions '(e2* e2/))
+          (elements-accessor (symbolicate type '#:-elements)))
+  "Define binary elementwise operations for FUNCTION for all subclasses of wrapped-elements."
+  `(progn
+     ,@(loop :for function :in functions
+             :collect
+                `(defmethod ,function ((a ,type) (b number))
+                   (,type (,function (,elements-accessor a) b)))
+             :collect
+                `(defmethod ,function ((a number) (b ,type))
+                   (,type (,function a (,elements-accessor b)))))))
+
+(defmacro define-elementwise-same-class
+    (type
+     &key (functions '(e2+ e2- e2*))
+          (elements-accessor (symbolicate type '#:-elements)))
+  "Define binary elementwise operations for FUNCTION for two arguments of the same class."
+  `(progn
+     ,@(loop for function in functions collect
+                `(defmethod ,function ((a ,type) (b ,type))
+                   (,type (,function (,elements-accessor a)
+                                     (,elements-accessor b)))))))
+
+(defmacro define-elementwise-as-array (type
+                                       &key (functions '(e2+ e2- e2*)))
+  "Define binary elementwise operations for FUNCTION, implemented by converting them to arrays."
+  `(progn
+     ,@(loop for function in functions
+             collect `(defmethod ,function ((a ,type) b)
+                        (,function (aops:as-array a) b))
+             collect `(defmethod ,function (a (b ,type))
+                        (,function a (aops:as-array b))))))
+
+(defmacro define-elementwise-univariate
+    (type &key (functions '(e1- e1/ eexp e1log esqrt))
+               (elements-accessor (symbolicate type '#:-elements)))
+  "Define unary elementwise operations for FUNCTION for all subclasses of wrapped-elements."
+  `(progn
+     ,@(loop :for function :in functions
+             :collect
+             `(defmethod ,function ((a ,type))
+                (,type (,function (,elements-accessor a)))))))
+
+(define-elementwise-as-array wrapped-matrix)
+
+(define-elementwise-with-constant lower-triangular-matrix)
+(define-elementwise-with-constant upper-triangular-matrix)
+(define-elementwise-with-constant hermitian-matrix)
+(define-elementwise-with-constant diagonal-matrix)
+
+(define-elementwise-same-class lower-triangular-matrix)
+(define-elementwise-same-class upper-triangular-matrix)
+(define-elementwise-same-class hermitian-matrix)
+(define-elementwise-same-class diagonal-matrix)
+
+(define-elementwise-univariate lower-triangular-matrix)
+(define-elementwise-univariate upper-triangular-matrix)
+(define-elementwise-univariate hermitian-matrix)
+(define-elementwise-univariate diagonal-matrix)
+
+(defmethod num= ((a wrapped-matrix) (b wrapped-matrix)
+               &optional (tolerance *num=-tolerance*))
+    (and (equal (type-of a) (type-of b))
+         (num= (aops:as-array a) (aops:as-array b) tolerance)))
+
+(defmethod num= ((a diagonal) (b diagonal)
+               &optional (tolerance *num=-tolerance*))
+    (num= (diagonal-elements a) (diagonal-elements b) tolerance))
+
+
+;;; transpose
+
+(defmethod aops:transpose ((matrix lower-triangular-matrix))
+  (upper-triangular-matrix
+   (aops:transpose (lower-triangular-matrix-elements matrix))))
+
+(defmethod aops:transpose ((matrix upper-triangular-matrix))
+  (lower-triangular-matrix
+   (aops:transpose (upper-triangular-matrix-elements matrix))))
+
+(defmethod aops:transpose ((matrix hermitian-matrix))
+  (if (subtypep (aops:element-type matrix) 'real)
+      matrix
+      (hermitian-matrix (aops:transpose (aops:as-array matrix)))))
+
+(defmethod aops:transpose ((diagonal diagonal))
+  diagonal)
