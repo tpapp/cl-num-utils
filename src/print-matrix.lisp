@@ -6,9 +6,7 @@
         #:anaphora
         #:let-plus)
   (:export
-   #:*print-precision*
-   #:*print-matrix-aligned*
-   #:*print-matrix-paddig*
+   #:*print-matrix-precision*
    #:print-matrix))
 
 (cl:in-package #:cl-num-utils.print-matrix)
@@ -19,16 +17,16 @@
       (values dimension nil)
       (values *print-length* t)))
 
-(defvar *print-precision* 5
+(defvar *print-matrix-precision* 5
   "Number of digits after the decimal point when printing numeric matrices.")
 
-(defun standard-numeric-formatter (x)
+(defun print-matrix-formatter (x)
   "Standard formatter for matrix printing.  Respects *print-precision*, and formats complex numbers as a+bi, eg 0.0+1.0i."
   ;; ?? do we want a complex numbers to be aligned on the +, like R? I
   ;; am not sure I like that very much, and for a lot of data, I would
   ;; visualize it graphically anyhow (I hate tables of 7+ numbers in
   ;; general).  -- Tamas, 2009-sep-13
-  (let ((precision *print-precision*))
+  (let ((precision *print-matrix-precision*))
     (typecase x
       (integer (format nil "~d" x))
       (real (format nil "~,vf" precision x))
@@ -37,27 +35,21 @@
                        precision (imagpart x)))
       (t (format nil "~a" x)))))
 
-(defvar *print-matrix-aligned* t "If non-nil, characters will be aligned.")
-
-(defvar *print-matrix-paddig* 1 "Number of spaces between columns.")
-
 (defun print-matrix (matrix stream
-                     &key (formatter #'standard-numeric-formatter)
-                          (masked-fn (constantly nil)))
-  "Format and print the elements of MATRIX (a 2d array) to STREAM, using *PRINT-MATRIX-PADDING* spaces between columns.
+                     &key (formatter #'print-matrix-formatter)
+                          (masked-fn (constantly nil))
+                          (aligned? t)
+                          (padding " "))
+  "Format and print the elements of MATRIX (a 2d array) to STREAM, using PADDING between columns.
 
 MASKED-FN is called on row and column indices.  If it returns nil, the corresponding element is formatted using FORMATTER and printed.  Otherwise, it should return a string, which is printed as is.
 
-If *PRINT-MATRIX-ALIGNED*, columns will be right-aligned.  At most *PRINT-LENGTH* rows and columns are printed, more is indicated with ellipses (...)."
+If ALIGNED?, columns will be right-aligned.  At most *PRINT-LENGTH* rows and columns are printed, more is indicated with ellipses (...)."
   ;; QUESTION maybe column & row labels, not a high priority at the moment
   (let+ (((&values nrow row-trunc?) (print-length-truncate (aops:nrow matrix)))
 	 ((&values ncol col-trunc?) (print-length-truncate (aops:ncol matrix)))
 	 (formatted-elements (make-array (list nrow ncol)))
-	 (column-widths (make-array ncol :element-type 'fixnum :initial-element 0))
-	 (padding (make-array *print-matrix-paddig*
-                              :element-type 'character
-                              :initial-element #\space))
-	 (aligned? *print-matrix-aligned*))
+	 (column-widths (make-array ncol :element-type 'fixnum :initial-element 0)))
     ;; first pass - format elements, measure width
     (dotimes (col ncol)
       (dotimes (row nrow)

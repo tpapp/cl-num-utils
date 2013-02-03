@@ -24,6 +24,7 @@
    (:file "arithmetic")
    (:file "extended-real")
    (:file "interval")
+   (:file "print-matrix")
    (:file "statistics")
    (:file "chebyshev")
    (:file "elementwise")
