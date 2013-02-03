@@ -1,9 +1,10 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
-
 (cl:defpackage #:cl-num-utils.matrix
   (:use #:cl
         #:alexandria
         #:anaphora
+        #:cl-num-utils.print-matrix
+        #:cl-num-utils.utilities
         #:let-plus)
   (:export
    #:diagonal-vector
@@ -37,11 +38,28 @@
   "Check if TYPE is a valid type for sparse matrices.  Only supertypes and subtypes of NUMBER are allowed."
   (or (subtypep type 'number) (subtypep 'number type)))
 
-(defun check-array-valid-sparse-type (array)
-  "Check that ARRAY can be used for constructing sparse matrices."
-  (let ((type (array-element-type array)))
+(defun ensure-valid-elements (array rank &rest predicates)
+  "Convert OBJECT to an array, check that it
+
+1. has the required rank,
+
+2. has a valid sparse element type, and
+
+3. that it satisfies PREDICATES.
+
+Return the array."
+  (let* ((array (aops:as-array array))
+         (type (array-element-type array)))
     (assert (valid-sparse-type? type) ()
-            "Array has element-type ~A, which cannot be used for a numeric matrix.")))
+            "Array has element-type ~A, which cannot be used for a numeric matrix.")
+    (assert (= (array-rank array) rank))
+    (loop for predicate in predicates
+          do (assert (funcall predicate array)))
+    array))
+
+(defun zero-like (array)
+  "Return 0 coerced to the element type of ARRAY.  It is assumed that the latter satisfies VALID-SPARSE-TYPE?."
+  (coerce 0 (array-element-type array)))
 
 ;;; diagonal matrices
 (defstruct diagonal-matrix
@@ -49,8 +67,7 @@
   (elements nil :type vector))
 
 (defun diagonal-matrix (elements)
-  (check-array-valid-sparse-type elements)
-  (make-diagonal-matrix :elements elements))
+  (make-diagonal-matrix :elements (ensure-valid-elements elements 1)))
 
 (define-structure-let+ (diagonal-matrix) elements)
 
@@ -69,3 +86,86 @@
 (defmethod aops:dims ((diagonal-matrix diagonal-matrix))
   (let ((n (length (diagonal-matrix-elements diagonal-matrix))))
     (list n n)))
+
+;;; wrapped matrices
+(defstruct wrapped-matrix
+  "A matrix that has some special structure (eg triangular, symmetric/hermitian).  ELEMENTS is always a matrix.  Not used directly, not exported."
+  (elements nil :type (array * (* *)) :read-only t))
+
+(defmethod aops:element-type ((wrapped-matrix wrapped-matrix))
+  (array-element-type (wrapped-matrix-elements wrapped-matrix)))
+
+(defmethod aops:dims ((wrapped-matrix wrapped-matrix))
+  (array-dimensions (wrapped-matrix-elements wrapped-matrix)))
+
+;;; triangular matrices
+(declaim (inline above-diagonal? below-diagonal?))
+
+(defun above-diagonal? (row col)
+  "Test if element with indexes row and col is (strictly) above the diagonal."
+  (< row col))
+
+(defun below-diagonal? (row col)
+  "Test if element with indexes row and col is (strictly) below the diagonal."
+  (> row col))
+
+(defmacro define-wrapped-matrix (type elements struct-docstring
+                                 (masked-test masked-string)
+                                 check-and-convert-elements
+                                 regularize-elements)
+  (let+ (((&with-gensyms matrix stream row col))
+         (elements-accessor `(,(symbolicate type '#:-elements) ,matrix)))
+    `(progn
+       (defstruct (,type (:include wrapped-matrix))
+         ,struct-docstring)
+       (defun ,type (,elements)
+         "Create a lower-triangular-matrix."
+         (,(symbolicate '#:make- type) :elements ,check-and-convert-elements))
+       (defmethod aops:as-array ((,matrix ,type))
+         (let+ ((,elements ,elements-accessor))
+           ,@(splice-awhen regularize-elements
+               it)
+           ,elements))
+       (defmethod print-object ((,matrix ,type) ,stream)
+         (print-unreadable-object (,matrix ,stream :type t)
+           (print-matrix ,elements-accessor ,stream
+                         :masked-fn (lambda (,row ,col)
+                                      (when (,masked-test ,row ,col)
+                                        ,masked-string))))))))
+
+(define-wrapped-matrix lower-triangular-matrix elements
+    "Lower triangular matrix.  ELEMENTS in the upper triangle are treated as zero."
+    (above-diagonal? ".")
+    (ensure-valid-elements elements 2)
+    (let+ ((zero (zero-like elements))
+           ((nrow ncol) (array-dimensions elements)))
+      (dotimes (row nrow)
+        (loop for col from (1+ row) below ncol
+              do (setf (aref elements row col) zero)))))
+
+(define-wrapped-matrix upper-triangular-matrix elements
+    "Upper triangular matrix.  ELEMENTS in the lower triangle are treated as zero."
+    (below-diagonal? ".")
+    (ensure-valid-elements elements 2)
+    (let+ ((zero (zero-like elements)))
+      (dotimes (row (array-dimension elements 0))
+        (loop for col from 0 below row
+              do (setf (aref elements row col) zero)))))
+
+(deftype triangular-matrix ()
+  "Triangular matrix (either lower or upper)."
+  '(or lower-triangular-matrix upper-triangular-matrix))
+
+;;; Hermitian matrix
+
+(define-wrapped-matrix hermitian-matrix elements
+    "Hermitian/symmetric matrix, with elements stored in the _lower_ triangle.
+
+Implements _both_ real symmetric and complex Hermitian matrices --- as technically, real symmetric matrices are also Hermitian.  Complex symmetric matrices are _not_ implemented as a special matrix type, as they don't have any special properties (eg real eigenvalues, etc)."
+    (above-diagonal? "*")
+    (ensure-valid-elements elements 2 #'aops:square-matrix?)
+    (dotimes (row (array-dimension elements 0))
+      (loop for col from 0 below row
+            do (setf (aref elements row col)
+                     (conjugate (aref elements col row))))))
+
