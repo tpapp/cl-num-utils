@@ -10,7 +10,11 @@
         #:let-plus)
   (:export
    #:diagonal-vector
-   #:diagonal-matrix))
+   #:diagonal-matrix
+   #:lower-triangular-matrix
+   #:upper-triangular-matrix
+   #:triangular-matrix
+   #:hermitian-matrix))
 
 (in-package #:cl-num-utils.matrix)
 
