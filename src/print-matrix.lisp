@@ -39,10 +39,11 @@
                      &key (formatter #'print-matrix-formatter)
                           (masked-fn (constantly nil))
                           (aligned? t)
-                          (padding " "))
+                          (padding " ")
+                          (indent "  "))
   "Format and print the elements of MATRIX (a 2d array) to STREAM, using PADDING between columns.
 
-MASKED-FN is called on row and column indices.  If it returns nil, the corresponding element is formatted using FORMATTER and printed.  Otherwise, it should return a string, which is printed as is.
+MASKED-FN is called on row and column indices.  If it returns nil, the corresponding element is formatted using FORMATTER and printed.  Otherwise, it should return a string, which is printed as is.  INDENT is printed before each row.
 
 If ALIGNED?, columns will be right-aligned.  At most *PRINT-LENGTH* rows and columns are printed, more is indicated with ellipses (...)."
   ;; QUESTION maybe column & row labels, not a high priority at the moment
@@ -64,7 +65,7 @@ If ALIGNED?, columns will be right-aligned.  At most *PRINT-LENGTH* rows and col
     (dotimes (row nrow)
       (when (plusp row)
         (fresh-line stream))
-      (format stream "  ")
+      (format stream indent)
       (dotimes (col ncol)
 	(when (plusp col)
 	  (princ padding stream))
