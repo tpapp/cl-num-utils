@@ -47,5 +47,7 @@
    (:file "elementwise")
    (:file "extended-real")
    (:file "interval")
+   (:file "matrix")
+   (:file "matrix-shorthand")
    (:file "num=")
    (:file "statistics")))
