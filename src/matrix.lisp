@@ -242,9 +242,9 @@ Implements _both_ real symmetric and complex Hermitian matrices --- as technical
     (and (equal (type-of a) (type-of b))
          (num= (aops:as-array a) (aops:as-array b) tolerance)))
 
-(defmethod num= ((a diagonal) (b diagonal)
+(defmethod num= ((a diagonal-matrix) (b diagonal-matrix)
                &optional (tolerance *num=-tolerance*))
-    (num= (diagonal-elements a) (diagonal-elements b) tolerance))
+    (num= (diagonal-matrix-elements a) (diagonal-matrix-elements b) tolerance))
 
 
 ;;; transpose
@@ -262,5 +262,5 @@ Implements _both_ real symmetric and complex Hermitian matrices --- as technical
       matrix
       (hermitian-matrix (aops:transpose (aops:as-array matrix)))))
 
-(defmethod aops:transpose ((diagonal diagonal))
+(defmethod aops:transpose ((diagonal diagonal-matrix))
   diagonal)
