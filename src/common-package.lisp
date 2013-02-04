@@ -20,6 +20,7 @@
     (reexport '#:cl-num-utils.chebyshev)
     (reexport '#:cl-num-utils.elementwise)
     (reexport '#:cl-num-utils.interval)
+    (reexport '#:cl-num-utils.matrix)
     (reexport '#:cl-num-utils.num=)
     (reexport '#:cl-num-utils.statistics)
     (reexport '#:cl-num-utils.utilities)))
