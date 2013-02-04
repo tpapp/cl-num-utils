@@ -48,14 +48,14 @@
   (loop for row in rows
         for row-index from 0
         collect (aprog1 (make-sequence 'list ncol :initial-element 0)
-                  (replace it row :start1 0 :end1 (1+ row-index)))))
+                  (replace it row :start1 0 :end1 (min ncol (1+ row-index))))))
 
 (defmacro lotr-mx (element-type &body rows)
   "Macro for creating a lower triangular matrix.  ROWS should be a list of lists, elements are evaluated.  Masked elements (above the diagonal) are ignored at the expansion, rows which don't have enough elements are padded with zeros."
   `(lower-triangular-matrix
     (mx ,element-type
       ,@(pad-left-expansion (mapcar #'ensure-list rows)
-                             (reduce #'max rows :key #'length)))))
+                            (reduce #'max rows :key #'length)))))
 
 (defmacro herm-mx (element-type &body rows)
   "Macro for creating a lower triangular matrix.  ROWS should be a list of lists, elements are evaluated.  Masked elements (above the diagonal) are ignored at the expansion, rows which don't have enough elements are padded with zeros."
