@@ -172,10 +172,11 @@ Return the array."
 Implements _both_ real symmetric and complex Hermitian matrices --- as technically, real symmetric matrices are also Hermitian.  Complex symmetric matrices are _not_ implemented as a special matrix type, as they don't have any special properties (eg real eigenvalues, etc)."
     (above-diagonal? "*")
     (ensure-valid-elements elements 2 #'aops:square-matrix?)
-    (dotimes (row (array-dimension elements 0))
-      (loop for col from 0 below row
-            do (setf (aref elements row col)
-                     (conjugate (aref elements col row))))))
+    (let+ (((nrow ncol) (array-dimensions elements)))
+      (dotimes (row nrow)
+        (loop for col from (1+ row) below ncol
+              do (setf (aref elements row col)
+                       (conjugate (aref elements col row)))))))
 
 (defmacro define-elementwise-with-constant
     (type
