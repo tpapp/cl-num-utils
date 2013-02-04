@@ -17,7 +17,8 @@
    #:triangular-matrix
    #:hermitian-matrix
    #:diagonal-matrix-elements
-   #:wrapped-matrix-elements))
+   #:wrapped-matrix-elements
+   #:transpose))
 
 (in-package #:cl-num-utils.matrix)
 
@@ -255,18 +256,23 @@ Implements _both_ real symmetric and complex Hermitian matrices --- as technical
 
 ;;; transpose
 
-(defmethod aops:transpose ((matrix lower-triangular-matrix))
-  (upper-triangular-matrix
-   (aops:transpose (lower-triangular-matrix-elements matrix))))
-
-(defmethod aops:transpose ((matrix upper-triangular-matrix))
-  (lower-triangular-matrix
-   (aops:transpose (upper-triangular-matrix-elements matrix))))
-
-(defmethod aops:transpose ((matrix hermitian-matrix))
-  (if (subtypep (aops:element-type matrix) 'real)
-      matrix
-      (hermitian-matrix (aops:transpose (aops:as-array matrix)))))
-
-(defmethod aops:transpose ((diagonal diagonal-matrix))
-  diagonal)
+(defgeneric transpose (array)
+  (:documentation "Transpose.")
+  (:method ((array array))
+    (let+ (((nrow ncol) (array-dimensions array)))
+      (aprog1 (aops:make-array-like array :dimensions (list ncol nrow))
+        (dotimes (row nrow)
+          (dotimes (col ncol)
+            (setf (aref it col row) (aref array row col)))))))
+  (:method ((matrix lower-triangular-matrix))
+    (upper-triangular-matrix
+     (transpose (lower-triangular-matrix-elements matrix))))
+  (:method ((matrix upper-triangular-matrix))
+    (lower-triangular-matrix
+     (transpose (upper-triangular-matrix-elements matrix))))
+  (:method ((matrix hermitian-matrix))
+    (if (subtypep (aops:element-type matrix) 'real)
+        matrix
+        (hermitian-matrix (transpose (aops:as-array matrix)))))
+  (:method ((diagonal diagonal-matrix))
+    diagonal))
