@@ -10,7 +10,7 @@
    #:vec
    #:mx
    #:diagonal-mx
-   #:lotr-mx
+   #:lower-triangular-mx
    #:hermitian-mx
    #:upper-triangular-mx))
 
