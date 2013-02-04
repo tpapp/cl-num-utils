@@ -15,7 +15,9 @@
    #:lower-triangular-matrix
    #:upper-triangular-matrix
    #:triangular-matrix
-   #:hermitian-matrix))
+   #:hermitian-matrix
+   #:diagonal-matrix-elements
+   #:wrapped-matrix-elements))
 
 (in-package #:cl-num-utils.matrix)
 
