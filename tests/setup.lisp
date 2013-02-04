@@ -10,6 +10,8 @@
         #:cl-num-utils.chebyshev
         #:cl-num-utils.elementwise
         #:cl-num-utils.interval
+        #:cl-num-utils.matrix
+        #:cl-num-utils.matrix-shorthand
         #:cl-num-utils.num=
         #:cl-num-utils.utilities
         #:cl-num-utils.statistics)
