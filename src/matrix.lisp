@@ -134,10 +134,12 @@ Return the array."
            ,elements))
        (defmethod print-object ((,matrix ,type) ,stream)
          (print-unreadable-object (,matrix ,stream :type t)
-           (print-matrix ,elements-accessor ,stream
-                         :masked-fn (lambda (,row ,col)
-                                      (when (,masked-test ,row ,col)
-                                        ,masked-string))))))))
+           (let ((,elements ,elements-accessor))
+             (format ,stream "element-type ~A~%" (aops:element-type ,elements))
+             (print-matrix ,elements ,stream
+                           :masked-fn (lambda (,row ,col)
+                                        (when (,masked-test ,row ,col)
+                                          ,masked-string)))))))))
 
 (define-wrapped-matrix lower-triangular-matrix elements
     "Lower triangular matrix.  ELEMENTS in the upper triangle are treated as zero."
