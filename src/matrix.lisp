@@ -11,6 +11,7 @@
   (:export
    #:diagonal-vector
    #:diagonal-matrix
+   #:wrapped-matrix
    #:lower-triangular-matrix
    #:upper-triangular-matrix
    #:triangular-matrix
