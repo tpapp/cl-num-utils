@@ -9,10 +9,10 @@
   (:export
    #:vec
    #:mx
-   #:diag-mx
+   #:diagonal-mx
    #:lotr-mx
-   #:herm-mx
-   #:uptr-mx))
+   #:hermitian-mx
+   #:upper-triangular-mx))
 
 (in-package #:cl-num-utils.matrix-shorthand)
 
@@ -24,7 +24,7 @@
        (lambda (element) (coerce element element-type))
        elements))
 
-(defun diag-mx (element-type &rest elements)
+(defun diagonal-mx (element-type &rest elements)
   "Return a DIAGONAL-MATRIX with elements coerced to ELEMENT-TYPE."
   (diagonal-matrix (apply #'vec element-type elements)))
 
@@ -50,14 +50,14 @@
         collect (aprog1 (make-sequence 'list ncol :initial-element 0)
                   (replace it row :start1 0 :end1 (min ncol (1+ row-index))))))
 
-(defmacro lotr-mx (element-type &body rows)
+(defmacro lower-triangular-mx (element-type &body rows)
   "Macro for creating a lower triangular matrix.  ROWS should be a list of lists, elements are evaluated.  Masked elements (above the diagonal) are ignored at the expansion, rows which don't have enough elements are padded with zeros."
   `(lower-triangular-matrix
     (mx ,element-type
       ,@(pad-left-expansion (mapcar #'ensure-list rows)
                             (reduce #'max rows :key #'length)))))
 
-(defmacro herm-mx (element-type &body rows)
+(defmacro hermitian-mx (element-type &body rows)
   "Macro for creating a lower triangular matrix.  ROWS should be a list of lists, elements are evaluated.  Masked elements (above the diagonal) are ignored at the expansion, rows which don't have enough elements are padded with zeros."
   `(hermitian-matrix
     (mx ,element-type
@@ -65,7 +65,7 @@
                             (max (length rows)
                                  (reduce #'max rows :key #'length))))))
 
-(defmacro uptr-mx (element-type &body rows)
+(defmacro upper-triangular-mx (element-type &body rows)
   "Macro for creating an upper triangular matrix.  ROWS should be a list of lists, elements are evaluated.  Masked elements (below the diagonal) are ignored at the expansion."
   `(upper-triangular-matrix
     (mx ,element-type
