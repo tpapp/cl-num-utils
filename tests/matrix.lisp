@@ -5,12 +5,11 @@
 (defsuite matrix-suite (tests))
 
 (deftest wrapped-univariate-operation (matrix-suite)
-  (assert-equality #'num= (e- (uptr-mx t 2)) (uptr-mx t -2))
-  (assert-equality #'num= (e/ (uptr-mx t 2)) (uptr-mx t 0.5))
-  (assert-equality #'num= (e+ (uptr-mx t 2)) (uptr-mx t 2)))
+  (assert-equality #'num= (e- (upper-triangular-mx t 2)) (upper-triangular-mx t -2))
+  (assert-equality #'num= (e/ (upper-triangular-mx t 2)) (upper-triangular-mx t 0.5))
+  (assert-equality #'num= (e+ (upper-triangular-mx t 2)) (upper-triangular-mx t 2)))
 
-(defun do-matrix-convert-ops (test &key converts
-                                        (ops (list #'e+ #'e- #'e*)))
+(defun do-matrix-convert-ops (test converts &key (ops (list #'e+ #'e- #'e*)))
   "Funcall TEST with CONVERT and each operation in OPs."
   (mapc (lambda (convert)
           (mapc (curry #'funcall test convert) ops))
