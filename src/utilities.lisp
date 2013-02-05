@@ -16,6 +16,7 @@
    #:fixnum?
    #:simple-fixnum-vector
    #:as-simple-fixnum-vector
+   #:as-double-float
    #:simple-double-float-vector
    #:generate-sequence
    #:expanding))
@@ -96,6 +97,10 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
   (if (and (typep sequence 'simple-fixnum-vector) copy?)
       (copy-seq sequence)
       (coerce sequence 'simple-fixnum-vector)))
+
+(defun as-double-float (v)
+  "Convert argument to DOUBLE-FLOAT."
+  (coerce v 'double-float))
 
 (deftype simple-double-float-vector (&optional (length '*))
   "Simple vector of double-float elements."
