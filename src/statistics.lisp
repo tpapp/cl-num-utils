@@ -230,10 +230,10 @@ When WEIGHTS are given, they need to be a sequence of matching length.")
     (assert (< 1 w) () 'not-enough-elements-in-accumulator)
     (/ s2 (1- w))))
 
-(defgeneric sd (object)
+(defgeneric sd (object &key weights)
   (:documentation "Standard deviation.  For samples, the square root of the unbiased estimator (see VARIANCE).")
-  (:method (object)
-    (sqrt (variance object))))
+  (:method (object &key weights)
+    (sqrt (variance object :weights weights))))
 
 (define-central-sample-moment central-m2 (object 2)
   "Second central moment.  For samples, normalized by the total weight (and thus not the unbiased estimator, see VARIANCE)."
