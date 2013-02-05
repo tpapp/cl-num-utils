@@ -344,7 +344,7 @@ When WEIGHTS are given, they need to be a sequence of matching length.")
                 (left (value int)))
            (if (zerop frac)
                left
-               (lerp left (value (1+ int)) frac)))))))
+               (lerp frac left (value (1+ int)))))))))
 
 (defun empirical-quantile-probabilities (n)
   "Probabilities that correspond to the empirical quantiles of a vector of length N.  That is to say,
