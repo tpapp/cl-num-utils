@@ -41,8 +41,10 @@
                #:clunit)
   :pathname #P"tests/"
   :serial t
-  :components                           ; in alphabetical order
+  :components
   ((:file "setup")
+   ;; in alphabetical order
+   (:file "arithmetic")
    (:file "chebyshev")
    (:file "elementwise")
    (:file "extended-real")

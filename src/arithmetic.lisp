@@ -7,6 +7,7 @@
         #:cl-num-utils.utilities
         #:let-plus)
   (:export
+   #:multf
    #:same-sign?
    #:square
    #:absolute-square
@@ -27,9 +28,15 @@
 
 ;;; simple arithmetic
 
+(define-modify-macro multf (coefficient) * "Multiply place by COEFFICIENT.")
+
 (defun same-sign? (&rest arguments)
   "Test whether all arguments have the same sign (ie all are positive, negative, or zero)."
-  (reduce #'= arguments :key #'signum))
+  (if arguments
+      (let+ (((first . rest) arguments)
+             (sign (signum first)))
+        (every (lambda (number) (= sign (signum number))) rest))
+      t))
 
 (declaim (inline square))
 (defun square (number)
@@ -205,8 +212,8 @@ When BY is given it determines the increment, adjusted to match the direction un
                            &key (result-type
                                  (similar-sequence-type sequence)))
   "Cumulative product of sequence.  Return a sequence of the same kind and length; last element is the total product.  The latter is also returned as the second value."
-  (let ((sum 0))
+  (let ((product 1))
     (values (map result-type (lambda (element)
-                               (incf sum element))
+                               (multf product element))
                  sequence)
-            sum)))
+            product)))
