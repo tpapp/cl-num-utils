@@ -22,7 +22,11 @@
    #:sum
    #:product
    #:cumulative-sum
-   #:cumulative-product))
+   #:cumulative-product
+   #:floor*
+   #:ceiling*
+   #:round*
+   #:truncate*))
 
 (in-package #:cl-num-utils.arithmetic)
 
@@ -217,3 +221,23 @@ When BY is given it determines the increment, adjusted to match the direction un
                                (multf product element))
                  sequence)
             product)))
+
+;;; truncation/rounding
+
+(defmacro define-rounding-with-offset (name function docstring)
+  `(defun ,name (number &optional (divisor 1) (offset 0))
+     ,docstring
+     (let+ (((&values quotient remainder) (,function (- number offset) divisor)))
+       (values (+ offset (* quotient divisor)) remainder))))
+
+(define-rounding-with-offset floor* floor
+  "Find the highest A=I*DIVISOR+OFFSET <= NUMBER, return (values A (- A NUMBER).")
+
+(define-rounding-with-offset ceiling* ceiling
+  "Find the lowest A=I*DIVISOR+OFFSET >= NUMBER, return (values A (- A NUMBER).")
+
+(define-rounding-with-offset round* round
+  "Find A=I*DIVISOR+OFFSET that minimizes |A-NUMBER|, return (values A (- A NUMBER).  When NUMBER is exactly in between two possible A's, the rounding rule of ROUND is used on NUMBER-OFFSET.")
+
+(define-rounding-with-offset truncate* truncate
+  "Find A=I*DIVISOR+OFFSET that maximizes |A|<=|NUMBER| with the same sign, return (values A (- A NUMBER).")

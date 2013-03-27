@@ -38,3 +38,13 @@
     (assert-eql 1 (product #()))
     (assert-equalp #() (cumulative-sum #()))
     (assert-equalp #() (cumulative-product #()))))
+
+(deftest arithmetic-rounding (arithmetic-tests)
+  (assert-equalp '(25 2) (multiple-value-list (floor* 27 5)))
+  (assert-equalp '(26 1) (multiple-value-list (floor* 27 5 1)))
+  (assert-equalp '(30 -3) (multiple-value-list (ceiling* 27 5)))
+  (assert-equalp '(31 -4) (multiple-value-list (ceiling* 27 5 1)))
+  (assert-equalp '(25 2) (multiple-value-list (round* 27 5)))
+  (assert-equalp '(29 -2) (multiple-value-list (round* 27 5 -1)))
+  (assert-equalp '(-25 -2) (multiple-value-list (truncate* -27 5)))
+  (assert-equalp '(-24 -3) (multiple-value-list (truncate* -27 5 1))))
