@@ -1,8 +1,29 @@
 * cl-num-utils
 
-This library will replace cl-numlib.  It is still experimental, and
-the interface changes constantly.  Nevertheless, parts that are
-available are usually tested and usable.  Comments are welcome.
+This library implements simple numerical functions for Common Lisp, including
+
+- =num==, a comparison operator for floats
+- simple arithmeric functions, like =sum= and =l2norm=
+- elementwise operations for arrays
+- intervals
+- special matrices and shorthand for their input
+- sample statistics
+- Chebyshev polynomials
+
+See the sources and the docstring for more details.
+
+All the functionality has corresponding unit tests.
+
+** Symbol conflicts with =alexandria=
+
+When you import both =cl-num-utils= and =alexandria=, you get symbol conflicts.  There are two solutions for this: either import only parts of =cl-num-utils= (see the packages named in each file), or shadow some symbols, eg
+#+BEGIN_SRC lisp
+  (cl:defpackage #:my-package
+    (:use #:cl
+          #:alexandria
+          #:cl-num-utils)
+    (:shadowing-import-from #:alexandria #:mean #:variance #:median))
+#+END_SRC
 
 ** Reporting bugs
 
@@ -10,6 +31,5 @@ available are usually tested and usable.  Comments are welcome.
 
 ** Tasks
 *** TODO finish histogram code, write tests
-*** TODO decide whether SUB should pass on keys for DATA-FRAME
 *** TODO decide whether recursive indexes are practical
     code is still there, but commented out
