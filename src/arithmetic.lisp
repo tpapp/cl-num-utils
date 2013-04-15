@@ -23,6 +23,7 @@
    #:product
    #:cumulative-sum
    #:cumulative-product
+   #:l2norm-square
    #:l2norm
    #:floor*
    #:ceiling*
@@ -225,10 +226,14 @@ When BY is given it determines the increment, adjusted to match the direction un
 
 ;;; norms
 
-(defgeneric l2norm (object)
-  (:documentation "$L_2$ norm of OBJECT.")
+(defgeneric l2norm-square (object)
+  (:documentation "Square of the $L_2$ norm of OBJECT.")
   (:method ((sequence sequence))
-    (sqrt (sum sequence :key #'absolute-square))))
+    (sum sequence :key #'absolute-square)))
+
+(defun l2norm (object)
+  "$L_2$ norm of OBJECT."
+  (sqrt (l2norm-square object)))
 
 ;;; truncation/rounding
 
