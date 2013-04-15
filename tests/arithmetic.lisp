@@ -39,6 +39,16 @@
     (assert-equalp #() (cumulative-sum #()))
     (assert-equalp #() (cumulative-product #()))))
 
+(deftest norms (arithmetic-tests)
+  (let* ((a #(2 3 4))
+         (a-list (coerce a 'list))
+         (b #(#C(3 4) 0 5 5 5))
+         (b-list (coerce b 'list)))
+    (assert-equality #'num= (sqrt 29) (l2norm a))
+    (assert-equality #'num= (sqrt 29) (l2norm a-list))
+    (assert-equality #'num= 10 (l2norm b))
+    (assert-equality #'num= 10 (l2norm b-list))))
+
 (deftest arithmetic-rounding (arithmetic-tests)
   (assert-equalp '(25 2) (multiple-value-list (floor* 27 5)))
   (assert-equalp '(26 1) (multiple-value-list (floor* 27 5 1)))

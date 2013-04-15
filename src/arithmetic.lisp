@@ -23,6 +23,7 @@
    #:product
    #:cumulative-sum
    #:cumulative-product
+   #:l2norm
    #:floor*
    #:ceiling*
    #:round*
@@ -221,6 +222,13 @@ When BY is given it determines the increment, adjusted to match the direction un
                                (multf product element))
                  sequence)
             product)))
+
+;;; norms
+
+(defgeneric l2norm (object)
+  (:documentation "$L_2$ norm of OBJECT.")
+  (:method ((sequence sequence))
+    (sqrt (sum sequence :key #'absolute-square))))
 
 ;;; truncation/rounding
 
