@@ -18,6 +18,10 @@
    #:e2/
    #:e1-
    #:e1/
+   #:e2log
+   #:e2exp
+   #:e1log
+   #:e1exp
    #:eexpt
    #:eexp
    #:elog
