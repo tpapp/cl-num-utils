@@ -49,6 +49,23 @@
     (assert-equality #'num= 10 (l2norm b))
     (assert-equality #'num= 10 (l2norm b-list))))
 
+(deftest normalize-probabilities (arithmetic-tests)
+  (let* ((a (vector 1 2 7))
+         (a-copy (copy-seq a)))
+    (assert-equalp #(1/10 2/10 7/10) (normalize-probabilities a))
+    (assert-equalp a a-copy)            ; not modified
+    (assert-equalp #(0.1d0 0.2d0 0.7d0)
+        (normalize-probabilities a :element-type 'double-float))
+    (assert-equalp a a-copy)            ; not modified
+    (assert-condition error (normalize-probabilities #(1 -1)))
+    (let ((normalized #(0.1d0 0.2d0 0.7d0)))
+      (assert-equalp normalized
+          (normalize-probabilities a
+                                   :element-type 'double-float
+                                   :result nil))
+      (assert-equalp a normalized)
+      (assert-false (equalp a a-copy)))))
+
 (deftest arithmetic-rounding (arithmetic-tests)
   (assert-equalp '(25 2) (multiple-value-list (floor* 27 5)))
   (assert-equalp '(26 1) (multiple-value-list (floor* 27 5 1)))

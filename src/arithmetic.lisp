@@ -25,6 +25,7 @@
    #:cumulative-product
    #:l2norm-square
    #:l2norm
+   #:normalize-probabilities
    #:floor*
    #:ceiling*
    #:round*
@@ -234,6 +235,24 @@ When BY is given it determines the increment, adjusted to match the direction un
 (defun l2norm (object)
   "$L_2$ norm of OBJECT."
   (sqrt (l2norm-square object)))
+
+(defun normalize-probabilities (vector
+                                &key
+                                (element-type t)
+                                (result (make-array (length vector)
+                                                    :element-type element-type)))
+  "Verify that each element of VECTOR is nonnegative and return a vector multiplied so that they sum to 1.  ELEMENT-TYPE can be used to specify the element-type of the result.  When RESULT is given, the result is placed there.  When RESULT is NIL, VECTOR is modified instead."
+  (unless result
+    (setf result vector)
+    (let ((result-type (array-element-type result)))
+      (unless (subtypep element-type result-type)
+        (setf element-type result-type))))
+  (let ((result (aif result it vector))
+        (sum (reduce #'+ vector
+                     :key (lambda (element)
+                            (assert (non-negative-real-p element))
+                            element))))
+    (map-into result (lambda (element) (coerce (/ element sum) element-type)) vector)))
 
 ;;; truncation/rounding
 
