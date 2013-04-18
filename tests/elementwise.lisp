@@ -39,7 +39,9 @@
     (assert-equalp (e+ a) (e+ a 0))
     (assert-equalp (e* a) (e* a 1))
     (assert-equalp (e- a) (e- 0d0 a))
-    (assert-equalp (e/ a) (e/ 1d0 a))))
+    (assert-equalp (e/ a) (e/ 1d0 a))
+    (assert-equality #'num= #(1.0) (elog #(10) 10))
+    (assert-equality #'num= a (eexp (elog a)))))
 
 ;; (deftest (elementwise-tests)
 ;;   stack-tests
