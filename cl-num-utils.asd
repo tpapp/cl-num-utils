@@ -52,4 +52,5 @@
    (:file "matrix")
    (:file "matrix-shorthand")
    (:file "num=")
-   (:file "statistics")))
+   (:file "statistics")
+   (:file "utilities")))
