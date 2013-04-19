@@ -19,7 +19,8 @@
    #:as-double-float
    #:simple-double-float-vector
    #:generate-sequence
-   #:expanding))
+   #:expanding
+   #:bic))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -116,3 +117,7 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
     `(macrolet ((,local-macro ()
                   ,@body))
        (,local-macro))))
+
+(defun bic (a b)
+  "Biconditional.  Returns A <=> B."
+  (if a b (not b)))

@@ -28,10 +28,6 @@
        ,@(when zero
            `((t ,zero))))))
 
-(defun bic (a b)
-  "Biconditional."
-  (if a b (not b)))
-
 (define-modify-macro multf (&rest values) * "Multiply by the arguments")
 
 
