@@ -16,7 +16,7 @@
                #:alexandria
                #:array-operations
                #:let-plus)
-  :pathname #P"src/"
+  :pathname "src/"
   :serial t
   :components
   ((:file "utilities")
@@ -39,7 +39,7 @@
   #+asdf-unicode :encoding #+asdf-unicode :utf-8
   :depends-on (#:cl-num-utils
                #:clunit)
-  :pathname #P"tests/"
+  :pathname "tests/"
   :serial t
   :components
   ((:file "setup")
