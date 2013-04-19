@@ -30,6 +30,7 @@
    #:split-interval
    #:shrink-interval
    #:grid-in
+   #:subintervals-in
    #:shift-interval))
 
 (in-package #:cl-num-utils.interval)
@@ -352,6 +353,29 @@ narrowing to the appropriate float type or fixnum if possible."
                                       right
                                       (+ left (* index step)))
                              (incf index)))))))
+
+(defun subintervals-in (interval count &optional (mid-open-right? t))
+  "Return INTERVAL evenly divided into COUNT subintervals as a vector.  When MID-OPEN-RIGHT?, subintervals in the middle are open on the right and closed on the left, otherwise the opposite; openness of endpoints on the edge follows INTERVAL."
+  (check-type count (integer 1))
+  (check-type interval finite-interval)
+  (let+ (((&interval (left open-left?) (right open-right?)) interval)
+         (mid-open-left? (not mid-open-right?))
+         (l left))
+    (aprog1 (make-array count)
+      (loop for index below count
+            do (let* ((next (1+ index))
+                      (end? (= next count))
+                      (r (if end?
+                             right
+                             (lerp (/ next count) left right))))
+                 (setf (aref it index) (interval l r
+                                                 :open-left? (if (zerop index)
+                                                                 open-left?
+                                                                 mid-open-left?)
+                                                 :open-right? (if end?
+                                                                  open-right?
+                                                                  mid-open-right?))
+                       l r))))))
 
 (defgeneric shift-interval (interval offset)
   (:method ((interval finite-interval) (offset real))

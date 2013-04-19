@@ -49,5 +49,11 @@
     (assert-equality #'num= #(0.0 0.5 1.0) (grid-in (interval 0.0 1.0) 3))
     (assert-equality #'num= #(0 2 4) (grid-in (interval 0 4) 3))))
 
+(deftest test-subintervals-in (interval-tests)
+  (assert-equalp (vector (interval 0 1 :open-left? nil :open-right? t)
+                         (interval 1 2 :open-left? nil :open-right? t)
+                         (interval 2 3 :open-left? nil :open-right? nil))
+      (subintervals-in (interval 0 3) 3)))
+
 (deftest test-plusminus-interval (interval-tests)
   (assert-equality #'num= (interval 0.5 1.5) (plusminus-interval 1 0.5)))
