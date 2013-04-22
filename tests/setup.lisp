@@ -5,6 +5,7 @@
         #:anaphora
         #:let-plus
         #:clunit
+        #:cl-slice
         ;; cl-num-utils subpackages
         #:cl-num-utils.arithmetic
         #:cl-num-utils.chebyshev

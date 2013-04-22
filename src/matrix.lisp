@@ -7,6 +7,7 @@
         #:cl-num-utils.num=
         #:cl-num-utils.print-matrix
         #:cl-num-utils.utilities
+        #:cl-slice
         #:let-plus)
   (:export
    #:diagonal-vector
@@ -143,7 +144,12 @@ Return the array."
              (print-matrix ,elements ,stream
                            :masked-fn (lambda (,row ,col)
                                         (when (,masked-test ,row ,col)
-                                          ,masked-string)))))))))
+                                          ,masked-string))))))
+       (defmethod slice ((,matrix ,type) &rest slices)
+         ;; NOTE: certain slices return matrices which preserve special structure.  Currently we handle the case when the slice is the same for both dimensions by default, and the matrix is square.
+         (if (and (not (cdr slices)) (aops:square-matrix? ,matrix))
+             (,type (slice ,elements-accessor (car slices) (car slices)))
+             (apply #'slice (aops:as-array ,matrix) slices))))))
 
 (define-wrapped-matrix lower-triangular-matrix elements
     "Lower triangular matrix.  ELEMENTS in the upper triangle are treated as zero."

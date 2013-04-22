@@ -15,6 +15,7 @@
   :depends-on (#:anaphora
                #:alexandria
                #:array-operations
+               #:cl-slice
                #:let-plus)
   :pathname "src/"
   :serial t
