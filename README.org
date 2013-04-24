@@ -9,6 +9,7 @@ This library implements simple numerical functions for Common Lisp, including
 - special matrices and shorthand for their input
 - sample statistics
 - Chebyshev polynomials
+- univariate rootfinding
 
 See the sources and the docstring for more details.
 
@@ -32,4 +33,4 @@ When you import both =cl-num-utils= and =alexandria=, you get symbol conflicts. 
 ** Tasks
 *** TODO finish histogram code, write tests
 *** TODO decide whether recursive indexes are practical
-    code is still there, but commented out
+code is still there, but commented out
