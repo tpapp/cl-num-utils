@@ -1,25 +1,38 @@
-(in-package :cl-num-utils)
+;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; -*-
+
+(cl:defpackage #:cl-num-utils.rootfinding
+  (:use #:cl
+        #:alexandria
+        #:cl-num-utils.interval
+        #:cl-num-utils.utilities
+        #:let-plus)
+  (:export
+   #:*rootfinding-epsilon*
+   #:*rootfinding-delta-relative*
+   #:root-bisection))
+
+(cl:in-package #:cl-num-utils.rootfinding)
 
 ;;; Testing convergence of rootfinding methods
 
 (defun opposite-sign? (a b)
-  "Return true iff a and b are on opposite sides of 0."
+  "Return true iff A and B are on opposite sides of 0."
   (or (and (minusp a) (plusp b))
       (and (plusp a) (minusp b))))
 
 (defun narrow-bracket? (a b delta)
-  "Return true iff |a-b| < delta."
+  "Return true iff $|a-b| < \\delta$."
   (< (abs (- a b)) delta))
 
 (defun near-root? (f epsilon)
-  "Return true iff |f| < epsilon."
+  "Return true iff $|f| < \\epsilon$."
   (< (abs f) epsilon))
 
 (defparameter *rootfinding-epsilon* (expt double-float-epsilon 0.25)
-  "Default EPSILON for rootfinding.")
+  "Default maximum for the absolute value of the function, used for rootfinding.")
 
 (defparameter *rootfinding-delta-relative* (expt double-float-epsilon 0.25)
-  "Default relative interval width (DELTA) for rootfinding.")
+  "Default relative interval width for rootfinding.")
 
 (defun rootfinding-delta (interval
                           &optional (delta-relative *rootfinding-delta-relative*))
@@ -35,25 +48,15 @@
 
 Sets up the following:
 
-- function opposite-sign-p for checking that two numbers are on the
-  opposite side of 0
+- function OPPOSITE-SIGN-P for checking that two numbers are on the opposite side of 0
 
-- function evaluate-and-return-if-within-epsilon which checks that
-  |f(x)| <= epsilon, if so, returns _from_ toplevel-function-name
-  (values x fx t), otherwise simply returns the value
+- function EVALUATE-AND-RETURN-IF-WITHIN-EPSILON which checks that |f(x)| <= EPSILON, if so, returns from the block with (VALUES X FX T), otherwise simply returns the value
 
-- function return-if-within-tolerance checks if the interval [a,b]
-  bracketing x is small enough (smaller than tolerance) and if so,
-  returns (x fx nil a b)
+- function RETURN-IF-WITHIN-TOLERANCE checks if the interval [A,B] bracketing X is small enough (smaller than TOLERANCE) and if so, returns (X FX NIL (INTERVAL A B))
 
-- variables fa and fb to hold function values at a and b
+- variables FA and FB to hold function values at A and B
 
-Initially, it checks for either f(a) or f(b) being a root, and
-establishes a <= b by exchanging a,f(a) and b,f(b) if necessary.  Also
-checks that f(a) and f(b) are of opposite sign.  Checks that both
-tolerance and epsilon are nonnegative.
-
-Implicitly uses the following variables: f, a, b, tolerance, epsilon."
+Initially, it checks for either $f(a)$ or $f(b)$ being a root, and establishes $a \leq b$ by exchanging $a,f(a)$ and $b,f(b)$ if necessary.  Also checks that $f(a)$ and $f(b)$ are of opposite sign.  Checks that both tolerance and epsilon are nonnegative."
   (check-types (a b fa fb) symbol)
   (with-unique-names (block-name)
     (once-only (delta epsilon f)
@@ -61,7 +64,7 @@ Implicitly uses the following variables: f, a, b, tolerance, epsilon."
          (flet ((,f-tested (x)
                   (let ((fx (funcall ,f x)))
                     (if (near-root? fx ,epsilon)
-                        (return-from ,block-name (values x fx t ,a ,b))
+                        (return-from ,block-name (values x fx t (interval ,a ,b)))
                         fx)))
                 (,test-bracket (fx x)
                   (when (narrow-bracket? ,a ,b ,delta)

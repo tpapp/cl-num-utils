@@ -23,4 +23,5 @@
     (reexport '#:cl-num-utils.matrix)
     (reexport '#:cl-num-utils.num=)
     (reexport '#:cl-num-utils.statistics)
-    (reexport '#:cl-num-utils.utilities)))
+    (reexport '#:cl-num-utils.utilities)
+    (reexport '#:cl-num-utils.rootfinding)))

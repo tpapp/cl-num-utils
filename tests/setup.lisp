@@ -15,7 +15,8 @@
         #:cl-num-utils.matrix-shorthand
         #:cl-num-utils.num=
         #:cl-num-utils.utilities
-        #:cl-num-utils.statistics)
+        #:cl-num-utils.statistics
+        #:cl-num-utils.rootfinding)
   (:shadowing-import-from #:cl-num-utils.statistics #:mean :variance #:median)
   (:export
    #:run))

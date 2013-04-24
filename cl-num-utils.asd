@@ -31,6 +31,7 @@
    (:file "matrix-shorthand")
    (:file "statistics")
    (:file "chebyshev")
+   (:file "rootfinding")
    (:file "common-package")))
 
 (asdf:defsystem #:cl-num-utils-tests
@@ -54,4 +55,5 @@
    (:file "matrix-shorthand")
    (:file "num=")
    (:file "statistics")
-   (:file "utilities")))
+   (:file "utilities")
+   (:file "rootfinding")))
