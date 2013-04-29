@@ -1,5 +1,6 @@
 ;;; -*- Mode:Lisp; Syntax:ANSI-Common-Lisp; Coding:utf-8 -*-
 (cl:defpackage #:cl-num-utils.matrix-shorthand
+  (:nicknames #:clnu.mx)
   (:use #:cl
         #:alexandria
         #:anaphora
