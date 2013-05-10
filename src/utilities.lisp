@@ -9,6 +9,7 @@
    #:gethash*
    #:splice-when
    #:splice-awhen
+   #:curry*
    #:check-types
    #:define-with-multiple-bindings
    #:unlessf
@@ -46,6 +47,24 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
   `(awhen ,test
      (list
       (progn ,@forms))))
+
+(defmacro curry* (function &rest arguments)
+  "Currying in all variables that are not *.  Note that this is a macro, so * should not be quoted, and FUNCTION will be used as is, ie it can be a LAMBDA form."
+  (let ((arguments (loop for arg in arguments
+                         collect (cond
+                                   ((eq arg '*) (gensym "ARG"))
+                                   ((keywordp arg) (list arg))
+                                   (t (list (gensym "VAR") arg))))))
+    `(let ,(loop for arg in arguments
+                 when (and (consp arg) (cdr arg))
+                 collect arg)
+       (lambda ,(loop for arg in arguments
+                      unless (consp arg)
+                      collect arg)
+         (,function ,@(loop for arg in arguments
+                            collect (if (consp arg)
+                                        (car arg)
+                                        arg)))))))
 
 (defmacro check-types ((&rest arguments) type)
   "CHECK-TYPE for multiple places of the same type.  Each argument is either a place, or a list of a place and a type-string."
