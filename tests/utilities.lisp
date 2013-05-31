@@ -22,4 +22,17 @@
   (assert-equal '(a b c) `(a ,@(splice-awhen 'b it) c))
   (assert-equal '(a c) `(a ,@(splice-awhen (not 'b) it) c)))
 
+(deftest with-double-floats (utilities-tests)
+  (let ((a 1)
+        (c 4)
+        (d 5))
+    (with-double-floats ((a 2)
+                         (b a)
+                         c
+                         (d))
+      (assert-eql a 2d0)
+      (assert-eql b 1d0)
+      (assert-eql c 4d0)
+      (assert-eql d 5d0))))
+
 ;;; FIXME: write tests for other utilities

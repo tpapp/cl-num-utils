@@ -18,6 +18,7 @@
    #:simple-fixnum-vector
    #:as-simple-fixnum-vector
    #:as-double-float
+   #:with-double-floats
    #:simple-double-float-vector
    #:generate-sequence
    #:expanding
@@ -121,6 +122,21 @@ Example: `(,foo ,@(splice-when add-bar? bar))"
 (defun as-double-float (v)
   "Convert argument to DOUBLE-FLOAT."
   (coerce v 'double-float))
+
+(defmacro with-double-floats (bindings &body body)
+  "For each binding = (variable value), coerce VALUE to DOUBLE-FLOAT and bind it to VARIABLE for BODY.  When VALUE is omitted, VARIABLE is used instead.  When BINDING is an atom, it is used for both the value and the variable.
+
+Example:
+  (with-double-floats (a
+                       (b)
+                       (c 1))
+    ...)"
+  `(let ,(mapcar (lambda (binding)
+                   (let+ (((variable &optional (value variable))
+                           (ensure-list binding)))
+                     `(,variable (as-double-float ,value))))
+                 bindings)
+     ,@body))
 
 (deftype simple-double-float-vector (&optional (length '*))
   "Simple vector of double-float elements."
