@@ -6,7 +6,7 @@
         #:let-plus
         #:clunit
         #:cl-slice
-        ;; cl-num-utils subpackages
+        ;; cl-num-utils subpackages (alphabetical order)
         #:cl-num-utils.arithmetic
         #:cl-num-utils.chebyshev
         #:cl-num-utils.elementwise
@@ -14,9 +14,10 @@
         #:cl-num-utils.matrix
         #:cl-num-utils.matrix-shorthand
         #:cl-num-utils.num=
-        #:cl-num-utils.utilities
+        #:cl-num-utils.quadrature
         #:cl-num-utils.statistics
-        #:cl-num-utils.rootfinding)
+        #:cl-num-utils.rootfinding
+        #:cl-num-utils.utilities)
   (:shadowing-import-from #:cl-num-utils.statistics #:mean :variance #:median)
   (:export
    #:run))
