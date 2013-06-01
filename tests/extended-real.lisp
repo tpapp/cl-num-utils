@@ -25,8 +25,8 @@
 (defun assert-relation-corner-cases (&rest relations)
   (loop for r in relations
         do (assert-true (funcall r 1))
-           (assert-true (funcall r (xreal:inf)))
-           (assert-true (funcall r (xreal:-inf)))
+           (assert-true (funcall r :plusinf))
+           (assert-true (funcall r :minusinf))
            (assert-condition error (funcall r))))
 
 (deftest relation-corner-cases-test (extended-real-tests)
@@ -35,75 +35,75 @@
 (deftest strict-inequalities-test (extended-real-tests)
   (assert-paired-relation #'xreal:< #'xreal:>
                           ;; < pairs
-                          (list 1 2)
-                          (list 1 (xreal:inf))
-                          (list (xreal:-inf) (xreal:inf))
-                          (list (xreal:-inf) 1)
+                          '(1 2)
+                          '(1 :plusinf)
+                          '(:minusinf :plusinf)
+                          '(:minusinf 1)
                           ;; < sequences
-                          (list 1 2 3)
-                          (list 1 2 (xreal:inf))
-                          (list (xreal:-inf) 1 4 (xreal:inf)))
+                          '(1 2 3)
+                          '(1 2 :plusinf)
+                          '(:minusinf 1 4 :plusinf))
   (assert-not-paired-relation #'xreal:< #'xreal:>
                               ;; not < pairs
                               '(1 1)
                               '(2 1)
-                              (list (xreal:inf) (xreal:inf))
-                              (list (xreal:inf) 1)
-                              (list (xreal:-inf) (xreal:-inf))
-                              (list (xreal:inf) (xreal:-inf))
-                              (list 1 (xreal:-inf))
+                              '(:plusinf :plusinf)
+                              '(:plusinf 1)
+                              '(:minusinf :minusinf)
+                              '(:plusinf :minusinf)
+                              '(1 :minusinf)
                               ;; not < sequences
                               '(1 2 2)
                               '(1 3 2)
-                              (list 1 (xreal:inf) 2)
-                              (list 1 (xreal:inf) (xreal:inf))))
+                              '(1 :plusinf 2)
+                              '(1 :plusinf :plusinf)))
 
 (deftest inequalities-test (extended-real-tests)
   (assert-paired-relation #'xreal:<= #'xreal:>=
                           ;; <= pairs
                           '(1 1)
                           '(1 2)
-                          (list 1 (xreal:inf))
-                          (list (xreal:inf) (xreal:inf))
-                          (list (xreal:-inf) (xreal:inf))
-                          (list (xreal:-inf) (xreal:-inf))
-                          (list (xreal:-inf) 1)
+                          '(1 :plusinf)
+                          '(:plusinf :plusinf)
+                          '(:minusinf :plusinf)
+                          '(:minusinf :minusinf)
+                          '(:minusinf 1)
                           ;; < sequences
                           '(1 2 2)
                           '(1 2 3)
-                          (list 1 2 (xreal:inf))
-                          (list 1 (xreal:inf) (xreal:inf))
-                          (list (xreal:-inf) 1 4 (xreal:inf)))
+                          '(1 2 :plusinf)
+                          '(1 :plusinf :plusinf)
+                          '(:minusinf 1 4 :plusinf))
   (assert-not-paired-relation #'xreal:<= #'xreal:>=
                               ;; not < pairs
                               '(2 1)
-                              (list (xreal:inf) 1)
-                              (list (xreal:inf) (xreal:-inf))
-                              (list 1 (xreal:-inf))
+                              '(:plusinf 1)
+                              '(:plusinf :minusinf)
+                              '(1 :minusinf)
                               ;; not <=/>= sequences
                               '(1 3 2)
-                              (list 1 (xreal:inf) 2)))
+                              '(1 :plusinf 2)))
 
 (deftest equality-test (extended-real-tests)
   (assert-relation #'xreal:=
-    ;; = pairs
-    '(1 1)
-    (list (xreal:inf) (xreal:inf))
-    (list (xreal:-inf) (xreal:-inf))
-    ;; = sequences
-    '(2 2 2)
-    (list (xreal:inf) (xreal:inf) (xreal:inf))
-    (list (xreal:-inf) (xreal:-inf) (xreal:-inf)))
+                   ;; = pairs
+                   '(1 1)
+                   '(:plusinf :plusinf)
+                   '(:minusinf :minusinf)
+                   ;; = sequences
+                   '(2 2 2)
+                   '(:plusinf :plusinf :plusinf)
+                   '(:minusinf :minusinf :minusinf))
   (assert-not-relation #'xreal:=
                        ;; not = pairs
                        '(1 2)
                        '(2 1)
-                       (list 1 (xreal:inf))
-                       (list (xreal:inf) 1)
-                       (list 1 (xreal:-inf))
-                       (list (xreal:-inf) 1)
+                       '(1 :plusinf)
+                       '(:plusinf 1)
+                       '(1 :minusinf)
+                       '(:minusinf 1)
                        ;; not = sequences
                        '(1 2 2)
                        '(2 2 1)
-                       (list (xreal:inf) (xreal:inf) 9)
-                       (list (xreal:inf) (xreal:-inf))))
+                       '(:plusinf :plusinf 9)
+                       '(:plusinf :minusinf)))

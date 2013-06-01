@@ -24,11 +24,11 @@
 
 (deftest chebyshev-open-inf (chebyshev-tests)
   (assert-true (<= (test-chebyshev-approximate (lambda (x) (/ x (+ 4 x)))
-                                               (interval 2 (xreal:inf)) 15
+                                               (interval 2 :plusinf) 15
                                                (interval 2 102))
                    1e-5))
   (assert-true (<= (test-chebyshev-approximate (lambda (x) (exp (- x)))
-                                               (interval 0 (xreal:inf)) 15
+                                               (interval 0 :plusinf) 15
                                                (interval 0 10)
                                                :n-points 30)
                    1e-4)))

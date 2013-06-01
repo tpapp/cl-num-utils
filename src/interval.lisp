@@ -81,7 +81,7 @@ the second value is an indicator for whether the endpoint is open."
   (:documentation "Left endpoint is -∞."))
 
 (defmethod left ((interval interval/infinite-left))
-  (xreal:-inf))
+  :minusinf)
 
 (defmethod open-left? ((interval interval/infinite-left))
   t)
@@ -91,7 +91,7 @@ the second value is an indicator for whether the endpoint is open."
   (:documentation "Right endpoint is ∞."))
 
 (defmethod right ((interval interval/infinite-right))
-  (xreal:inf))
+  :plusinf)
 
 (defmethod open-right? ((interval interval/infinite-right))
   t)
@@ -139,7 +139,7 @@ the second value is an indicator for whether the endpoint is open."
   ()
   (:documentation "Interval from LEFT to ∞."))
 
-(defclass minusinf-interval (interval/infinite-left interval/finite-right)
+(defclass minusinf-interval (interval interval/infinite-left interval/finite-right)
   ()
   (:documentation "Interval from -∞ to RIGHT."))
 
@@ -172,12 +172,12 @@ the second value is an indicator for whether the endpoint is open."
       ((? real real) (make-instance 'finite-interval :left left :right right
                                                      :open-left? open-left?
                                                      :open-right? open-right?))
-      ((? real xreal:inf) (make-instance 'plusinf-interval :left left
-                                                        :open-left? open-left?))
-      ((? xreal:-inf real) (make-instance 'minusinf-interval :right right
-                                                          :open-right? open-right?))
-      ((? xreal:-inf xreal:inf) (make-instance 'real-line))
-      (t (error 'internal-error)))))
+      ((? real :plusinf) (make-instance 'plusinf-interval :left left
+                                                          :open-left? open-left?))
+      ((? :minusinf real) (make-instance 'minusinf-interval :right right
+                                                            :open-right? open-right?))
+      ((? :minusinf :plusinf) (make-instance 'real-line))
+      (t (error "Invalid interval specification.")))))
 
 (defun plusminus-interval (center half-width
                            &key open-left? (open-right? open-left?))

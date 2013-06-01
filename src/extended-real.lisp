@@ -5,10 +5,6 @@
   (:nicknames #:xreal)
   (:shadow #:= #:< #:> #:<= #:>=)
   (:export
-   :inf
-   :-inf
-   :inf?
-   :-inf?
    :infinite?
    :extended-real
    :=
@@ -21,31 +17,20 @@
 
 (in-package #:cl-num-utils.extended-real)
 
-(defun inf ()
-  "Return an object representing (positive) infinity."
-  :inf)
-
-(defun -inf ()
-  "Return an object representing negative infinity."
-  :-inf)
-
-(defun inf? (object)
-  "Test if an object represents (positive) infinity."
-  (eq :inf object))
-
-(defun -inf? (object)
-  "Test if an object represents negative infinity."
-  (eq :-inf object))
+(deftype infinite ()
+  "Representing infinity (extending the real line)."
+  '(member :plusinf :minusinf))
 
 (defun infinite? (object)
   "Test if an object represents positive or negative infinity."
-  (or (inf? object) (-inf? object)))
+  (typep object 'infinite))
 
 (deftype extended-real (&optional (base 'real))
-  `(or (satisfies inf?) (satisfies -inf?) ,base))
+  "Extended real number."
+  `(or infinite ,base))
 
 (defun extend-pairwise-comparison (test first rest)
-  ""
+  "Extend TEST (a pairwise comparison) to an arbitrary number of arguments (but at least one, FIRST)."
   (loop while rest do
     (let ((next (car rest)))
       (unless (funcall test first next)
@@ -55,12 +40,13 @@
   t)
 
 (defmacro with-template ((prefix &rest variables) &body body)
+  "Define the function (PREFIX &rest VARIABLES) which can be used to match variables using :PLUSINF, :MINUSINF, REAL, or T."
   (let ((names (mapcar (curry #'symbolicate 'kind-) variables)))
     `(macrolet ((,prefix ,names
                   (flet ((expand (kind variable)
                            (ecase kind
-                             (inf `(inf? ,variable))
-                             (-inf `(-inf? ,variable))
+                             (:plusinf `(eq :plusinf ,variable))
+                             (:minusinf `(eq :minusinf ,variable))
                              (real `(realp ,variable))
                              ((t) t))))
                     (list 'and
@@ -72,49 +58,51 @@
        ,@body)))
 
 (defmacro lambda-template ((prefix &rest variables) &body body)
+  "LAMBDA with WITH-TEMPLATE in its BODY."
   `(lambda ,variables
      (with-template (,prefix ,@variables)
        ,@body)))
 
-(defmacro define-pairwise (name test)
+(defmacro define-comparison (name test)
+  "Define a comparison, extendeding a pairwise comparison to an arbitrary number of arguments."
   `(defun ,name (number &rest more-numbers)
      (extend-pairwise-comparison ,test number more-numbers)))
 
-(define-pairwise =
+(define-comparison =
     (lambda-template (? a b)
       (if (? real real)
           (cl:= a b)
-          (or (? inf inf)
-              (? -inf -inf)))))
+          (or (? :plusinf :plusinf)
+              (? :minusinf :minusinf)))))
 
-(define-pairwise <
+(define-comparison <
     (lambda-template (? a b)
       (if (? real real)
           (cl:< a b)
-          (or (? -inf inf)
-              (? -inf real)
-              (? real inf)))))
+          (or (? :minusinf :plusinf)
+              (? :minusinf real)
+              (? real :plusinf)))))
 
-(define-pairwise >
+(define-comparison >
     (lambda-template (? a b)
       (if (? real real)
           (cl:> a b)
-          (or (? inf -inf)
-              (? real -inf)
-              (? inf real)))))
+          (or (? :plusinf :minusinf)
+              (? real :minusinf)
+              (? :plusinf real)))))
 
-(define-pairwise <=
+(define-comparison <=
     (lambda-template (? a b)
       (if (? real real)
           (cl:<= a b)
-          (or (? -inf t)
-              (? t inf)))))
+          (or (? :minusinf t)
+              (? t :plusinf)))))
 
-(define-pairwise >=
+(define-comparison >=
     (lambda-template (? a b)
       (if (? real real)
           (cl:>= a b)
-          (or (? t -inf)
-              (? inf t)))))
+          (or (? t :minusinf)
+              (? :plusinf t)))))
 
 ;;; TODO /=, min, max, minusp, plusp, abs, ...
