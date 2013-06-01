@@ -32,6 +32,7 @@
    (:file "statistics")
    (:file "chebyshev")
    (:file "rootfinding")
+   (:file "quadrature")
    (:file "common-package")))
 
 (asdf:defsystem #:cl-num-utils-tests
