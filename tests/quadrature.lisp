@@ -4,7 +4,7 @@
 
 (defsuite quadrature-tests (tests))
 
-(deftest integration1 (quadrature-tests)
+(deftest integration-finite (quadrature-tests)
   (flet ((test-romberg (function interval value &rest rest)
            (let+ (((&interval a b) interval)
                   (closed-interval (interval a b))
@@ -20,3 +20,11 @@
     (test-romberg (lambda (x) (/ (exp (- (/ (expt x 2) 2)))
                                  (sqrt (* 2 pi))))
                   (interval 0 1) 0.3413447460685429d0 :epsilon 1d-9)))
+
+(deftest integration-plusinf (quadrature-tests)
+  (assert-equality #'num= 1
+      (romberg-quadrature (lambda (x) (expt x -2))
+                          (interval 1 (xreal:inf))))
+  (assert-equality #'num= 1/3
+      (romberg-quadrature (lambda (x) (exp (* -3 x)))
+                          (interval 0 (xreal:inf)))))

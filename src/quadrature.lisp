@@ -139,9 +139,7 @@ H is the stepsize."
 ;;; implementation of Romberg quadrature
 
 (defun romberg-quadrature% (quadrature epsilon min-iter max-iter)
-  "Internal function implementing Romberg quadrature.  Requires an iterative
-quadrature instance, a relative EPSILON and MIN-ITER for the stopping
-criterion, and the maximum number of iterations allowed."
+  "Internal function implementing Romberg quadrature.  Requires an iterative quadrature instance, a relative EPSILON and MIN-ITER for the stopping criterion, and the maximum number of iterations allowed.  Works on finite intervals."
   (loop with re = (richardson-extrapolation
                    (richardson-coefficient quadrature) max-iter)
         do (let+ ((q (refine-quadrature quadrature))
@@ -151,12 +149,25 @@ criterion, and the maximum number of iterations allowed."
                         (<= change epsilon))
                (return-from romberg-quadrature% (values q-extrapolated n))))))
 
+(defgeneric transformed-quadrature (function interval transformation)
+  (:documentation "Return a quadrature for integrating FUNCTION on INTERVAL, which may be infinite, in which case FUNCTION will be transformed.  TRANSFORMATION can be used to select the transformation when applicable, otherwise it is NIL.")
+  (:method (function (interval finite-interval) (transformation null))
+    (let+ (((&interval (a a-open?) (b b-open?)) interval))
+      (if (or a-open? b-open?)
+          (midpoint-quadrature function a b)
+          (trapezoidal-quadrature function a b))))
+  (:method (function (interval plusinf-interval) (transformation null))
+    (let+ (((&accessors-r/o left) interval))
+      (midpoint-quadrature (lambda (y)
+                             (let ((1-y (- 1 y)))
+                               (/ (funcall function (+ left (/ y 1-y)))
+                                  (expt 1-y 2))))
+                           0 1))))
+
 (defun romberg-quadrature (f interval &key (epsilon (sqrt double-float-epsilon))
                                            (min-iter 5)
-                                           (max-iter 20))
+                                           (max-iter 20)
+                                           transformation)
   "Romberg quadrature of F on the interval.  The iteration stops if the relative change is below EPSILON, but only after MIN-ITER refinements (to avoid spurious premature convergence).  An error occurs when MAX-ITER iterations are reached without convergence."
-  (romberg-quadrature% (let+ (((&interval (a a-open?) (b b-open?)) interval))
-                         (if (or a-open? b-open?)
-                             (midpoint-quadrature f a b)
-                             (trapezoidal-quadrature f a b)))
+  (romberg-quadrature% (transformed-quadrature f interval transformation)
                        epsilon min-iter max-iter))
