@@ -6,6 +6,7 @@
         #:anaphora
         #:let-plus)
   (:export
+   #:print-length-truncate
    #:*print-matrix-precision*
    #:print-matrix))
 
