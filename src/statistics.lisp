@@ -37,7 +37,11 @@
    #:quantile
    #:quantiles
    #:ensure-sorted-reals
-   #:ensure-sorted-vector))
+   #:ensure-sorted-vector
+   #:make-sparse-counter
+   #:sparse-counter
+   #:sparse-counter-alist
+   #:sparse-counter-count))
 
 (in-package #:cl-num-utils.statistics)
 
@@ -369,6 +373,31 @@ for any vector SAMPLE."
     (alexandria:median object))
   (:method (object)
     (quantile object 0.5)))
+
+;;; sparse counters
+
+(defstruct (sparse-counter (:constructor make-sparse-counter%))
+  (table nil :type hash-table :read-only t))
+
+(defun make-sparse-counter (&key (test #'equal))
+  "Create a sparse counter.  Elements are compared with TEST (should be accepted by HASH-TABLE)."
+  (make-sparse-counter% :table (make-hash-table :test test)))
+
+(defmethod add ((accumulator sparse-counter) object &optional weight)
+  (assert (not weight) () "not implemented")
+  (incf (gethash (sparse-counter-table accumulator) object 0))
+  object)
+
+(defmethod tally ((accumulator sparse-counter))
+  (hash-table-count (sparse-counter-table accumulator)))
+
+(defun sparse-counter-alist (sparse-counter)
+  "Return (OBJECT . COUNT) pairs as an alist."
+  (hash-table-alist (sparse-counter-table sparse-counter)))
+
+(defun sparse-counter-count (sparse-counter object)
+  "Return the count for OBJECT."
+  (gethash (sparse-counter-table sparse-counter) object 0))
 
 ;; ;;; NOTE old code below
 
