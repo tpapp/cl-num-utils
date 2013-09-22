@@ -40,8 +40,9 @@
    #:ensure-sorted-vector
    #:make-sparse-counter
    #:sparse-counter
-   #:sparse-counter-alist
-   #:sparse-counter-count))
+   #:sparse-counter-count
+   #:sparse-counter-table
+   #:sparse-counter-alist))
 
 (in-package #:cl-num-utils.statistics)
 
@@ -383,9 +384,9 @@ for any vector SAMPLE."
   "Create a sparse counter.  Elements are compared with TEST (should be accepted by HASH-TABLE)."
   (make-sparse-counter% :table (make-hash-table :test test)))
 
-(defmethod add ((accumulator sparse-counter) object &optional weight)
-  (assert (not weight) () "not implemented")
-  (incf (gethash object (sparse-counter-table accumulator) 0))
+(defmethod add ((accumulator sparse-counter) object &optional (weight 1))
+  (assert (non-negative-real-p weight) () "Weight has to be nonnegative.")
+  (incf (gethash object (sparse-counter-table accumulator) 0) weight)
   object)
 
 (defmethod tally ((accumulator sparse-counter))
@@ -401,13 +402,19 @@ for any vector SAMPLE."
 
 (defmethod print-object ((sparse-counter sparse-counter) stream)
   (let+ (((&structure-r/o sparse-counter- table) sparse-counter)
-         (tally (hash-table-count table)))
+         (varieties (hash-table-count table))
+         (alist (sort (hash-table-alist table) #'>= :key #'cdr))
+         (tally (reduce #'+ alist :key #'cdr))
+         ((&values print-length truncated?)
+          (cl-num-utils.print-matrix:print-length-truncate varieties)))
     (print-unreadable-object (sparse-counter stream :type t)
-      (format stream "tally: ~D" tally)
-      (maphash (lambda (object count)
-                 (format stream "~&  ~a  ~d  (~,1f%)" object count
-                         (round* (* 100 (/ count tally)) 1/10)))
-               table))))
+      (format stream "tally: ~D, varieties: ~D" tally varieties)
+      (loop repeat print-length
+            for (object . count) in alist
+            do (format stream "~&  ~a  ~d  (~,1f%)" object count
+                       (round* (* 100 (/ count tally)) 1/10)))
+      (when truncated?
+        (format stream "  ~&...")))))
 
 ;; ;;; NOTE old code below
 
