@@ -385,7 +385,7 @@ for any vector SAMPLE."
 
 (defmethod add ((accumulator sparse-counter) object &optional weight)
   (assert (not weight) () "not implemented")
-  (incf (gethash (sparse-counter-table accumulator) object 0))
+  (incf (gethash object (sparse-counter-table accumulator) 0))
   object)
 
 (defmethod tally ((accumulator sparse-counter))
@@ -398,6 +398,16 @@ for any vector SAMPLE."
 (defun sparse-counter-count (sparse-counter object)
   "Return the count for OBJECT."
   (gethash (sparse-counter-table sparse-counter) object 0))
+
+(defmethod print-object ((sparse-counter sparse-counter) stream)
+  (let+ (((&structure-r/o sparse-counter- table) sparse-counter)
+         (tally (hash-table-count table)))
+    (print-unreadable-object (sparse-counter stream :type t)
+      (format stream "tally: ~D" tally)
+      (maphash (lambda (object count)
+                 (format stream "~&  ~a  ~d  (~,1f%)" object count
+                         (round* (* 100 (/ count tally)) 1/10)))
+               table))))
 
 ;; ;;; NOTE old code below
 
