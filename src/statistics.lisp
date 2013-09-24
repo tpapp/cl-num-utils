@@ -406,7 +406,7 @@ for any vector SAMPLE."
 
 (defun sparse-counter-count (sparse-counter object)
   "Return the count for OBJECT."
-  (gethash (sparse-counter-table sparse-counter) object 0))
+  (gethash object (sparse-counter-table sparse-counter) 0))
 
 (defmethod print-object ((sparse-counter sparse-counter) stream)
   (let+ (((&structure-r/o sparse-counter- table) sparse-counter)
