@@ -390,7 +390,12 @@ for any vector SAMPLE."
   object)
 
 (defmethod tally ((accumulator sparse-counter))
-  (hash-table-count (sparse-counter-table accumulator)))
+  (let ((sum 0))
+    (maphash (lambda (object count)
+               (declare (ignore object))
+               (incf sum count))
+             (sparse-counter-table accumulator))
+    sum))
 
 (defun sparse-counter-alist (sparse-counter &optional (predicate nil predicate?))
   "Return (OBJECT . COUNT) pairs as an alist.  When PREDICATE is given, sort the counts with it."
@@ -406,7 +411,7 @@ for any vector SAMPLE."
 (defmethod print-object ((sparse-counter sparse-counter) stream)
   (let+ (((&structure-r/o sparse-counter- table) sparse-counter)
          (varieties (hash-table-count table))
-         (alist (sparse-counter-alist table #'>=))
+         (alist (sparse-counter-alist sparse-counter #'>=))
          (tally (reduce #'+ alist :key #'cdr))
          ((&values print-length truncated?)
           (cl-num-utils.print-matrix:print-length-truncate varieties)))
