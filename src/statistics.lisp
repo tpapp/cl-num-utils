@@ -38,6 +38,7 @@
    #:quantiles
    #:ensure-sorted-reals
    #:ensure-sorted-vector
+   #:weighted-quantiles
    #:make-sparse-counter
    #:sparse-counter
    #:sparse-counter-count
@@ -374,6 +375,47 @@ for any vector SAMPLE."
     (alexandria:median object))
   (:method (object)
     (quantile object 0.5)))
+
+;;; weighted quantiles
+
+(defun weighted-quantile-p-table (weights)
+  "Return table of probability brackets for weighted quantile calculations., built from the weights (which should be positive reals, not checked).  Uses a 0.5 correction."
+  (aprog1 (aops:make-array-like weights)
+    (loop with sum = (sum weights)
+          with cumulative-sum = 0
+          for index from 0
+          for w across weights
+          do (setf (aref it index) (/ (+ cumulative-sum (/ w 2)) sum))
+             (incf cumulative-sum w))))
+
+(defun weighted-empirical-quantile (sorted-reals p-table q)
+  "Return the empirical quantile of a vector of real numbers, sorted in ascending order (not checked).  Uses a 0.5 correction."
+  (let+ ((p-index (binary-search p-table q)))
+    (cond
+      ((or (< q 0) (< 1 q)) (error "Quantile ~A is not in [0,1]." q))
+      ((not p-index) (aref sorted-reals 0))
+      ((eq p-index t) (aref sorted-reals (1- (length sorted-reals))))
+      (t (let+ ((p-left (aref p-table p-index))
+                (left (aref sorted-reals p-index)))
+           (if (= p-left q)
+               left
+               (let (
+                     (p-right (aref p-table (1+ p-index))))
+                 (lerp (/ (- q p-left)
+                          (- p-right p-left))
+                       left
+                       (aref sorted-reals (1+ p-index))))))))))
+
+(defun weighted-quantiles (values weights qs)
+  "Calculate quantiles QS of weighted observations.  Uses a 0.5 correction."
+  (let* ((pairs (map 'vector #'cons values weights))
+         (pairs (sort pairs #'<= :key #'car))
+         (sorted-reals (map 'vector #'car pairs))
+         (sorted-weights (map 'vector #'cdr pairs))
+         (p-table (weighted-quantile-p-table sorted-weights)))
+    (map 'vector (lambda (q)
+                   (weighted-empirical-quantile sorted-reals p-table q))
+         qs)))
 
 ;;; sparse counters
 

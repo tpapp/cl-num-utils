@@ -244,9 +244,15 @@ Slow, but useful for testing as it does not suffer from approximation error."
 
 (deftest quantiles (statistics-tests)
   (let ((sample #(0.0 1.0))
-        (quantiles (numseq 0 1 :length 11 :type 'double-float)))
-    (assert-equality #'num= #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0)
-        (map 'vector (curry #'quantile sample) quantiles))))
+        (quantiles (numseq 0 1 :length 11 :type 'double-float))
+        (weights #(1 1))
+        (expected-xs #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0)))
+    (assert-equality #'num= expected-xs
+        (map 'vector (curry #'quantile sample) quantiles))
+    (assert-equality #'num= expected-xs
+        (quantiles sample quantiles))
+    (assert-equality #'num= expected-xs
+        (weighted-quantiles sample weights quantiles))))
 
 (deftest quantile-probabilities (statistics-tests)
   (let* ((n 10)
