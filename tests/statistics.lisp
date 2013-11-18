@@ -248,8 +248,6 @@ Slow, but useful for testing as it does not suffer from approximation error."
     (assert-equality #'num= #(0.0 0.0 0.0 0.1 0.3 0.5 0.7 0.9 1.0 1.0 1.0)
         (map 'vector (curry #'quantile sample) quantiles))))
 
-(ensure-sorted-reals #(0.0 1.0))
-
 (deftest quantile-probabilities (statistics-tests)
   (let* ((n 10)
          (sample (sort (aops:generate (lambda () (random (* n 2))) n) #'<))
