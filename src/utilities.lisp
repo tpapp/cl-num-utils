@@ -22,7 +22,8 @@
    #:simple-double-float-vector
    #:generate-sequence
    #:expanding
-   #:bic))
+   #:bic
+   #:binary-search))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -156,3 +157,25 @@ Example:
 (defun bic (a b)
   "Biconditional.  Returns A <=> B."
   (if a b (not b)))
+
+(defun binary-search (sorted-reals value)
+  "Return INDEX such that
+
+  (WITHIN? (AREF SORTED-REALS INDEX) VALUE (AREF SORTED-REALS (1+ INDEX)).
+
+SORTED-REALS is assumed to be reals sorted in ascending order (not checked, if this does not hold the result may be nonsensical, though the algorithm will terminate).
+
+If value is below (or above) the first (last) break, NIL (T) is returned."
+  (let+ ((left 0)
+         (right (1- (length sorted-reals)))
+         ((&flet sr (index) (aref sorted-reals index))))
+    (cond
+      ((< value (sr left)) nil)
+      ((<= (sr right) value) t)
+      (t (loop
+           (when (= (1+ left) right)
+             (return left))
+           (let ((middle (floor (+ left right) 2)))
+             (if (< value (sr middle))
+                 (setf right middle)
+                 (setf left middle))))))))
