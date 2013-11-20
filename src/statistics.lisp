@@ -43,7 +43,9 @@
    #:sparse-counter
    #:sparse-counter-count
    #:sparse-counter-table
-   #:sparse-counter-alist))
+   #:sparse-counter-alist
+   #:tabulate
+   #:cross-tabulate))
 
 (in-package #:cl-num-utils.statistics)
 
@@ -465,6 +467,18 @@ for any vector SAMPLE."
                        (round* (* 100 (/ count tally)) 1/10)))
       (when truncated?
         (format stream "  ~&...")))))
+
+(defun tabulate (sequence &key (test #'equalp))
+  "Tabulate a sequence (using a SPARSE-COUNTER with the given TEST)."
+  (aprog1 (clnu:make-sparse-counter :test test)
+    (map nil (curry #'clnu:add it) sequence)))
+
+(defun cross-tabulate (sequence1 sequence2 &key (test #'equalp))
+  "Cross-tabulate two sequences (using a SPARSE-COUNTER with the given TEST).  TEST is used to compare conses."
+  (assert (length= sequence1 sequence2))
+  (aprog1 (clnu:make-sparse-counter :test test)
+    (map nil (lambda (s1 s2)
+               (add it (cons s1 s2))) sequence1 sequence2)))
 
 ;; ;;; NOTE old code below
 
