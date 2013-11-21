@@ -470,13 +470,13 @@ for any vector SAMPLE."
 
 (defun tabulate (sequence &key (test #'equalp))
   "Tabulate a sequence (using a SPARSE-COUNTER with the given TEST)."
-  (aprog1 (clnu:make-sparse-counter :test test)
-    (map nil (curry #'clnu:add it) sequence)))
+  (aprog1 (make-sparse-counter :test test)
+    (map nil (curry #'add it) sequence)))
 
 (defun cross-tabulate (sequence1 sequence2 &key (test #'equalp))
   "Cross-tabulate two sequences (using a SPARSE-COUNTER with the given TEST).  TEST is used to compare conses."
   (assert (length= sequence1 sequence2))
-  (aprog1 (clnu:make-sparse-counter :test test)
+  (aprog1 (make-sparse-counter :test test)
     (map nil (lambda (s1 s2)
                (add it (cons s1 s2))) sequence1 sequence2)))
 
