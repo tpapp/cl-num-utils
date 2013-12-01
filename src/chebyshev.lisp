@@ -139,18 +139,18 @@ either end) using the given number of Chebyshev polynomials."
       (lambda (x)
         (chebyshev-evaluate coefficients (cinf-to-ab x a 1d0 left)))))
   (:method (f (interval finite-interval) n-polynomials n-points)
-    (let+ (((&interval (left open-left?) (right open-right?)) interval)
-           ((&assert (< left right)))
-           (a (if open-left?
-                  -1d0
-                  (chebyshev-root n-points 0)))
-           (b (if open-right?
-                  1d0
-                  (chebyshev-root n-points (1- n-points))))
-           ((&values intercept slope) (ab-to-cd-intercept-slope left right a b))
-           (coefficients (chebyshev-regression (lambda (z)
-                                                 (funcall f (/ (- z intercept)
-                                                               slope)))
-                                               n-polynomials n-points)))
-      (lambda (x)
-        (chebyshev-evaluate coefficients (+ intercept (* slope x)))))))
+    (let+ (((&interval (left open-left?) (right open-right?)) interval))
+      (assert (< left right))
+      (let+ ((a (if open-left?
+                    -1d0
+                    (chebyshev-root n-points 0)))
+             (b (if open-right?
+                    1d0
+                    (chebyshev-root n-points (1- n-points))))
+             ((&values intercept slope) (ab-to-cd-intercept-slope left right a b))
+             (coefficients (chebyshev-regression (lambda (z)
+                                                   (funcall f (/ (- z intercept)
+                                                                 slope)))
+                                                 n-polynomials n-points)))
+        (lambda (x)
+          (chebyshev-evaluate coefficients (+ intercept (* slope x))))))))
