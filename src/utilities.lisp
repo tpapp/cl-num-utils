@@ -23,7 +23,9 @@
    #:generate-sequence
    #:expanding
    #:bic
-   #:binary-search))
+   #:binary-search
+   #:as-alist
+   #:as-plist))
 
 (cl:in-package #:cl-num-utils.utilities)
 
@@ -179,3 +181,11 @@ If value is below (or above) the first (last) break, NIL (T) is returned."
              (if (< value (sr middle))
                  (setf right middle)
                  (setf left middle))))))))
+
+(defgeneric as-alist (object)
+  (:documentation "Return OBJECT as an ALIST.  Semantics depends on OBJECT."))
+
+(defgeneric as-plist (object)
+  (:documentation "Return OBJECT as a PLIST.  Semantics depends on OBJECT.  The default method uses AS-ALIST.")
+  (:method (object)
+    (alist-plist (as-alist object))))
