@@ -56,10 +56,9 @@
 (defgeneric tally (accumulator)
   (:documentation "The total weight of elements in ACCUMULATOR."))
 
-(defgeneric add (accumulator object &optional weight)
-  (:documentation "Add OBJECT to ACCUMULATOR with WEIGHT (defaults to 1 if not given).  Return OBJECT.  NILs are ignored by the accumulator, unless a specialized method decides otherwise.")
-  (:method (accumulator (object null) &optional weight)
-    (declare (ignore weight))
+(defgeneric add (accumulator object &key)
+  (:documentation "Add OBJECT to ACCUMULATOR.  Return OBJECT.  NILs are ignored by the accumulator, unless a specialized method decides otherwise.  Keywords may be used to specify additional information (eg weight).")
+  (:method (accumulator (object null) &key)
     object))
 
 (defgeneric pool2 (accumulator1 accumulator2)
@@ -109,7 +108,7 @@ of the algorithm.  M_2, ..., M_4 in the paper are s2, ..., s4 in the code."
 
 (define-structure-num= central-sample-moments w m s2 s3 s4)
 
-(defmethod add ((moments central-sample-moments) (y real) &optional (weight 1))
+(defmethod add ((moments central-sample-moments) (y real) &key (weight 1))
   ;; NOTE: See the docstring of CENTRAL-SAMPLE-MOMENTS for the description of
   ;; the algorithm.
   (assert (<= 0 weight) () "Algorithm is only stable with nonnegative weights.")
@@ -208,7 +207,7 @@ When WEIGHTS are given, they need to be a sequence of matching length.")
     (if weights
         (aprog1 (central-sample-moments nil :degree degree)
           (assert (length= sequence weights))
-          (map nil (curry #'add it) sequence weights))
+          (map nil (lambda (e w) (add it e :weight w)) sequence weights))
         (aprog1 (central-sample-moments nil :degree degree)
           (map nil (curry #'add it) sequence)))))
 
@@ -283,9 +282,7 @@ When WEIGHTS are given, they need to be a sequence of matching length.")
 (define-structure-let+ (sorted-reals)
                        ordered-elements unordered-elements)
 
-(defmethod add ((accumulator sorted-reals) object &optional (weight 1 weight?))
-  (declare (ignore weight))
-  (assert (not weight?) () "Weighted quantiles are not implemented yet.")
+(defmethod add ((accumulator sorted-reals) object &key)
   (push object (sorted-reals-unordered-elements accumulator)))
 
 (defun sorted-reals-elements (sorted-reals)
@@ -428,7 +425,7 @@ for any vector SAMPLE."
   "Create a sparse counter.  Elements are compared with TEST (should be accepted by HASH-TABLE)."
   (make-sparse-counter% :table (make-hash-table :test test)))
 
-(defmethod add ((accumulator sparse-counter) object &optional (weight 1))
+(defmethod add ((accumulator sparse-counter) object &key (weight 1))
   (assert (non-negative-real-p weight) () "Weight has to be nonnegative.")
   (incf (gethash object (sparse-counter-table accumulator) 0) weight)
   object)
