@@ -1,3 +1,7 @@
+This repository is archived. You may find an updated version of these
+libraries at https://github.com/Lisp-Stat/numerical-utilities
+
+
 * cl-num-utils
 
 This library implements simple numerical functions for Common Lisp, including
